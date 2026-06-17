@@ -1,5 +1,16 @@
 import { Injectable, computed, signal } from '@angular/core';
 
+import {
+  BASE_XP,
+  CURRENT_LEVEL_XP,
+  DEFAULT_PROTOTYPE_STATE,
+  NEXT_LEVEL_XP,
+  PROTOTYPE_QUESTS,
+  PROTOTYPE_TITLES,
+  LEVELHABIT_STORAGE_KEY,
+  WEEK_BASE
+} from './levelhabit-prototype-data';
+
 export type QuestCategory = 'Mind' | 'Body' | 'Craft' | 'Home';
 export type QuestDifficulty = 'Easy' | 'Standard' | 'Boss';
 
@@ -41,92 +52,10 @@ export type CategoryBreakdown = {
   percent: number;
 };
 
-type StoredPrototypeState = {
+export type StoredPrototypeState = {
   completedQuestIds: string[];
   selectedTitle: string;
 };
-
-const STORAGE_KEY = 'levelhabit.prototype.v1';
-const BASE_XP = 1840;
-const NEXT_LEVEL_XP = 2400;
-const CURRENT_LEVEL_XP = 1800;
-
-const QUESTS: Omit<Quest, 'completed'>[] = [
-  {
-    id: 'morning-training',
-    title: 'Morning training',
-    category: 'Body',
-    summary: 'Move with intent before the day gets loud.',
-    cadence: 'Daily',
-    xp: 80,
-    streak: 14,
-    difficulty: 'Standard',
-    accent: 'emerald'
-  },
-  {
-    id: 'deep-work-focus',
-    title: 'Deep work focus',
-    category: 'Craft',
-    summary: 'One protected block for the project that matters.',
-    cadence: 'Weekdays',
-    xp: 120,
-    streak: 6,
-    difficulty: 'Boss',
-    accent: 'indigo'
-  },
-  {
-    id: 'study-sprint',
-    title: 'Study sprint',
-    category: 'Mind',
-    summary: 'Read, review, or practice one useful concept.',
-    cadence: 'Daily',
-    xp: 70,
-    streak: 9,
-    difficulty: 'Easy',
-    accent: 'cyan'
-  },
-  {
-    id: 'meal-prep',
-    title: 'Meal prep',
-    category: 'Home',
-    summary: 'Set up tomorrow with one clean food choice.',
-    cadence: 'Tue Thu Sun',
-    xp: 60,
-    streak: 3,
-    difficulty: 'Easy',
-    accent: 'amber'
-  },
-  {
-    id: 'evening-reflection',
-    title: 'Evening reflection',
-    category: 'Mind',
-    summary: 'Close the loop with a short note and a plan.',
-    cadence: 'Daily',
-    xp: 90,
-    streak: 21,
-    difficulty: 'Standard',
-    accent: 'rose'
-  }
-];
-
-const DEFAULT_COMPLETED_IDS = ['morning-training', 'study-sprint'];
-
-const WEEK_BASE: WeekDay[] = [
-  { label: 'Mon', completed: 4, total: 5, xp: 310 },
-  { label: 'Tue', completed: 5, total: 5, xp: 420 },
-  { label: 'Wed', completed: 3, total: 5, xp: 260 },
-  { label: 'Thu', completed: 4, total: 5, xp: 340 },
-  { label: 'Fri', completed: 5, total: 5, xp: 450 },
-  { label: 'Sat', completed: 2, total: 4, xp: 160 },
-  { label: 'Today', completed: 0, total: QUESTS.length, xp: 0 }
-];
-
-const TITLES = [
-  'Streakwarden',
-  'Quest Cartographer',
-  'Focus Adept',
-  'Routine Smith'
-];
 
 @Injectable({
   providedIn: 'root'
@@ -134,12 +63,12 @@ const TITLES = [
 export class LevelHabitStateService {
   private readonly state = signal<StoredPrototypeState>(this.loadState());
 
-  readonly availableTitles = TITLES;
+  readonly availableTitles = PROTOTYPE_TITLES;
 
   readonly quests = computed<Quest[]>(() => {
     const completedQuestIds = new Set(this.state().completedQuestIds);
 
-    return QUESTS.map((quest) => ({
+    return PROTOTYPE_QUESTS.map((quest) => ({
       ...quest,
       completed: completedQuestIds.has(quest.id)
     }));
@@ -154,7 +83,7 @@ export class LevelHabitStateService {
   );
 
   readonly completedCount = computed(() => this.completedQuests().length);
-  readonly questCount = computed(() => QUESTS.length);
+  readonly questCount = computed(() => PROTOTYPE_QUESTS.length);
 
   readonly earnedXp = computed(() =>
     this.completedQuests().reduce((total, quest) => total + quest.xp, 0)
@@ -219,7 +148,7 @@ export class LevelHabitStateService {
 
   readonly categoryBreakdown = computed<CategoryBreakdown[]>(() => {
     const categories = Array.from(
-      new Set(QUESTS.map((quest) => quest.category))
+      new Set(PROTOTYPE_QUESTS.map((quest) => quest.category))
     ) as QuestCategory[];
 
     return categories.map((category) => {
@@ -313,7 +242,7 @@ export class LevelHabitStateService {
   completeAll(): void {
     this.saveState({
       ...this.state(),
-      completedQuestIds: QUESTS.map((quest) => quest.id)
+      completedQuestIds: PROTOTYPE_QUESTS.map((quest) => quest.id)
     });
   }
 
@@ -325,7 +254,7 @@ export class LevelHabitStateService {
   }
 
   selectTitle(title: string): void {
-    if (!TITLES.includes(title)) {
+    if (!PROTOTYPE_TITLES.includes(title)) {
       return;
     }
 
@@ -336,24 +265,21 @@ export class LevelHabitStateService {
   }
 
   private loadState(): StoredPrototypeState {
-    const fallback: StoredPrototypeState = {
-      completedQuestIds: DEFAULT_COMPLETED_IDS,
-      selectedTitle: TITLES[0]
-    };
+    const fallback: StoredPrototypeState = DEFAULT_PROTOTYPE_STATE;
 
     if (typeof localStorage === 'undefined') {
       return fallback;
     }
 
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(LEVELHABIT_STORAGE_KEY);
 
       if (!stored) {
         return fallback;
       }
 
       const parsed = JSON.parse(stored) as Partial<StoredPrototypeState>;
-      const validQuestIds = new Set(QUESTS.map((quest) => quest.id));
+      const validQuestIds = new Set(PROTOTYPE_QUESTS.map((quest) => quest.id));
       const completedQuestIds = Array.isArray(parsed.completedQuestIds)
         ? parsed.completedQuestIds.filter((id) => validQuestIds.has(id))
         : fallback.completedQuestIds;
@@ -362,7 +288,7 @@ export class LevelHabitStateService {
         completedQuestIds,
         selectedTitle:
           typeof parsed.selectedTitle === 'string' &&
-          TITLES.includes(parsed.selectedTitle)
+          PROTOTYPE_TITLES.includes(parsed.selectedTitle)
             ? parsed.selectedTitle
             : fallback.selectedTitle
       };
@@ -378,6 +304,6 @@ export class LevelHabitStateService {
       return;
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    localStorage.setItem(LEVELHABIT_STORAGE_KEY, JSON.stringify(nextState));
   }
 }

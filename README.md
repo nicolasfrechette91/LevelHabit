@@ -125,6 +125,8 @@ npm install
 npm run build
 ```
 
+Website available here : https://nicolasfrechette91.github.io/LevelHabit/#/dashboard
+
 ## Roadmap
 
 1. Authentication and hero profile

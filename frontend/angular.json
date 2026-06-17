@@ -92,6 +92,14 @@
           "options": {
             "port": 4200
           }
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "buildTarget": "levelhabit:build:development",
+            "runner": "vitest",
+            "tsConfig": "tsconfig.spec.json"
+          }
         }
       }
     }
