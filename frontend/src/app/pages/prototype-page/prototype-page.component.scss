@@ -66,6 +66,11 @@
   height: 2.2rem;
   position: relative;
   width: 2.2rem;
+
+  &:focus-visible {
+    outline: 0.2rem solid rgba($lh-warning, 0.7);
+    outline-offset: 0.16rem;
+  }
 }
 
 .quest-row.done {
@@ -249,13 +254,11 @@
       border-radius: 0;
 
       &:first-child {
-        border-bottom-left-radius: $lh-radius-sm;
-        border-top-left-radius: $lh-radius-sm;
+        border-radius: $lh-radius-sm 0 0 $lh-radius-sm;
       }
 
       &:last-child {
-        border-bottom-right-radius: $lh-radius-sm;
-        border-top-right-radius: $lh-radius-sm;
+        border-radius: 0 $lh-radius-sm $lh-radius-sm 0;
       }
     }
   }

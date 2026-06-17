@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 
-import { PrototypePageComponent } from './pages/prototype-page/prototype-page.component';
+import { PROTOTYPE_ROUTE_CONFIGS } from './pages/prototype-page/prototype-view.model';
+
+const loadPrototypePage = () =>
+  import('./pages/prototype-page/prototype-page.component').then(
+    (component) => component.PrototypePageComponent
+  );
 
 export const routes: Routes = [
   {
@@ -8,46 +13,14 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
     pathMatch: 'full'
   },
-  {
-    path: 'dashboard',
-    component: PrototypePageComponent,
-    title: 'Dashboard | LevelHabit',
+  ...PROTOTYPE_ROUTE_CONFIGS.map(({ path, title }) => ({
+    path,
+    loadComponent: loadPrototypePage,
+    title: `${title} | LevelHabit`,
     data: {
-      view: 'dashboard'
+      view: path
     }
-  },
-  {
-    path: 'quests',
-    component: PrototypePageComponent,
-    title: 'Quests | LevelHabit',
-    data: {
-      view: 'quests'
-    }
-  },
-  {
-    path: 'hero',
-    component: PrototypePageComponent,
-    title: 'Hero | LevelHabit',
-    data: {
-      view: 'hero'
-    }
-  },
-  {
-    path: 'achievements',
-    component: PrototypePageComponent,
-    title: 'Achievements | LevelHabit',
-    data: {
-      view: 'achievements'
-    }
-  },
-  {
-    path: 'analytics',
-    component: PrototypePageComponent,
-    title: 'Analytics | LevelHabit',
-    data: {
-      view: 'analytics'
-    }
-  },
+  })),
   {
     path: '**',
     redirectTo: 'dashboard'

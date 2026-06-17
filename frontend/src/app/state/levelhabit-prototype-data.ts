@@ -1,11 +1,16 @@
-import type { Quest, StoredPrototypeState, WeekDay } from './levelhabit-state.service';
+import type {
+  PrototypeQuest,
+  PrototypeTitle,
+  StoredPrototypeState,
+  WeekDay
+} from './levelhabit.models';
 
 export const LEVELHABIT_STORAGE_KEY = 'levelhabit.prototype.v1';
 export const BASE_XP = 1840;
 export const NEXT_LEVEL_XP = 2400;
 export const CURRENT_LEVEL_XP = 1800;
 
-export const PROTOTYPE_QUESTS: Omit<Quest, 'completed'>[] = [
+export const PROTOTYPE_QUESTS = [
   {
     id: 'morning-training',
     title: 'Morning training',
@@ -61,11 +66,14 @@ export const PROTOTYPE_QUESTS: Omit<Quest, 'completed'>[] = [
     difficulty: 'Standard',
     accent: 'rose'
   }
+] satisfies readonly PrototypeQuest[];
+
+export const DEFAULT_COMPLETED_IDS: readonly string[] = [
+  'morning-training',
+  'study-sprint'
 ];
 
-export const DEFAULT_COMPLETED_IDS = ['morning-training', 'study-sprint'];
-
-export const WEEK_BASE: WeekDay[] = [
+export const WEEK_BASE = [
   { label: 'Mon', completed: 4, total: 5, xp: 310 },
   { label: 'Tue', completed: 5, total: 5, xp: 420 },
   { label: 'Wed', completed: 3, total: 5, xp: 260 },
@@ -73,16 +81,16 @@ export const WEEK_BASE: WeekDay[] = [
   { label: 'Fri', completed: 5, total: 5, xp: 450 },
   { label: 'Sat', completed: 2, total: 4, xp: 160 },
   { label: 'Today', completed: 0, total: PROTOTYPE_QUESTS.length, xp: 0 }
-];
+] satisfies readonly WeekDay[];
 
 export const PROTOTYPE_TITLES = [
   'Streakwarden',
   'Quest Cartographer',
   'Focus Adept',
   'Routine Smith'
-];
+] satisfies readonly PrototypeTitle[];
 
-export const DEFAULT_PROTOTYPE_STATE: StoredPrototypeState = {
+export const DEFAULT_PROTOTYPE_STATE = {
   completedQuestIds: DEFAULT_COMPLETED_IDS,
-  selectedTitle: PROTOTYPE_TITLES[0]
-};
+  selectedTitle: 'Streakwarden'
+} satisfies StoredPrototypeState;

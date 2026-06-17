@@ -1,18 +1,19 @@
 <div class="app-shell">
-  <header class="navbar site-header sticky-top" aria-label="Primary navigation">
+  <header class="navbar site-header sticky-top">
     <div class="container-xl d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
       <a class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0" routerLink="/dashboard" aria-label="LevelHabit dashboard">
-        <img src="levelhabit-mark.svg" alt="" width="36" height="36">
+        <img ngSrc="levelhabit-mark.svg" alt="" width="36" height="36" priority>
         <span>LevelHabit</span>
       </a>
 
-      <nav class="navbar-nav flex-row flex-wrap gap-1 ms-md-auto">
+      <nav class="navbar-nav flex-row flex-wrap gap-1 ms-md-auto" aria-label="Primary">
         @for (item of navItems; track item.path) {
           <a
             class="nav-link rounded-3 px-3 py-2"
             [routerLink]="item.path"
             routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+            ariaCurrentWhenActive="page"
+            [routerLinkActiveOptions]="{ exact: true }"
           >
             {{ item.label }}
           </a>

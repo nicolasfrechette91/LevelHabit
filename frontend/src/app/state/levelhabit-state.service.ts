@@ -10,57 +10,24 @@ import {
   LEVELHABIT_STORAGE_KEY,
   WEEK_BASE
 } from './levelhabit-prototype-data';
-
-export type QuestCategory = 'Mind' | 'Body' | 'Craft' | 'Home';
-export type QuestDifficulty = 'Easy' | 'Standard' | 'Boss';
-
-export type Quest = {
-  id: string;
-  title: string;
-  category: QuestCategory;
-  summary: string;
-  cadence: string;
-  xp: number;
-  streak: number;
-  difficulty: QuestDifficulty;
-  accent: 'emerald' | 'indigo' | 'amber' | 'rose' | 'cyan';
-  completed: boolean;
-};
-
-export type Achievement = {
-  id: string;
-  title: string;
-  summary: string;
-  reward: string;
-  progress: number;
-  target: number;
-  unlocked: boolean;
-};
-
-export type WeekDay = {
-  label: string;
-  completed: number;
-  total: number;
-  xp: number;
-};
-
-export type CategoryBreakdown = {
-  category: QuestCategory;
-  completed: number;
-  total: number;
-  xp: number;
-  percent: number;
-};
-
-export type StoredPrototypeState = {
-  completedQuestIds: string[];
-  selectedTitle: string;
-};
+import type {
+  Achievement,
+  CategoryBreakdown,
+  PrototypeTitle,
+  Quest,
+  QuestCategory,
+  StoredPrototypeState,
+  WeekDay
+} from './levelhabit.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LevelHabitStateService {
+  private readonly validQuestIds = new Set<string>(
+    PROTOTYPE_QUESTS.map((quest) => quest.id)
+  );
+  private readonly validTitles = new Set<string>(PROTOTYPE_TITLES);
   private readonly state = signal<StoredPrototypeState>(this.loadState());
 
   readonly availableTitles = PROTOTYPE_TITLES;
@@ -253,8 +220,8 @@ export class LevelHabitStateService {
     });
   }
 
-  selectTitle(title: string): void {
-    if (!PROTOTYPE_TITLES.includes(title)) {
+  selectTitle(title: PrototypeTitle): void {
+    if (!this.validTitles.has(title)) {
       return;
     }
 
@@ -265,7 +232,7 @@ export class LevelHabitStateService {
   }
 
   private loadState(): StoredPrototypeState {
-    const fallback: StoredPrototypeState = DEFAULT_PROTOTYPE_STATE;
+    const fallback = this.createDefaultState();
 
     if (typeof localStorage === 'undefined') {
       return fallback;
@@ -278,19 +245,21 @@ export class LevelHabitStateService {
         return fallback;
       }
 
-      const parsed = JSON.parse(stored) as Partial<StoredPrototypeState>;
-      const validQuestIds = new Set(PROTOTYPE_QUESTS.map((quest) => quest.id));
-      const completedQuestIds = Array.isArray(parsed.completedQuestIds)
-        ? parsed.completedQuestIds.filter((id) => validQuestIds.has(id))
-        : fallback.completedQuestIds;
+      const parsed: unknown = JSON.parse(stored);
+
+      if (!this.isRecord(parsed)) {
+        return fallback;
+      }
 
       return {
-        completedQuestIds,
-        selectedTitle:
-          typeof parsed.selectedTitle === 'string' &&
-          PROTOTYPE_TITLES.includes(parsed.selectedTitle)
-            ? parsed.selectedTitle
-            : fallback.selectedTitle
+        completedQuestIds: this.readCompletedQuestIds(
+          parsed['completedQuestIds'],
+          fallback.completedQuestIds
+        ),
+        selectedTitle: this.readSelectedTitle(
+          parsed['selectedTitle'],
+          fallback.selectedTitle
+        )
       };
     } catch {
       return fallback;
@@ -298,12 +267,51 @@ export class LevelHabitStateService {
   }
 
   private saveState(nextState: StoredPrototypeState): void {
-    this.state.set(nextState);
+    this.state.set({
+      ...nextState,
+      completedQuestIds: [...nextState.completedQuestIds]
+    });
 
     if (typeof localStorage === 'undefined') {
       return;
     }
 
     localStorage.setItem(LEVELHABIT_STORAGE_KEY, JSON.stringify(nextState));
+  }
+
+  private createDefaultState(): StoredPrototypeState {
+    return {
+      ...DEFAULT_PROTOTYPE_STATE,
+      completedQuestIds: [...DEFAULT_PROTOTYPE_STATE.completedQuestIds]
+    };
+  }
+
+  private readCompletedQuestIds(
+    value: unknown,
+    fallback: readonly string[]
+  ): readonly string[] {
+    if (!Array.isArray(value)) {
+      return fallback;
+    }
+
+    return value.filter(
+      (questId): questId is string =>
+        typeof questId === 'string' && this.validQuestIds.has(questId)
+    );
+  }
+
+  private readSelectedTitle(
+    value: unknown,
+    fallback: PrototypeTitle
+  ): PrototypeTitle {
+    return this.isPrototypeTitle(value) ? value : fallback;
+  }
+
+  private isPrototypeTitle(value: unknown): value is PrototypeTitle {
+    return typeof value === 'string' && this.validTitles.has(value);
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 }
