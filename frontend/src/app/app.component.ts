@@ -15,7 +15,7 @@ type NavItem = {
 })
 export class AppComponent {
   protected readonly navItems: NavItem[] = [
-    { label: 'Dashboard', path: '/dashboard' },
+    { label: 'Today', path: '/dashboard' },
     { label: 'Quests', path: '/quests' },
     { label: 'Hero', path: '/hero' },
     { label: 'Achievements', path: '/achievements' },

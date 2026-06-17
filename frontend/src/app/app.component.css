@@ -4,12 +4,16 @@
 
 .site-header {
   align-items: center;
+  backdrop-filter: blur(18px);
+  background: rgba(247, 250, 248, 0.84);
+  border-bottom: 1px solid rgba(223, 232, 227, 0.9);
   display: flex;
   gap: 1.5rem;
   justify-content: space-between;
-  margin: 0 auto;
-  max-width: 1180px;
-  padding: 1rem 1.25rem;
+  padding: 0.9rem max(1.25rem, calc((100vw - 1180px) / 2 + 1.25rem));
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .brand {
@@ -46,7 +50,7 @@
 
 .nav-links a:hover,
 .nav-links a.active {
-  background: rgba(35, 103, 80, 0.08);
+  background: rgba(32, 108, 83, 0.1);
   color: var(--color-emerald);
 }
 
@@ -58,10 +62,13 @@ main {
   .site-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 0;
+    padding: 0.75rem 1rem;
   }
 
   .nav-links {
     justify-content: flex-start;
+    width: 100%;
   }
 
   .nav-links a {

@@ -1,61 +1,55 @@
 import { Routes } from '@angular/router';
 
-import { LandingComponent } from './pages/landing/landing.component';
-import { PlaceholderPageComponent } from './pages/placeholder-page/placeholder-page.component';
+import { PrototypePageComponent } from './pages/prototype-page/prototype-page.component';
 
 export const routes: Routes = [
   {
     path: '',
-    component: LandingComponent,
-    title: 'LevelHabit'
+    redirectTo: 'dashboard',
+    pathMatch: 'full'
   },
   {
     path: 'dashboard',
-    component: PlaceholderPageComponent,
+    component: PrototypePageComponent,
     title: 'Dashboard | LevelHabit',
     data: {
-      area: 'Dashboard',
-      description: 'Future home for the authenticated player overview, active quests, hero status, and daily progress.'
+      view: 'dashboard'
     }
   },
   {
     path: 'quests',
-    component: PlaceholderPageComponent,
+    component: PrototypePageComponent,
     title: 'Quests | LevelHabit',
     data: {
-      area: 'Quests',
-      description: 'Future home for creating, scheduling, and completing habit quests.'
+      view: 'quests'
     }
   },
   {
     path: 'hero',
-    component: PlaceholderPageComponent,
+    component: PrototypePageComponent,
     title: 'Hero | LevelHabit',
     data: {
-      area: 'Hero',
-      description: 'Future home for profile progression, levels, titles, and hero customization.'
+      view: 'hero'
     }
   },
   {
     path: 'achievements',
-    component: PlaceholderPageComponent,
+    component: PrototypePageComponent,
     title: 'Achievements | LevelHabit',
     data: {
-      area: 'Achievements',
-      description: 'Future home for unlocked badges, milestones, and mastery rewards.'
+      view: 'achievements'
     }
   },
   {
     path: 'analytics',
-    component: PlaceholderPageComponent,
+    component: PrototypePageComponent,
     title: 'Analytics | LevelHabit',
     data: {
-      area: 'Analytics',
-      description: 'Future home for habit consistency, streak trends, and long-term progress insights.'
+      view: 'analytics'
     }
   },
   {
     path: '**',
-    redirectTo: ''
+    redirectTo: 'dashboard'
   }
 ];

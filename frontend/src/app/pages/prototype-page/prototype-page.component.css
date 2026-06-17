@@ -1,0 +1,602 @@
+.prototype-page {
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.page-hero {
+  align-items: stretch;
+  background:
+    linear-gradient(135deg, rgba(30, 96, 80, 0.94), rgba(33, 45, 91, 0.92)),
+    #1e6050;
+  border-radius: 8px;
+  color: #ffffff;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  padding: 1.5rem;
+}
+
+.hero-copy h1,
+.section-heading h2,
+.focus-panel h2,
+.quest-card h2,
+.profile-panel h2,
+.achievement-card h2 {
+  margin: 0;
+}
+
+.hero-copy h1 {
+  font-size: clamp(2.35rem, 6vw, 4.75rem);
+  line-height: 0.96;
+}
+
+.hero-copy p:not(.eyebrow),
+.focus-panel p,
+.quest-card p,
+.profile-panel p,
+.achievement-card p {
+  line-height: 1.55;
+}
+
+.hero-copy p:not(.eyebrow) {
+  color: rgba(255, 255, 255, 0.78);
+  margin: 1rem 0 0;
+  max-width: 42rem;
+}
+
+.hero-actions,
+.focus-meta,
+.quest-card-meta,
+.toolbar,
+.section-heading,
+.quest-card-top,
+.achievement-progress {
+  align-items: center;
+  display: flex;
+}
+
+.hero-actions {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+}
+
+button,
+.section-heading a {
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+button {
+  border: 0;
+}
+
+.primary-action,
+.quiet-action,
+.quest-card button {
+  min-height: 2.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.primary-action {
+  background: #f2b84b;
+  color: #1b211d;
+}
+
+.quiet-action {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.hero-status,
+.panel,
+.profile-panel,
+.stat-grid article,
+.title-panel,
+.achievement-card,
+.quest-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(27, 33, 29, 0.12);
+  border-radius: 8px;
+}
+
+.hero-status {
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+  color: #ffffff;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.hero-status strong {
+  display: block;
+  font-size: 1.7rem;
+}
+
+.status-label,
+.quest-row span,
+.quest-card p,
+.quest-card-meta,
+.profile-panel p,
+.stat-grid span,
+.achievement-card p,
+.achievement-card small,
+.category-list span,
+.bar-chart small {
+  color: var(--color-muted);
+}
+
+.hero-status .status-label,
+.hero-status .status-grid,
+.hero-status .status-grid span {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.level-meter,
+.meter,
+.achievement-progress div {
+  background: rgba(27, 33, 29, 0.12);
+  border-radius: 999px;
+  height: 0.7rem;
+  overflow: hidden;
+}
+
+.hero-status .level-meter {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.level-meter span,
+.meter i,
+.achievement-progress i {
+  background: linear-gradient(90deg, #5fd0a5, #f2b84b, #ef7d67);
+  display: block;
+  height: 100%;
+}
+
+.status-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-layout,
+.analytics-layout,
+.hero-layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-layout {
+  grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.85fr);
+}
+
+.dashboard-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel,
+.profile-panel,
+.title-panel {
+  padding: 1rem;
+}
+
+.section-heading {
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.section-heading h2,
+.focus-panel h2,
+.profile-panel h2 {
+  font-size: 1.35rem;
+}
+
+.completion-pill,
+.section-heading a,
+.focus-meta span,
+.mini-achievements span,
+.quest-card-top span,
+.quest-card-top small,
+.achievement-card small {
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.completion-pill,
+.section-heading a {
+  background: rgba(32, 108, 83, 0.1);
+  color: var(--color-emerald);
+  padding: 0.45rem 0.65rem;
+  text-decoration: none;
+}
+
+.quest-list,
+.mini-achievements,
+.category-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.quest-row {
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+  min-height: 4.25rem;
+  padding: 0.8rem 0;
+}
+
+.quest-row:first-child {
+  border-top: 0;
+}
+
+.quest-check {
+  background: #ffffff;
+  border: 2px solid rgba(32, 108, 83, 0.36);
+  border-radius: 50%;
+  height: 2.2rem;
+  position: relative;
+  width: 2.2rem;
+}
+
+.quest-row.done .quest-check {
+  background: var(--color-emerald);
+  border-color: var(--color-emerald);
+}
+
+.quest-row.done .quest-check::after {
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  content: "";
+  height: 0.75rem;
+  left: 0.72rem;
+  position: absolute;
+  top: 0.42rem;
+  transform: rotate(45deg);
+  width: 0.38rem;
+}
+
+.quest-row.done strong {
+  color: var(--color-emerald);
+}
+
+.quest-row small {
+  color: var(--color-coral);
+  font-weight: 900;
+}
+
+.focus-panel p {
+  color: var(--color-muted);
+}
+
+.focus-meta,
+.quest-card-meta {
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.focus-meta span,
+.quest-card-meta span {
+  background: rgba(33, 45, 91, 0.08);
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+}
+
+.mini-achievements div {
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.7rem;
+}
+
+.mini-achievements .unlocked strong {
+  color: var(--color-emerald);
+}
+
+.toolbar {
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.toolbar > span {
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.segmented-control {
+  background: rgba(27, 33, 29, 0.08);
+  border-radius: 8px;
+  display: inline-flex;
+  padding: 0.25rem;
+}
+
+.segmented-control button {
+  background: transparent;
+  color: var(--color-muted);
+  min-height: 2.35rem;
+  padding: 0.55rem 0.85rem;
+}
+
+.segmented-control button.active {
+  background: #ffffff;
+  color: var(--color-emerald);
+}
+
+.quest-grid,
+.achievement-grid,
+.stat-grid,
+.title-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.quest-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quest-card {
+  border-top: 5px solid var(--color-emerald);
+  display: grid;
+  gap: 0.8rem;
+  min-height: 18rem;
+  padding: 1rem;
+}
+
+.quest-card-top {
+  justify-content: space-between;
+}
+
+.quest-card button {
+  align-self: end;
+  background: var(--color-ink);
+  color: #ffffff;
+}
+
+.accent-indigo {
+  border-top-color: #4f5fa8;
+}
+
+.accent-amber {
+  border-top-color: #d29324;
+}
+
+.accent-rose {
+  border-top-color: #c85f71;
+}
+
+.accent-cyan {
+  border-top-color: #2a8ea4;
+}
+
+.hero-layout {
+  grid-template-columns: minmax(17rem, 0.9fr) minmax(0, 1.1fr);
+}
+
+.profile-panel {
+  align-content: start;
+  display: grid;
+  gap: 1rem;
+}
+
+.avatar-frame {
+  align-items: center;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #206c53, #27346d);
+  border-radius: 8px;
+  color: #ffffff;
+  display: flex;
+  font-size: 3rem;
+  font-weight: 950;
+  justify-content: center;
+  max-width: 12rem;
+  width: 100%;
+}
+
+.stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stat-grid article {
+  padding: 1rem;
+}
+
+.stat-grid strong {
+  display: block;
+  font-size: 2rem;
+  margin-top: 0.25rem;
+}
+
+.title-panel {
+  grid-column: 1 / -1;
+}
+
+.title-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.title-grid button {
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink);
+  min-height: 4rem;
+  padding: 0.8rem;
+}
+
+.title-grid button.active {
+  background: var(--color-emerald);
+  border-color: var(--color-emerald);
+  color: #ffffff;
+}
+
+.achievement-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.achievement-card {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  padding: 1rem;
+}
+
+.achievement-card > *:not(.achievement-mark) {
+  grid-column: 2;
+}
+
+.achievement-mark {
+  background: rgba(33, 45, 91, 0.1);
+  border: 1px solid rgba(33, 45, 91, 0.18);
+  border-radius: 50%;
+  grid-row: 1 / span 3;
+  height: 3rem;
+  position: relative;
+  width: 3rem;
+}
+
+.achievement-mark::after {
+  border: 2px solid #27346d;
+  border-left: 0;
+  border-top: 0;
+  content: "";
+  height: 1rem;
+  left: 1.05rem;
+  position: absolute;
+  top: 0.7rem;
+  transform: rotate(45deg);
+  width: 0.55rem;
+}
+
+.achievement-card.unlocked .achievement-mark {
+  background: var(--color-emerald);
+}
+
+.achievement-card.unlocked .achievement-mark::after {
+  border-color: #ffffff;
+}
+
+.achievement-progress {
+  gap: 0.8rem;
+}
+
+.achievement-progress span {
+  color: var(--color-ink);
+  flex: 0 0 5.5rem;
+  font-weight: 900;
+}
+
+.achievement-progress div {
+  flex: 1;
+}
+
+.analytics-layout {
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+}
+
+.bar-chart {
+  align-items: end;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 18rem;
+}
+
+.bar-chart div {
+  align-items: center;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-rows: 1fr auto auto;
+  height: 100%;
+}
+
+.bar {
+  align-self: end;
+  background: linear-gradient(180deg, #2a8ea4, #206c53);
+  border-radius: 999px 999px 0 0;
+  display: block;
+  min-height: 1.25rem;
+  width: 100%;
+}
+
+.bar-chart strong,
+.bar-chart small {
+  text-align: center;
+}
+
+.category-list > div {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.category-list > div > div:first-child {
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 980px) {
+  .page-hero,
+  .dashboard-layout,
+  .analytics-layout,
+  .hero-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .prototype-page {
+    padding-inline: 1rem;
+  }
+
+  .page-hero {
+    padding: 1rem;
+  }
+
+  .status-grid,
+  .quest-grid,
+  .achievement-grid,
+  .stat-grid,
+  .title-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quest-row {
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+  }
+
+  .quest-row small {
+    grid-column: 2;
+  }
+
+  .toolbar,
+  .category-list > div > div:first-child {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmented-control {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .bar-chart {
+    min-height: 14rem;
+  }
+}

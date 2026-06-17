@@ -1,0 +1,287 @@
+<section class="prototype-page">
+  <header class="page-hero">
+    <div class="hero-copy">
+      <p class="eyebrow">{{ copy().eyebrow }}</p>
+      <h1>{{ copy().title }}</h1>
+      <p>{{ copy().summary }}</p>
+      <div class="hero-actions" aria-label="Quest actions">
+        <button type="button" class="primary-action" (click)="game.completeAll()">
+          Complete all
+        </button>
+        <button type="button" class="quiet-action" (click)="game.resetToday()">
+          Reset run
+        </button>
+      </div>
+    </div>
+
+    <aside class="hero-status" aria-label="Hero progress">
+      <div>
+        <span class="status-label">Level {{ game.level() }}</span>
+        <strong>{{ game.levelTitle() }}</strong>
+      </div>
+      <div class="level-meter" aria-hidden="true">
+        <span [style.width.%]="game.levelProgress()"></span>
+      </div>
+      <div class="status-grid">
+        <span>
+          <strong>{{ game.totalXp() | number }}</strong>
+          XP
+        </span>
+        <span>
+          <strong>{{ game.currentStreak() }}</strong>
+          day streak
+        </span>
+        <span>
+          <strong>{{ game.completedCount() }}/{{ game.questCount() }}</strong>
+          today
+        </span>
+      </div>
+    </aside>
+  </header>
+
+  @switch (view()) {
+    @case ('dashboard') {
+      <section class="dashboard-layout" aria-label="Dashboard">
+        <article class="panel quest-run">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Daily run</p>
+              <h2>Quest queue</h2>
+            </div>
+            <span class="completion-pill">{{ game.completionPercent() }}%</span>
+          </div>
+
+          <div class="quest-list">
+            @for (quest of game.quests(); track quest.id) {
+              <div class="quest-row" [class.done]="quest.completed">
+                <button
+                  type="button"
+                  class="quest-check"
+                  [attr.aria-label]="quest.completed ? 'Mark ' + quest.title + ' active' : 'Complete ' + quest.title"
+                  (click)="toggleQuest(quest)"
+                ></button>
+                <div>
+                  <strong>{{ quest.title }}</strong>
+                  <span>{{ quest.category }} · {{ quest.cadence }} · {{ quest.xp }} XP</span>
+                </div>
+                <small>{{ quest.streak }}d</small>
+              </div>
+            }
+          </div>
+        </article>
+
+        <div class="dashboard-stack">
+          <article class="panel focus-panel">
+            <p class="eyebrow">Next quest</p>
+            <h2>{{ topQuest().title }}</h2>
+            <p>{{ topQuest().summary }}</p>
+            <div class="focus-meta">
+              <span>{{ topQuest().difficulty }}</span>
+              <span>{{ topQuest().xp }} XP</span>
+              <span>{{ topQuest().streak }} day streak</span>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Rewards</p>
+                <h2>Achievement pulse</h2>
+              </div>
+              <a routerLink="/achievements">Vault</a>
+            </div>
+            <div class="mini-achievements">
+              @for (achievement of game.achievements().slice(0, 3); track achievement.id) {
+                <div [class.unlocked]="achievement.unlocked">
+                  <strong>{{ achievement.title }}</strong>
+                  <span>{{ achievement.progress }}/{{ achievement.target }}</span>
+                </div>
+              }
+            </div>
+          </article>
+        </div>
+      </section>
+    }
+
+    @case ('quests') {
+      <section class="quest-workspace" aria-label="Quests">
+        <div class="toolbar">
+          <div class="segmented-control" aria-label="Quest filter">
+            <button
+              type="button"
+              [class.active]="questFilter() === 'active'"
+              [attr.aria-pressed]="questFilter() === 'active'"
+              (click)="setFilter('active')"
+            >
+              Active
+            </button>
+            <button
+              type="button"
+              [class.active]="questFilter() === 'all'"
+              [attr.aria-pressed]="questFilter() === 'all'"
+              (click)="setFilter('all')"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              [class.active]="questFilter() === 'completed'"
+              [attr.aria-pressed]="questFilter() === 'completed'"
+              (click)="setFilter('completed')"
+            >
+              Done
+            </button>
+          </div>
+          <span>{{ filteredQuests().length }} shown</span>
+        </div>
+
+        <div class="quest-grid">
+          @for (quest of filteredQuests(); track quest.id) {
+            <article class="quest-card accent-{{ quest.accent }}" [class.done]="quest.completed">
+              <div class="quest-card-top">
+                <span>{{ quest.category }}</span>
+                <small>{{ quest.difficulty }}</small>
+              </div>
+              <h2>{{ quest.title }}</h2>
+              <p>{{ quest.summary }}</p>
+              <div class="quest-card-meta">
+                <span>{{ quest.cadence }}</span>
+                <span>{{ quest.streak }} day streak</span>
+                <span>{{ quest.xp }} XP</span>
+              </div>
+              <button type="button" (click)="toggleQuest(quest)">
+                {{ quest.completed ? 'Reopen' : 'Complete' }}
+              </button>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @case ('hero') {
+      <section class="hero-layout" aria-label="Hero profile">
+        <article class="profile-panel">
+          <div class="avatar-frame" aria-hidden="true">
+            <span>LH</span>
+          </div>
+          <div>
+            <p class="eyebrow">Player profile</p>
+            <h2>Level {{ game.level() }} {{ game.levelTitle() }}</h2>
+            <p>{{ game.xpToNextLevel() | number }} XP to {{ game.nextLevelLabel() }}</p>
+          </div>
+          <div class="level-meter wide" aria-hidden="true">
+            <span [style.width.%]="game.levelProgress()"></span>
+          </div>
+        </article>
+
+        <div class="stat-grid">
+          <article>
+            <span>Total XP</span>
+            <strong>{{ game.totalXp() | number }}</strong>
+          </article>
+          <article>
+            <span>Best streak</span>
+            <strong>{{ game.currentStreak() }} days</strong>
+          </article>
+          <article>
+            <span>Unlocked</span>
+            <strong>{{ game.unlockedAchievements().length }}/{{ game.achievements().length }}</strong>
+          </article>
+          <article>
+            <span>Consistency</span>
+            <strong>{{ game.consistencyScore() }}%</strong>
+          </article>
+        </div>
+
+        <section class="title-panel" aria-label="Hero titles">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Titles</p>
+              <h2>Equipped title</h2>
+            </div>
+          </div>
+          <div class="title-grid">
+            @for (title of game.availableTitles; track title) {
+              <button
+                type="button"
+                [class.active]="title === game.levelTitle()"
+                [attr.aria-pressed]="title === game.levelTitle()"
+                (click)="game.selectTitle(title)"
+              >
+                {{ title }}
+              </button>
+            }
+          </div>
+        </section>
+      </section>
+    }
+
+    @case ('achievements') {
+      <section class="achievement-grid" aria-label="Achievements">
+        @for (achievement of game.achievements(); track achievement.id) {
+          <article class="achievement-card" [class.unlocked]="achievement.unlocked">
+            <div class="achievement-mark" aria-hidden="true"></div>
+            <div>
+              <span>{{ achievement.unlocked ? 'Unlocked' : 'Locked' }}</span>
+              <h2>{{ achievement.title }}</h2>
+              <p>{{ achievement.summary }}</p>
+            </div>
+            <div class="achievement-progress">
+              <span>{{ achievement.progress | number }}/{{ achievement.target | number }}</span>
+              <div aria-hidden="true">
+                <i [style.width.%]="achievementPercent(achievement.progress, achievement.target)"></i>
+              </div>
+            </div>
+            <small>{{ achievement.reward }}</small>
+          </article>
+        }
+      </section>
+    }
+
+    @case ('analytics') {
+      <section class="analytics-layout" aria-label="Analytics">
+        <article class="panel chart-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Week</p>
+              <h2>XP output</h2>
+            </div>
+            <span>{{ game.weekXp() | number }} XP</span>
+          </div>
+          <div class="bar-chart">
+            @for (day of game.weeklyHistory(); track day.label) {
+              <div>
+                <span class="bar" [style.height.%]="chartHeight(day.xp)"></span>
+                <strong>{{ day.label }}</strong>
+                <small>{{ day.xp }}</small>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel category-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Balance</p>
+              <h2>Category spread</h2>
+            </div>
+            <span>{{ game.consistencyScore() }}%</span>
+          </div>
+          <div class="category-list">
+            @for (category of game.categoryBreakdown(); track category.category) {
+              <div>
+                <div>
+                  <strong>{{ category.category }}</strong>
+                  <span>{{ category.completed }}/{{ category.total }} · {{ category.xp }} XP</span>
+                </div>
+                <div class="meter" aria-hidden="true">
+                  <i [style.width.%]="category.percent"></i>
+                </div>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+    }
+  }
+</section>

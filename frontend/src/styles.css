@@ -1,16 +1,17 @@
 :root {
   color-scheme: light;
-  --color-ink: #17211c;
-  --color-muted: #5f6f65;
-  --color-surface: #fffdf8;
-  --color-surface-strong: #f4efe5;
-  --color-border: #ded8c9;
-  --color-emerald: #236750;
-  --color-emerald-strong: #164c3d;
-  --color-gold: #c58b2d;
-  --color-coral: #b75f48;
-  --color-sky: #dcecf2;
-  --shadow-soft: 0 18px 45px rgba(23, 33, 28, 0.12);
+  --color-ink: #17201d;
+  --color-muted: #61706b;
+  --color-surface: #f7faf8;
+  --color-surface-strong: #ffffff;
+  --color-border: #dfe8e3;
+  --color-emerald: #206c53;
+  --color-emerald-strong: #164d3e;
+  --color-gold: #d29324;
+  --color-coral: #c85f71;
+  --color-sky: #dff3f6;
+  --color-indigo: #27346d;
+  --shadow-soft: 0 18px 45px rgba(23, 32, 29, 0.12);
   font-family:
     Inter,
     ui-sans-serif,
@@ -33,7 +34,8 @@ body {
 
 body {
   background:
-    linear-gradient(180deg, rgba(220, 236, 242, 0.55), rgba(255, 253, 248, 0) 34rem),
+    radial-gradient(circle at top left, rgba(95, 208, 165, 0.18), transparent 24rem),
+    linear-gradient(180deg, rgba(223, 243, 246, 0.64), rgba(247, 250, 248, 0) 32rem),
     var(--color-surface);
   color: var(--color-ink);
 }
