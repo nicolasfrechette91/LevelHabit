@@ -5,7 +5,11 @@
   "projects": {
     "levelhabit": {
       "projectType": "application",
-      "schematics": {},
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
@@ -30,6 +34,10 @@
               "src/styles.scss"
             ],
             "stylePreprocessorOptions": {
+              "includePaths": [
+                "node_modules",
+                "src/styles"
+              ],
               "sass": {
                 "silenceDeprecations": [
                   "color-functions",

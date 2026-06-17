@@ -1,0 +1,93 @@
+@use "variables" as *;
+
+.eyebrow {
+  color: var(--lh-emerald);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.lh-card {
+  background: rgba($lh-white, 0.84);
+  border-color: rgba($lh-ink, 0.12);
+  border-radius: $lh-radius-sm;
+  box-shadow: var(--lh-shadow-subtle);
+}
+
+.badge-lh-soft {
+  background: rgba($lh-emerald, 0.1);
+  color: var(--lh-emerald);
+}
+
+.btn-lh-primary {
+  --bs-btn-color: #{$lh-white};
+  --bs-btn-bg: var(--lh-emerald);
+  --bs-btn-border-color: var(--lh-emerald);
+  --bs-btn-hover-color: #{$lh-white};
+  --bs-btn-hover-bg: var(--lh-emerald-strong);
+  --bs-btn-hover-border-color: var(--lh-emerald-strong);
+  --bs-btn-active-color: #{$lh-white};
+  --bs-btn-active-bg: var(--lh-emerald-strong);
+  --bs-btn-active-border-color: var(--lh-emerald-strong);
+}
+
+.btn-lh-gold {
+  --bs-btn-color: #{$lh-dark};
+  --bs-btn-bg: #{$lh-warning};
+  --bs-btn-border-color: #{$lh-warning};
+  --bs-btn-hover-color: #{$lh-dark};
+  --bs-btn-hover-bg: #{$lh-warning-light};
+  --bs-btn-hover-border-color: #{$lh-warning-light};
+  --bs-btn-active-color: #{$lh-dark};
+  --bs-btn-active-bg: var(--lh-gold);
+  --bs-btn-active-border-color: var(--lh-gold);
+}
+
+.btn-lh-ghost {
+  --bs-btn-color: #{$lh-white};
+  --bs-btn-bg: rgba(255, 255, 255, 0.12);
+  --bs-btn-border-color: rgba(255, 255, 255, 0.2);
+  --bs-btn-hover-color: #{$lh-white};
+  --bs-btn-hover-bg: rgba(255, 255, 255, 0.2);
+  --bs-btn-hover-border-color: rgba(255, 255, 255, 0.34);
+  --bs-btn-active-color: #{$lh-white};
+  --bs-btn-active-bg: rgba(255, 255, 255, 0.24);
+  --bs-btn-active-border-color: rgba(255, 255, 255, 0.38);
+}
+
+progress.lh-progress {
+  --lh-progress-track: rgba(27, 33, 29, 0.12);
+  appearance: none;
+  background: var(--lh-progress-track);
+  border: 0;
+  border-radius: $lh-radius-pill;
+  display: block;
+  height: 0.7rem;
+  overflow: hidden;
+  width: 100%;
+
+  &::-webkit-progress-bar {
+    background: var(--lh-progress-track);
+    border-radius: $lh-radius-pill;
+  }
+
+  &::-webkit-progress-value {
+    background: $lh-progress-gradient;
+    border-radius: $lh-radius-pill;
+  }
+
+  &::-moz-progress-bar {
+    background: $lh-progress-gradient;
+    border-radius: $lh-radius-pill;
+  }
+
+  &.hero-progress {
+    --lh-progress-track: rgba(255, 255, 255, 0.18);
+  }
+
+  &.slim {
+    height: 0.55rem;
+  }
+}

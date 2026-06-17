@@ -1,0 +1,65 @@
+$lh-ink: #17201d;
+$lh-muted: #61706b;
+$lh-surface: #f7faf8;
+$lh-surface-strong: #ffffff;
+$lh-border: #dfe8e3;
+$lh-emerald: #206c53;
+$lh-emerald-strong: #164d3e;
+$lh-gold: #d29324;
+$lh-gold-strong: #a86f10;
+$lh-warning: #f2b84b;
+$lh-warning-light: #ffd16c;
+$lh-coral: #c85f71;
+$lh-cyan: #2a8ea4;
+$lh-indigo: #27346d;
+$lh-indigo-soft: #4f5fa8;
+$lh-white: #ffffff;
+$lh-dark: #1b211d;
+
+$lh-font-family:
+  Inter,
+  ui-sans-serif,
+  system-ui,
+  -apple-system,
+  BlinkMacSystemFont,
+  "Segoe UI",
+  sans-serif;
+
+$lh-radius-sm: 0.5rem;
+$lh-radius-pill: 999px;
+$lh-shadow-soft: 0 18px 45px rgba($lh-ink, 0.12);
+$lh-shadow-subtle: 0 12px 30px rgba($lh-ink, 0.08);
+$lh-progress-gradient: linear-gradient(90deg, #5fd0a5, $lh-warning, #ef7d67);
+
+@mixin levelhabit-css-variables {
+  :root {
+    color-scheme: light;
+    --lh-ink: #{$lh-ink};
+    --lh-muted: #{$lh-muted};
+    --lh-surface: #{$lh-surface};
+    --lh-surface-strong: #{$lh-surface-strong};
+    --lh-border: #{$lh-border};
+    --lh-emerald: #{$lh-emerald};
+    --lh-emerald-strong: #{$lh-emerald-strong};
+    --lh-gold: #{$lh-gold};
+    --lh-gold-strong: #{$lh-gold-strong};
+    --lh-coral: #{$lh-coral};
+    --lh-cyan: #{$lh-cyan};
+    --lh-indigo: #{$lh-indigo};
+    --lh-shadow-soft: #{$lh-shadow-soft};
+    --lh-shadow-subtle: #{$lh-shadow-subtle};
+    --bs-body-font-family: #{$lh-font-family};
+    --bs-body-color: var(--lh-ink);
+    --bs-body-bg: var(--lh-surface);
+    --bs-border-color: var(--lh-border);
+    --bs-border-radius: #{$lh-radius-sm};
+    --bs-primary: var(--lh-emerald);
+    --bs-primary-rgb: 32, 108, 83;
+    --bs-success: var(--lh-emerald);
+    --bs-success-rgb: 32, 108, 83;
+    --bs-warning: #{$lh-warning};
+    --bs-warning-rgb: 242, 184, 75;
+    --bs-link-color: var(--lh-emerald);
+    --bs-link-hover-color: var(--lh-emerald-strong);
+  }
+}

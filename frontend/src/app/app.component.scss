@@ -1,0 +1,44 @@
+@use "variables" as *;
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.site-header {
+  backdrop-filter: blur(18px);
+  background: rgba($lh-surface, 0.86);
+  border-bottom: 1px solid rgba($lh-border, 0.9);
+  z-index: 10;
+}
+
+.brand {
+  color: var(--lh-ink);
+  font-size: 1.05rem;
+  font-weight: 900;
+
+  &:hover {
+    color: var(--lh-emerald);
+  }
+
+  img {
+    display: block;
+  }
+}
+
+.navbar-nav {
+  .nav-link {
+    color: var(--lh-muted);
+    font-size: 0.92rem;
+    font-weight: 700;
+
+    &:hover,
+    &.active {
+      background: rgba($lh-emerald, 0.1);
+      color: var(--lh-emerald);
+    }
+  }
+}
+
+.app-main {
+  min-height: calc(100vh - 4.25rem);
+}

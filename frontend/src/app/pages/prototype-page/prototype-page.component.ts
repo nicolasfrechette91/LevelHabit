@@ -41,7 +41,7 @@ const VIEW_COPY: Record<PrototypeView, { eyebrow: string; title: string; summary
   standalone: true,
   imports: [DecimalPipe, RouterLink],
   templateUrl: './prototype-page.component.html',
-  styleUrls: ['./prototype-page.component.css']
+  styleUrls: ['./prototype-page.component.scss']
 })
 export class PrototypePageComponent {
   protected readonly game = inject(LevelHabitStateService);

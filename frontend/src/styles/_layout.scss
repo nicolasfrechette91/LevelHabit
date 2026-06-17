@@ -1,0 +1,21 @@
+@use "variables" as *;
+
+@include levelhabit-css-variables;
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(#5fd0a5, 0.18), transparent 24rem),
+    linear-gradient(180deg, rgba(#dff3f6, 0.64), rgba($lh-surface, 0) 32rem),
+    var(--lh-surface);
+  color: var(--lh-ink);
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
