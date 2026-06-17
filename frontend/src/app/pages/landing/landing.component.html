@@ -1,0 +1,65 @@
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Gamified habit tracking</p>
+    <h1>Make daily progress feel like a quest worth returning to.</h1>
+    <p class="hero-text">
+      LevelHabit helps users complete habits, earn XP, build streaks, unlock achievements,
+      and level up a personal hero profile over time.
+    </p>
+    <div class="hero-actions">
+      <a class="button-link" routerLink="/dashboard">Open roadmap</a>
+      <a class="button-link secondary" [href]="apiHealthUrl">Check API</a>
+    </div>
+  </div>
+
+  <div class="progress-preview" aria-label="LevelHabit progress preview">
+    <div class="preview-header">
+      <div>
+        <span class="preview-label">Hero level</span>
+        <strong>Level 7</strong>
+      </div>
+      <span class="xp-badge">1,840 XP</span>
+    </div>
+
+    <div class="quest-list">
+      <div class="quest complete">
+        <span class="quest-check" aria-hidden="true"></span>
+        <div>
+          <strong>Morning training</strong>
+          <span>Quest complete</span>
+        </div>
+      </div>
+      <div class="quest">
+        <span class="quest-check" aria-hidden="true"></span>
+        <div>
+          <strong>Deep work focus</strong>
+          <span>Ready today</span>
+        </div>
+      </div>
+      <div class="quest">
+        <span class="quest-check" aria-hidden="true"></span>
+        <div>
+          <strong>Evening reflection</strong>
+          <span>Streak protected</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="streak-panel">
+      <span>Current streak</span>
+      <strong>14 days</strong>
+      <div class="streak-track" aria-hidden="true">
+        <span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pillars" aria-label="LevelHabit core loop">
+  @for (pillar of pillars; track pillar.title) {
+    <article class="pillar">
+      <h2>{{ pillar.title }}</h2>
+      <p>{{ pillar.description }}</p>
+    </article>
+  }
+</section>

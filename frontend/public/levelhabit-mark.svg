@@ -1,0 +1,8 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">LevelHabit mark</title>
+  <rect x="8" y="6" width="48" height="52" rx="8" fill="#FFFDF8" stroke="#17211C" stroke-width="3"/>
+  <path d="M20 19H44" stroke="#236750" stroke-width="4" stroke-linecap="round"/>
+  <path d="M20 29H36" stroke="#C58B2D" stroke-width="4" stroke-linecap="round"/>
+  <path d="M20 39H31" stroke="#B75F48" stroke-width="4" stroke-linecap="round"/>
+  <path d="M42.5 36L45.1 41.5L51 42.4L46.8 46.7L47.8 52.6L42.5 49.8L37.2 52.6L38.2 46.7L34 42.4L39.9 41.5L42.5 36Z" fill="#C58B2D" stroke="#17211C" stroke-width="2" stroke-linejoin="round"/>
+</svg>

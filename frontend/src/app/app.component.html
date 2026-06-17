@@ -1,0 +1,24 @@
+<div class="app-shell">
+  <header class="site-header" aria-label="Primary navigation">
+    <a class="brand" routerLink="/" aria-label="LevelHabit home">
+      <img src="/levelhabit-mark.svg" alt="" width="36" height="36">
+      <span>LevelHabit</span>
+    </a>
+
+    <nav class="nav-links">
+      @for (item of navItems; track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+        >
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+  </header>
+
+  <main>
+    <router-outlet />
+  </main>
+</div>

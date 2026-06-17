@@ -1,0 +1,24 @@
+.placeholder-page {
+  margin: 0 auto;
+  max-width: 760px;
+  padding: 5rem 1.25rem;
+}
+
+.placeholder-page h1 {
+  font-size: 3rem;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.placeholder-page p:not(.eyebrow) {
+  color: var(--color-muted);
+  font-size: 1.12rem;
+  line-height: 1.65;
+  margin: 1rem 0 2rem;
+}
+
+@media (max-width: 620px) {
+  .placeholder-page h1 {
+    font-size: 2.3rem;
+  }
+}

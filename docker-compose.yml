@@ -1,0 +1,23 @@
+name: levelhabit
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: levelhabit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-levelhabit}
+      POSTGRES_USER: ${POSTGRES_USER:-levelhabit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-levelhabit_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - levelhabit_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-levelhabit} -d ${POSTGRES_DB:-levelhabit}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  levelhabit_postgres_data:
