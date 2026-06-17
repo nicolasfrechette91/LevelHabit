@@ -1,0 +1,175 @@
+@import "../node_modules/bootstrap/scss/functions";
+@import "../node_modules/bootstrap/scss/variables";
+@import "../node_modules/bootstrap/scss/variables-dark";
+@import "../node_modules/bootstrap/scss/maps";
+@import "../node_modules/bootstrap/scss/mixins";
+@import "../node_modules/bootstrap/scss/utilities";
+@import "../node_modules/bootstrap/scss/root";
+@import "../node_modules/bootstrap/scss/reboot";
+@import "../node_modules/bootstrap/scss/type";
+@import "../node_modules/bootstrap/scss/images";
+@import "../node_modules/bootstrap/scss/containers";
+@import "../node_modules/bootstrap/scss/grid";
+@import "../node_modules/bootstrap/scss/forms";
+@import "../node_modules/bootstrap/scss/buttons";
+@import "../node_modules/bootstrap/scss/button-group";
+@import "../node_modules/bootstrap/scss/nav";
+@import "../node_modules/bootstrap/scss/navbar";
+@import "../node_modules/bootstrap/scss/card";
+@import "../node_modules/bootstrap/scss/badge";
+@import "../node_modules/bootstrap/scss/progress";
+@import "../node_modules/bootstrap/scss/list-group";
+@import "../node_modules/bootstrap/scss/helpers";
+@import "../node_modules/bootstrap/scss/utilities/api";
+
+:root {
+  color-scheme: light;
+  --lh-ink: #17201d;
+  --lh-muted: #61706b;
+  --lh-surface: #f7faf8;
+  --lh-surface-strong: #ffffff;
+  --lh-border: #dfe8e3;
+  --lh-emerald: #206c53;
+  --lh-emerald-strong: #164d3e;
+  --lh-gold: #d29324;
+  --lh-gold-strong: #a86f10;
+  --lh-coral: #c85f71;
+  --lh-cyan: #2a8ea4;
+  --lh-indigo: #27346d;
+  --lh-shadow-soft: 0 18px 45px rgba(23, 32, 29, 0.12);
+  --lh-shadow-subtle: 0 12px 30px rgba(23, 32, 29, 0.08);
+  --bs-body-font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  --bs-body-color: var(--lh-ink);
+  --bs-body-bg: var(--lh-surface);
+  --bs-border-color: var(--lh-border);
+  --bs-border-radius: 0.5rem;
+  --bs-primary: var(--lh-emerald);
+  --bs-primary-rgb: 32, 108, 83;
+  --bs-success: var(--lh-emerald);
+  --bs-success-rgb: 32, 108, 83;
+  --bs-warning: #f2b84b;
+  --bs-warning-rgb: 242, 184, 75;
+  --bs-link-color: var(--lh-emerald);
+  --bs-link-hover-color: var(--lh-emerald-strong);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(95, 208, 165, 0.18), transparent 24rem),
+    linear-gradient(180deg, rgba(223, 243, 246, 0.64), rgba(247, 250, 248, 0) 32rem),
+    var(--lh-surface);
+  color: var(--lh-ink);
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+.eyebrow {
+  color: var(--lh-emerald);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.lh-muted {
+  color: var(--lh-muted) !important;
+}
+
+.lh-card {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(23, 32, 29, 0.12);
+  border-radius: 8px;
+  box-shadow: var(--lh-shadow-subtle);
+}
+
+.badge-lh-soft {
+  background: rgba(32, 108, 83, 0.1);
+  color: var(--lh-emerald);
+}
+
+.btn-lh-primary {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: var(--lh-emerald);
+  --bs-btn-border-color: var(--lh-emerald);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--lh-emerald-strong);
+  --bs-btn-hover-border-color: var(--lh-emerald-strong);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: var(--lh-emerald-strong);
+  --bs-btn-active-border-color: var(--lh-emerald-strong);
+}
+
+.btn-lh-gold {
+  --bs-btn-color: #1b211d;
+  --bs-btn-bg: #f2b84b;
+  --bs-btn-border-color: #f2b84b;
+  --bs-btn-hover-color: #1b211d;
+  --bs-btn-hover-bg: #ffd16c;
+  --bs-btn-hover-border-color: #ffd16c;
+  --bs-btn-active-color: #1b211d;
+  --bs-btn-active-bg: var(--lh-gold);
+  --bs-btn-active-border-color: var(--lh-gold);
+}
+
+.btn-lh-ghost {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: rgba(255, 255, 255, 0.12);
+  --bs-btn-border-color: rgba(255, 255, 255, 0.2);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: rgba(255, 255, 255, 0.2);
+  --bs-btn-hover-border-color: rgba(255, 255, 255, 0.34);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: rgba(255, 255, 255, 0.24);
+  --bs-btn-active-border-color: rgba(255, 255, 255, 0.38);
+}
+
+progress.lh-progress {
+  --lh-progress-track: rgba(27, 33, 29, 0.12);
+  appearance: none;
+  background: var(--lh-progress-track);
+  border: 0;
+  border-radius: 999px;
+  display: block;
+  height: 0.7rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+progress.lh-progress::-webkit-progress-bar {
+  background: var(--lh-progress-track);
+  border-radius: 999px;
+}
+
+progress.lh-progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #5fd0a5, #f2b84b, #ef7d67);
+  border-radius: 999px;
+}
+
+progress.lh-progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #5fd0a5, #f2b84b, #ef7d67);
+  border-radius: 999px;
+}
+
+progress.lh-progress.hero-progress {
+  --lh-progress-track: rgba(255, 255, 255, 0.18);
+}
+
+progress.lh-progress.slim {
+  height: 0.55rem;
+}

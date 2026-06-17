@@ -27,8 +27,18 @@
               }
             ],
             "styles": [
-              "src/styles.css"
-            ]
+              "src/styles.scss"
+            ],
+            "stylePreprocessorOptions": {
+              "sass": {
+                "silenceDeprecations": [
+                  "color-functions",
+                  "global-builtin",
+                  "if-function",
+                  "import"
+                ]
+              }
+            }
           },
           "configurations": {
             "production": {

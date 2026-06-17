@@ -1,24 +1,27 @@
 <div class="app-shell">
-  <header class="site-header" aria-label="Primary navigation">
-    <a class="brand" routerLink="/dashboard" aria-label="LevelHabit dashboard">
-      <img src="levelhabit-mark.svg" alt="" width="36" height="36">
-      <span>LevelHabit</span>
-    </a>
+  <header class="navbar site-header sticky-top" aria-label="Primary navigation">
+    <div class="container-xl d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
+      <a class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0" routerLink="/dashboard" aria-label="LevelHabit dashboard">
+        <img src="levelhabit-mark.svg" alt="" width="36" height="36">
+        <span>LevelHabit</span>
+      </a>
 
-    <nav class="nav-links">
-      @for (item of navItems; track item.path) {
-        <a
-          [routerLink]="item.path"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: item.path === '/' }"
-        >
-          {{ item.label }}
-        </a>
-      }
-    </nav>
+      <nav class="navbar-nav flex-row flex-wrap gap-1 ms-md-auto">
+        @for (item of navItems; track item.path) {
+          <a
+            class="nav-link rounded-3 px-3 py-2"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+          >
+            {{ item.label }}
+          </a>
+        }
+      </nav>
+    </div>
   </header>
 
-  <main>
+  <main class="app-main">
     <router-outlet />
   </main>
 </div>

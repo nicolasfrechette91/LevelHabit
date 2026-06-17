@@ -84,10 +84,6 @@ export class PrototypePageComponent {
     Math.max(...this.game.weeklyHistory().map((day) => day.xp), 1)
   );
 
-  protected chartHeight(xp: number): number {
-    return Math.max(12, Math.round((xp / this.chartMaxXp()) * 100));
-  }
-
   protected achievementPercent(progress: number, target: number): number {
     return Math.min(100, Math.round((progress / target) * 100));
   }
