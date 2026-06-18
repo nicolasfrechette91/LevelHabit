@@ -11,6 +11,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { AuthService } from '../../auth/auth.service';
 import type { QuestUpsertRequest } from '../../quests/quest-api.service';
 import {
   PERSISTED_QUEST_CATEGORIES,
@@ -37,6 +38,7 @@ type QuestFilter = 'active' | 'all' | 'archived';
   styleUrls: ['./prototype-page.component.scss']
 })
 export class PrototypePageComponent implements OnInit {
+  protected readonly auth = inject(AuthService);
   protected readonly game = inject(LevelHabitStateService);
 
   private readonly route = inject(ActivatedRoute);
@@ -79,6 +81,46 @@ export class PrototypePageComponent implements OnInit {
   });
 
   protected readonly copy = computed(() => PROTOTYPE_VIEW_COPY[this.view()]);
+
+  protected readonly profileUser = computed(() => this.auth.user());
+
+  protected readonly profileHero = computed(() => this.auth.heroProfile());
+
+  protected readonly playerDisplayName = computed(
+    () => this.profileUser()?.displayName ?? 'Prototype player'
+  );
+
+  protected readonly heroDisplayName = computed(
+    () => this.profileHero()?.heroName ?? this.game.levelTitle()
+  );
+
+  protected readonly profileLevel = computed(
+    () => this.profileHero()?.level ?? this.game.level()
+  );
+
+  protected readonly profileTotalXp = computed(
+    () => this.profileHero()?.totalXp ?? this.game.totalXp()
+  );
+
+  protected readonly profileCurrentStreak = computed(
+    () => this.profileHero()?.currentStreak ?? this.game.currentStreak()
+  );
+
+  protected readonly profileLevelProgress = computed(() =>
+    this.profileHero() ? 0 : this.game.levelProgress()
+  );
+
+  protected readonly profileInitials = computed(() => {
+    const name = this.heroDisplayName();
+    const initials = name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('');
+
+    return initials || 'LH';
+  });
 
   protected readonly filteredQuests = computed(() => {
     const quests = this.game.quests();

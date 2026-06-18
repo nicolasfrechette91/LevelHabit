@@ -114,10 +114,10 @@ PostgreSQL is exposed locally on port `5432` by default.
 - `backend/LevelHabit.Api/appsettings.json` contains safe local defaults.
 - `backend/LevelHabit.Api/appsettings.Example.json` shows the expected backend configuration shape.
 - `frontend/src/environments/environment.development.ts` points Angular to the local API.
-- `frontend/src/environments/environment.ts` keeps `authRequired` disabled so
-  GitHub Pages can continue serving the frontend-only prototype without a live
-  backend. Local development enables `authRequired` in
-  `environment.development.ts`.
+- `frontend/src/environments/environment.ts` points GitHub Pages to
+  `https://level-habit-api.onrender.com/api` and keeps `authRequired` enabled.
+- Backend CORS allows `https://nicolasfrechette91.github.io` and
+  `http://localhost:4200`.
 
 ### Backend secrets
 
@@ -138,6 +138,21 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Po
 dotnet user-secrets set "Jwt:Secret" "replace-with-at-least-32-random-characters"
 ```
 
+### Render environment variables
+
+Set these on the Render backend service. Use real values from Supabase and a
+long random JWT secret; do not commit them.
+
+```text
+ConnectionStrings__DefaultConnection=<Supabase PostgreSQL connection string>
+Jwt__Secret=<at least 32 random characters>
+Jwt__Issuer=LevelHabit.Api
+Jwt__Audience=LevelHabit.Frontend
+Jwt__ExpirationMinutes=60
+Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
+Cors__AllowedOrigins__1=http://localhost:4200
+```
+
 ## Database migrations
 
 Install the EF Core CLI if needed:
@@ -155,6 +170,16 @@ dotnet ef database update
 
 The current migration creates `users` and `hero_profiles`. Registering a user
 automatically creates the related hero profile.
+
+For Supabase, apply the migrations against the Supabase PostgreSQL connection
+string before or during the Render release:
+
+```powershell
+cd backend/LevelHabit.Api
+$env:ConnectionStrings__DefaultConnection = "<Supabase PostgreSQL connection string>"
+$env:Jwt__Secret = "replace-with-at-least-32-random-characters"
+dotnet ef database update
+```
 
 ## Validation commands
 
@@ -178,6 +203,18 @@ npm run build
 ```
 
 Website available here : https://nicolasfrechette91.github.io/LevelHabit/#/dashboard
+
+## Production smoke test
+
+After Render deploys the backend and Supabase has the current migrations:
+
+1. Open https://nicolasfrechette91.github.io/LevelHabit/#/register.
+2. Register with email, password, display name, and hero name.
+3. Confirm the app lands on the dashboard and shows the registered player and hero.
+4. Logout, then login again from https://nicolasfrechette91.github.io/LevelHabit/#/login.
+5. Confirm `GET https://level-habit-api.onrender.com/api/auth/me` returns the current user/profile when sent the saved bearer token.
+
+Render should redeploy from the repository; no real secrets belong in source.
 
 ## Roadmap
 

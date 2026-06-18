@@ -71,6 +71,22 @@ describe('Dashboard view', () => {
   });
 });
 
+describe('Profile view', () => {
+  beforeEach(() => {
+    resetPrototypeStorage();
+  });
+
+  it('displays authenticated user and hero profile data', async () => {
+    const { nativeElement } = await renderPrototypeRoute('/hero');
+    const pageText = textContent(nativeElement);
+
+    expect(pageText).toContain(AUTH_ME_RESPONSE.user.displayName);
+    expect(pageText).toContain(AUTH_ME_RESPONSE.user.email);
+    expect(pageText).toContain(AUTH_ME_RESPONSE.heroProfile.heroName);
+    expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.heroProfile.level}`);
+  });
+});
+
 describe('Achievements view', () => {
   beforeEach(() => {
     resetPrototypeStorage();

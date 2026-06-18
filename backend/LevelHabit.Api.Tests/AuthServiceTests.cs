@@ -1,4 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using LevelHabit.Api.Auth;
 using LevelHabit.Api.Contracts.Auth;
 using LevelHabit.Api.Data;
@@ -8,6 +10,7 @@ using LevelHabit.Api.Services.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace LevelHabit.Api.Tests;
 
@@ -60,7 +63,8 @@ public sealed class AuthServiceTests
 
         Assert.Equal("player@example.com", login.User.Email);
         Assert.Equal("Morning Warden", login.HeroProfile.HeroName);
-        Assert.False(string.IsNullOrWhiteSpace(login.AccessToken));
+        ClaimsPrincipal principal = harness.ValidateAccessToken(login.AccessToken);
+        Assert.Equal(login.User.Id.ToString(), principal.FindFirstValue(ClaimTypes.NameIdentifier));
     }
 
     [Fact]
@@ -112,17 +116,47 @@ public sealed class AuthServiceTests
         Assert.Equal("Morning Warden", me.HeroProfile.HeroName);
     }
 
+    [Fact]
+    public async Task GetCurrentUserAsync_returns_user_and_profile_from_valid_jwt()
+    {
+        using AuthServiceHarness harness = AuthServiceHarness.Create();
+
+        AuthResponse registration = await harness.Service.RegisterAsync(
+            new RegisterRequest(
+                Email: "player@example.com",
+                Password: "CorrectHorse123!",
+                DisplayName: "Player One",
+                HeroName: "Morning Warden"),
+            CancellationToken.None);
+
+        ClaimsPrincipal principal = harness.ValidateAccessToken(registration.AccessToken);
+
+        MeResponse me = await harness.Service.GetCurrentUserAsync(
+            principal,
+            CancellationToken.None);
+
+        Assert.Equal(registration.User.Id, me.User.Id);
+        Assert.Equal("player@example.com", me.User.Email);
+        Assert.Equal("Morning Warden", me.HeroProfile.HeroName);
+    }
+
     private sealed class AuthServiceHarness : IDisposable
     {
-        private AuthServiceHarness(LevelHabitDbContext dbContext, IAuthService service)
+        private AuthServiceHarness(
+            LevelHabitDbContext dbContext,
+            IAuthService service,
+            JwtOptions jwtOptions)
         {
             DbContext = dbContext;
             Service = service;
+            JwtOptions = jwtOptions;
         }
 
         public LevelHabitDbContext DbContext { get; }
 
         public IAuthService Service { get; }
+
+        public JwtOptions JwtOptions { get; }
 
         public static AuthServiceHarness Create()
         {
@@ -149,7 +183,28 @@ public sealed class AuthServiceTests
                 tokenService,
                 TimeProvider.System);
 
-            return new AuthServiceHarness(dbContext, service);
+            return new AuthServiceHarness(dbContext, service, jwtOptions);
+        }
+
+        public ClaimsPrincipal ValidateAccessToken(string accessToken)
+        {
+            TokenValidationParameters validationParameters = new()
+            {
+                ValidateIssuer = true,
+                ValidIssuer = JwtOptions.Issuer,
+                ValidateAudience = true,
+                ValidAudience = JwtOptions.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(JwtOptions.Secret!)),
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(1)
+            };
+
+            return new JwtSecurityTokenHandler().ValidateToken(
+                accessToken,
+                validationParameters,
+                out _);
         }
 
         public void Dispose()

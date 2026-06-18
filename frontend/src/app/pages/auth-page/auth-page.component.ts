@@ -90,6 +90,10 @@ export class AuthPageComponent {
       return 'Authentication failed. Please try again.';
     }
 
+    if (error.status === 0) {
+      return 'LevelHabit API is not reachable right now. Please try again in a moment.';
+    }
+
     const problem = error.error as
       | { detail?: unknown; title?: unknown; errors?: Record<string, string[]> }
       | undefined;
