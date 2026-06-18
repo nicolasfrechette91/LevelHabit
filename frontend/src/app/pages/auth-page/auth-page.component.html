@@ -16,22 +16,110 @@
           <form class="d-grid gap-3" [formGroup]="registerForm" (ngSubmit)="submitRegister()">
             <div>
               <label class="form-label fw-bold" for="register-email">Email</label>
-              <input id="register-email" class="form-control form-control-lg" type="email" autocomplete="email" formControlName="email">
+              <input
+                id="register-email"
+                class="form-control form-control-lg"
+                [class.is-invalid]="shouldShowRegisterError(registerForm.controls.email)"
+                [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.email) ? 'true' : null"
+                [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.email) ? 'register-email-error' : null"
+                type="email"
+                autocomplete="email"
+                formControlName="email"
+                required
+              >
+
+              @if (shouldShowRegisterError(registerForm.controls.email)) {
+                <div id="register-email-error" class="invalid-feedback">
+                  @if (registerForm.controls.email.hasError('required')) {
+                    Email is required.
+                  } @else if (registerForm.controls.email.hasError('email')) {
+                    Please enter a valid email address.
+                  }
+                </div>
+              }
             </div>
 
             <div>
               <label class="form-label fw-bold" for="register-password">Password</label>
-              <input id="register-password" class="form-control form-control-lg" type="password" autocomplete="new-password" formControlName="password">
+              <input
+                id="register-password"
+                class="form-control form-control-lg"
+                [class.is-invalid]="shouldShowRegisterError(registerForm.controls.password)"
+                [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.password) ? 'true' : null"
+                [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.password) ? 'register-password-error' : null"
+                type="password"
+                autocomplete="new-password"
+                formControlName="password"
+                required
+                minlength="8"
+              >
+
+              @if (shouldShowRegisterError(registerForm.controls.password)) {
+                <div id="register-password-error" class="invalid-feedback">
+                  @if (registerForm.controls.password.hasError('required')) {
+                    Password is required.
+                  } @else if (registerForm.controls.password.hasError('minlength')) {
+                    Password must be at least 8 characters.
+                  }
+                </div>
+              }
             </div>
 
             <div>
               <label class="form-label fw-bold" for="display-name">Display name</label>
-              <input id="display-name" class="form-control form-control-lg" type="text" autocomplete="name" formControlName="displayName">
+              <input
+                id="display-name"
+                class="form-control form-control-lg"
+                [class.is-invalid]="shouldShowRegisterError(registerForm.controls.displayName)"
+                [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.displayName) ? 'true' : null"
+                [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.displayName) ? 'display-name-error' : null"
+                type="text"
+                autocomplete="name"
+                formControlName="displayName"
+                required
+                minlength="2"
+                maxlength="80"
+              >
+
+              @if (shouldShowRegisterError(registerForm.controls.displayName)) {
+                <div id="display-name-error" class="invalid-feedback">
+                  @if (registerForm.controls.displayName.hasError('required')) {
+                    Display name is required.
+                  } @else if (registerForm.controls.displayName.hasError('minlength')) {
+                    Display name must be at least 2 characters.
+                  } @else if (registerForm.controls.displayName.hasError('maxlength')) {
+                    Display name must be 80 characters or fewer.
+                  }
+                </div>
+              }
             </div>
 
             <div>
               <label class="form-label fw-bold" for="hero-name">Hero name</label>
-              <input id="hero-name" class="form-control form-control-lg" type="text" formControlName="heroName">
+              <input
+                id="hero-name"
+                class="form-control form-control-lg"
+                [class.is-invalid]="shouldShowRegisterError(registerForm.controls.heroName)"
+                [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.heroName) ? 'true' : null"
+                [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.heroName) ? 'hero-name-error' : null"
+                type="text"
+                formControlName="heroName"
+                required
+                minlength="2"
+                maxlength="80"
+              >
+
+              @if (shouldShowRegisterError(registerForm.controls.heroName)) {
+                <div id="hero-name-error" class="invalid-feedback">
+                  @if (registerForm.controls.heroName.hasError('required')) {
+                    Hero name is required.
+                  } @else if (registerForm.controls.heroName.hasError('minlength')) {
+                    Hero name must be at least 2 characters.
+                  } @else if (registerForm.controls.heroName.hasError('maxlength')) {
+                    Hero name must be 80 characters or fewer.
+                  }
+                </div>
+              }
             </div>
 
             @if (errorMessage()) {
@@ -48,27 +136,45 @@
           <form class="d-grid gap-3" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
             <div>
               <label class="form-label fw-bold" for="login-email">Email</label>
-              <input id="login-email" class="form-control form-control-lg" type="email" autocomplete="email" formControlName="email">
-              
-              @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
-                <div class="text-danger small mt-1">
-                  Email is required.
-                </div>
-              }
+              <input
+                id="login-email"
+                class="form-control form-control-lg"
+                [class.is-invalid]="shouldShowLoginError(loginForm.controls.email)"
+                [attr.aria-invalid]="shouldShowLoginError(loginForm.controls.email) ? 'true' : null"
+                [attr.aria-describedby]="shouldShowLoginError(loginForm.controls.email) ? 'login-email-error' : null"
+                type="email"
+                autocomplete="email"
+                formControlName="email"
+                required
+              >
 
-              @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('email')) {
-                <div class="text-danger small mt-1">
-                  Please enter a valid email address.
+              @if (shouldShowLoginError(loginForm.controls.email)) {
+                <div id="login-email-error" class="invalid-feedback">
+                  @if (loginForm.controls.email.hasError('required')) {
+                    Email is required.
+                  } @else if (loginForm.controls.email.hasError('email')) {
+                    Please enter a valid email address.
+                  }
                 </div>
               }
             </div>
 
             <div>
               <label class="form-label fw-bold" for="login-password">Password</label>
-              <input id="login-password" class="form-control form-control-lg" type="password" autocomplete="current-password" formControlName="password">
+              <input
+                id="login-password"
+                class="form-control form-control-lg"
+                [class.is-invalid]="shouldShowLoginError(loginForm.controls.password)"
+                [attr.aria-invalid]="shouldShowLoginError(loginForm.controls.password) ? 'true' : null"
+                [attr.aria-describedby]="shouldShowLoginError(loginForm.controls.password) ? 'login-password-error' : null"
+                type="password"
+                autocomplete="current-password"
+                formControlName="password"
+                required
+              >
 
-              @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
-                <div class="text-danger small mt-1">
+              @if (shouldShowLoginError(loginForm.controls.password)) {
+                <div id="login-password-error" class="invalid-feedback">
                   Password is required.
                 </div>
               }

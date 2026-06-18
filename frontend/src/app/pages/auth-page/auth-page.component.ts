@@ -1,6 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, finalize } from 'rxjs';
@@ -47,6 +52,7 @@ export class AuthPageComponent {
 
   protected submitLogin(): void {
     this.loginSubmitted.set(true);
+    this.errorMessage.set(null);
 
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -57,15 +63,8 @@ export class AuthPageComponent {
   }
 
   protected submitRegister(): void {
-    console.log('submitRegister fired');
-    console.log('valid:', this.registerForm.valid);
-    console.log('errors:', {
-      email: this.registerForm.controls.email.errors,
-      password: this.registerForm.controls.password.errors,
-      displayName: this.registerForm.controls.displayName.errors,
-      heroName: this.registerForm.controls.heroName.errors
-    });
     this.registerSubmitted.set(true);
+    this.errorMessage.set(null);
 
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -73,6 +72,14 @@ export class AuthPageComponent {
     }
 
     this.submitAuth(this.auth.register(this.registerForm.getRawValue() satisfies RegisterRequest));
+  }
+
+  protected shouldShowLoginError(control: AbstractControl<string>): boolean {
+    return this.shouldShowControlError(control, this.loginSubmitted());
+  }
+
+  protected shouldShowRegisterError(control: AbstractControl<string>): boolean {
+    return this.shouldShowControlError(control, this.registerSubmitted());
   }
 
   private submitAuth(request: Observable<AuthResponse>): void {
@@ -129,5 +136,12 @@ export class AuthPageComponent {
     }
 
     return 'Authentication failed. Please try again.';
+  }
+
+  private shouldShowControlError(
+    control: AbstractControl<string>,
+    submitted: boolean
+  ): boolean {
+    return control.invalid && (control.dirty || control.touched || submitted);
   }
 }
