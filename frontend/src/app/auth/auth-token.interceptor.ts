@@ -8,7 +8,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthService);
   const accessToken = auth.accessToken();
   const isApiRequest =
-    request.url.startsWith(environment.apiBaseUrl) ||
+    request.url.startsWith(environment.apiUrl) ||
     request.url.startsWith('/api');
 
   if (!accessToken || !isApiRequest) {

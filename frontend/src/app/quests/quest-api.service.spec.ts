@@ -34,7 +34,7 @@ describe('QuestApiService', () => {
 
     const responsePromise = firstValueFrom(service.list());
     const request = http.expectOne(
-      `${environment.apiBaseUrl}/quests?includeArchived=true`
+      `${environment.apiUrl}/quests?includeArchived=true`
     );
     expect(request.request.method).toBe('GET');
     request.flush([QUEST_RESPONSE]);
@@ -42,6 +42,19 @@ describe('QuestApiService', () => {
     const response = await responsePromise;
 
     expect(response).toEqual([QUEST_RESPONSE]);
+    http.verify();
+  });
+
+  it('loads a quest by id through the API', async () => {
+    const service = TestBed.inject(QuestApiService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const responsePromise = firstValueFrom(service.get(QUEST_RESPONSE.id));
+    const request = http.expectOne(`${environment.apiUrl}/quests/${QUEST_RESPONSE.id}`);
+    expect(request.request.method).toBe('GET');
+    request.flush(QUEST_RESPONSE);
+
+    expect(await responsePromise).toEqual(QUEST_RESPONSE);
     http.verify();
   });
 
@@ -57,7 +70,7 @@ describe('QuestApiService', () => {
       frequency: 'Daily' as const
     };
     const responsePromise = firstValueFrom(service.create(requestBody));
-    const request = http.expectOne(`${environment.apiBaseUrl}/quests`);
+    const request = http.expectOne(`${environment.apiUrl}/quests`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual(requestBody);
     request.flush(QUEST_RESPONSE);
@@ -66,12 +79,38 @@ describe('QuestApiService', () => {
     http.verify();
   });
 
+  it('updates a quest through the API', async () => {
+    const service = TestBed.inject(QuestApiService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const requestBody = {
+      title: 'Evening training',
+      description: 'Move after work.',
+      category: 'Health' as const,
+      difficulty: 'Hard' as const,
+      frequency: 'Weekdays' as const
+    };
+    const responsePromise = firstValueFrom(
+      service.update(QUEST_RESPONSE.id, requestBody)
+    );
+    const request = http.expectOne(`${environment.apiUrl}/quests/${QUEST_RESPONSE.id}`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual(requestBody);
+    request.flush({
+      ...QUEST_RESPONSE,
+      ...requestBody
+    });
+
+    expect(await responsePromise).toMatchObject(requestBody);
+    http.verify();
+  });
+
   it('archives a quest through the API', async () => {
     const service = TestBed.inject(QuestApiService);
     const http = TestBed.inject(HttpTestingController);
 
     const responsePromise = firstValueFrom(service.archive(QUEST_RESPONSE.id));
-    const request = http.expectOne(`${environment.apiBaseUrl}/quests/${QUEST_RESPONSE.id}`);
+    const request = http.expectOne(`${environment.apiUrl}/quests/${QUEST_RESPONSE.id}`);
     expect(request.request.method).toBe('DELETE');
     request.flush(null);
 

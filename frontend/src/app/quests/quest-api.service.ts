@@ -35,7 +35,7 @@ export type QuestUpsertRequest = Readonly<{
 })
 export class QuestApiService {
   private readonly http = inject(HttpClient);
-  private readonly questsUrl = `${environment.apiBaseUrl}/quests`;
+  private readonly questsUrl = `${environment.apiUrl}/quests`;
 
   list(includeArchived = true): Observable<QuestResponse[]> {
     return this.http.get<QuestResponse[]>(this.questsUrl, {
@@ -43,6 +43,10 @@ export class QuestApiService {
         includeArchived
       }
     });
+  }
+
+  get(id: string): Observable<QuestResponse> {
+    return this.http.get<QuestResponse>(`${this.questsUrl}/${id}`);
   }
 
   create(request: QuestUpsertRequest): Observable<QuestResponse> {

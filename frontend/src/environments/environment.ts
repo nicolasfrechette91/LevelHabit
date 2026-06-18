@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: '/api',
-  authRequired: false
+  apiUrl: 'https://level-habit-api.onrender.com/api',
+  authRequired: true
 };

@@ -59,19 +59,19 @@ export class AuthService {
 
   register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${environment.apiBaseUrl}/auth/register`, request)
+      .post<AuthResponse>(`${environment.apiUrl}/auth/register`, request)
       .pipe(tap((response) => this.persistSession(response)));
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${environment.apiBaseUrl}/auth/login`, request)
+      .post<AuthResponse>(`${environment.apiUrl}/auth/login`, request)
       .pipe(tap((response) => this.persistSession(response)));
   }
 
   loadCurrentUser(): Observable<MeResponse> {
     return this.http
-      .get<MeResponse>(`${environment.apiBaseUrl}/auth/me`)
+      .get<MeResponse>(`${environment.apiUrl}/auth/me`)
       .pipe(tap((response) => this.setCurrentUser(response)));
   }
 

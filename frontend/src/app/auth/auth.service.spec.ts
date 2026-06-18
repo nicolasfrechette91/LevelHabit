@@ -52,7 +52,7 @@ describe('AuthService', () => {
       })
     );
 
-    const request = http.expectOne(`${environment.apiBaseUrl}/auth/login`);
+    const request = http.expectOne(`${environment.apiUrl}/auth/login`);
     expect(request.request.method).toBe('POST');
     request.flush(AUTH_RESPONSE);
 
@@ -79,7 +79,7 @@ describe('AuthService', () => {
       })
     );
 
-    const request = http.expectOne(`${environment.apiBaseUrl}/auth/register`);
+    const request = http.expectOne(`${environment.apiUrl}/auth/register`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toMatchObject({
       displayName: 'Player One',
@@ -112,7 +112,7 @@ describe('AuthService', () => {
     const http = TestBed.inject(HttpTestingController);
 
     const responsePromise = firstValueFrom(service.ensureCurrentUser());
-    const request = http.expectOne(`${environment.apiBaseUrl}/auth/me`);
+    const request = http.expectOne(`${environment.apiUrl}/auth/me`);
     expect(request.request.method).toBe('GET');
     request.flush(ME_RESPONSE);
 
