@@ -1,3 +1,4 @@
+import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -10,6 +11,10 @@ import { LevelHabitStateService } from './levelhabit-state.service';
 
 describe('LevelHabitStateService', () => {
   beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient()]
+    });
     localStorage.clear();
   });
 

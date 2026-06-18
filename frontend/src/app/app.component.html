@@ -1,21 +1,49 @@
 <div class="app-shell">
   <header class="navbar site-header sticky-top">
     <div class="container-xl d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
-      <a class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0" routerLink="/dashboard" aria-label="LevelHabit dashboard">
+      <a
+        class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0"
+        [routerLink]="auth.canUsePrototypeRoutes() ? '/dashboard' : '/login'"
+        aria-label="LevelHabit"
+      >
         <img ngSrc="levelhabit-mark.svg" alt="" width="36" height="36" priority>
         <span>LevelHabit</span>
       </a>
 
       <nav class="navbar-nav flex-row flex-wrap gap-1 ms-md-auto" aria-label="Primary">
-        @for (item of navItems; track item.path) {
+        @if (auth.canUsePrototypeRoutes()) {
+          @for (item of navItems; track item.path) {
+            <a
+              class="nav-link rounded-3 px-3 py-2"
+              [routerLink]="item.path"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
+              {{ item.label }}
+            </a>
+          }
+          @if (auth.isAuthenticated()) {
+            <button type="button" class="nav-link logout-button rounded-3 px-3 py-2" (click)="logout()">
+              Logout
+            </button>
+          }
+        } @else {
           <a
             class="nav-link rounded-3 px-3 py-2"
-            [routerLink]="item.path"
+            routerLink="/login"
             routerLinkActive="active"
             ariaCurrentWhenActive="page"
-            [routerLinkActiveOptions]="{ exact: true }"
           >
-            {{ item.label }}
+            Login
+          </a>
+          <a
+            class="nav-link rounded-3 px-3 py-2"
+            routerLink="/register"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+          >
+            Register
           </a>
         }
       </nav>

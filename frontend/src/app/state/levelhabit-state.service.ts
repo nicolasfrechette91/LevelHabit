@@ -1,5 +1,6 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 
+import { AuthService } from '../auth/auth.service';
 import {
   BASE_XP,
   CURRENT_LEVEL_XP,
@@ -24,6 +25,7 @@ import type {
   providedIn: 'root'
 })
 export class LevelHabitStateService {
+  private readonly auth = inject(AuthService);
   private readonly validQuestIds = new Set<string>(
     PROTOTYPE_QUESTS.map((quest) => quest.id)
   );
@@ -56,23 +58,35 @@ export class LevelHabitStateService {
     this.completedQuests().reduce((total, quest) => total + quest.xp, 0)
   );
 
-  readonly totalXp = computed(() => BASE_XP + this.earnedXp());
+  readonly heroProfile = computed(() => this.auth.heroProfile());
 
-  readonly level = computed(() =>
-    this.totalXp() >= NEXT_LEVEL_XP ? 8 : 7
+  readonly totalXp = computed(() =>
+    this.heroProfile()?.totalXp ?? BASE_XP + this.earnedXp()
   );
 
-  readonly levelTitle = computed(() => this.state().selectedTitle);
+  readonly level = computed(() =>
+    this.heroProfile()?.level ?? (this.totalXp() >= NEXT_LEVEL_XP ? 8 : 7)
+  );
+
+  readonly levelTitle = computed(() =>
+    this.heroProfile()?.heroName ?? this.state().selectedTitle
+  );
 
   readonly nextLevelLabel = computed(() =>
-    this.level() >= 8 ? 'Level 9' : 'Level 8'
+    this.heroProfile()
+      ? `Level ${this.level() + 1}`
+      : this.level() >= 8 ? 'Level 9' : 'Level 8'
   );
 
   readonly xpToNextLevel = computed(() =>
-    Math.max(0, NEXT_LEVEL_XP - this.totalXp())
+    this.heroProfile() ? 0 : Math.max(0, NEXT_LEVEL_XP - this.totalXp())
   );
 
   readonly levelProgress = computed(() => {
+    if (this.heroProfile()) {
+      return 0;
+    }
+
     const progress = this.totalXp() - CURRENT_LEVEL_XP;
     const span = NEXT_LEVEL_XP - CURRENT_LEVEL_XP;
 
@@ -80,6 +94,12 @@ export class LevelHabitStateService {
   });
 
   readonly currentStreak = computed(() => {
+    const profile = this.heroProfile();
+
+    if (profile) {
+      return profile.currentStreak;
+    }
+
     const completedStreaks = this.completedQuests().map((quest) => quest.streak);
     const bestToday = completedStreaks.length > 0 ? Math.max(...completedStreaks) : 0;
 

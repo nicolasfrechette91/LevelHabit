@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   DEFAULT_COMPLETED_IDS,
-  PROTOTYPE_QUESTS,
-  PROTOTYPE_TITLES
+  PROTOTYPE_QUESTS
 } from '../../state/levelhabit-prototype-data';
 import {
   getButtonByText,
   getQuestToggle,
   renderPrototypeRoute,
   resetPrototypeStorage,
+  AUTH_ME_RESPONSE,
   textContent
 } from '../../test/prototype-test-utils';
 
@@ -36,12 +36,13 @@ describe('Dashboard view', () => {
     resetPrototypeStorage();
   });
 
-  it('displays mock hero/profile data and the quest queue', async () => {
+  it('displays authenticated hero/profile data and the mock quest queue', async () => {
     const { nativeElement, state } = await renderPrototypeRoute('/dashboard');
     const pageText = textContent(nativeElement);
 
-    expect(pageText).toContain(`Level ${state.level()}`);
-    expect(pageText).toContain(PROTOTYPE_TITLES[0]);
+    expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.heroProfile.level}`);
+    expect(pageText).toContain(AUTH_ME_RESPONSE.heroProfile.heroName);
+    expect(state.levelTitle()).toBe(AUTH_ME_RESPONSE.heroProfile.heroName);
     expect(pageText).toContain(`${state.completedCount()}/${state.questCount()}`);
 
     for (const quest of PROTOTYPE_QUESTS) {
@@ -49,7 +50,7 @@ describe('Dashboard view', () => {
     }
   });
 
-  it('updates rendered completion and XP when completing a quest', async () => {
+  it('updates rendered completion when completing a mock quest', async () => {
     const { harness, nativeElement, state } = await renderPrototypeRoute('/dashboard');
     const quest = PROTOTYPE_QUESTS.find(
       (candidate) => !DEFAULT_COMPLETED_IDS.includes(candidate.id)
@@ -57,16 +58,14 @@ describe('Dashboard view', () => {
 
     expect(quest).toBeDefined();
 
-    const startingXp = state.totalXp();
     getQuestToggle(nativeElement, quest!.title).click();
     harness.detectChanges();
 
     const pageText = textContent(nativeElement);
 
     expect(state.quests().find((candidate) => candidate.id === quest!.id)?.completed).toBe(true);
-    expect(state.totalXp()).toBe(startingXp + quest!.xp);
+    expect(state.totalXp()).toBe(AUTH_ME_RESPONSE.heroProfile.totalXp);
     expect(pageText).toContain(`${state.completedCount()}/${state.questCount()}`);
-    expect(pageText).toContain(state.totalXp().toLocaleString('en-US'));
   });
 });
 

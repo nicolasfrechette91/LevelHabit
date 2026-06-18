@@ -1,0 +1,48 @@
+@use "variables" as *;
+
+.auth-page {
+  min-height: calc(100vh - 4.25rem);
+  display: grid;
+  align-items: center;
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 27rem);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.auth-intro {
+  max-width: 38rem;
+}
+
+.auth-panel {
+  border-color: rgba($lh-emerald, 0.24);
+  box-shadow: 0 1.25rem 3rem rgba($lh-ink, 0.12);
+}
+
+.form-control {
+  border-color: rgba($lh-border, 0.95);
+  border-radius: 0.75rem;
+  color: var(--lh-ink);
+
+  &:focus {
+    border-color: var(--lh-emerald);
+    box-shadow: 0 0 0 0.2rem rgba($lh-emerald, 0.14);
+  }
+}
+
+.auth-switch {
+  color: var(--lh-emerald);
+}
+
+@media (max-width: 767.98px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-page {
+    align-items: start;
+  }
+}

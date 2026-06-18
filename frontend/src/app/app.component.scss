@@ -26,7 +26,10 @@
 }
 
 .navbar-nav {
-  .nav-link {
+  .nav-link,
+  .logout-button {
+    border: 0;
+    background: transparent;
     color: var(--lh-muted);
     font-size: 0.92rem;
     font-weight: 700;
