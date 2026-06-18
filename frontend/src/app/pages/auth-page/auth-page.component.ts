@@ -26,6 +26,8 @@ export class AuthPageComponent {
   });
 
   protected readonly pending = signal(false);
+  protected readonly loginSubmitted = signal(false);
+  protected readonly registerSubmitted = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly mode = computed<AuthMode>(() =>
     this.routeData()['mode'] === 'register' ? 'register' : 'login'
@@ -44,6 +46,8 @@ export class AuthPageComponent {
   });
 
   protected submitLogin(): void {
+    this.loginSubmitted.set(true);
+
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
@@ -53,6 +57,16 @@ export class AuthPageComponent {
   }
 
   protected submitRegister(): void {
+    console.log('submitRegister fired');
+    console.log('valid:', this.registerForm.valid);
+    console.log('errors:', {
+      email: this.registerForm.controls.email.errors,
+      password: this.registerForm.controls.password.errors,
+      displayName: this.registerForm.controls.displayName.errors,
+      heroName: this.registerForm.controls.heroName.errors
+    });
+    this.registerSubmitted.set(true);
+
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       return;

@@ -6,9 +6,7 @@
         {{ mode() === 'register' ? 'Create your hero' : 'Welcome back' }}
       </h1>
       <p class="lead mb-0">
-        {{ mode() === 'register'
-          ? 'Choose your player identity and begin with a fresh hero profile.'
-          : 'Sign in to load your hero profile and continue the daily run.' }}
+        {{ mode() === 'register' ? 'Choose your player identity and begin with a fresh hero profile.' : 'Sign in to load your hero profile and continue the daily run.' }}
       </p>
     </div>
 
@@ -51,11 +49,29 @@
             <div>
               <label class="form-label fw-bold" for="login-email">Email</label>
               <input id="login-email" class="form-control form-control-lg" type="email" autocomplete="email" formControlName="email">
+              
+              @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('required')) {
+                <div class="text-danger small mt-1">
+                  Email is required.
+                </div>
+              }
+
+              @if (loginForm.controls.email.touched && loginForm.controls.email.hasError('email')) {
+                <div class="text-danger small mt-1">
+                  Please enter a valid email address.
+                </div>
+              }
             </div>
 
             <div>
               <label class="form-label fw-bold" for="login-password">Password</label>
               <input id="login-password" class="form-control form-control-lg" type="password" autocomplete="current-password" formControlName="password">
+
+              @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
+                <div class="text-danger small mt-1">
+                  Password is required.
+                </div>
+              }
             </div>
 
             @if (errorMessage()) {
