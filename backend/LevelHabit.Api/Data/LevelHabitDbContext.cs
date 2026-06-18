@@ -11,11 +11,14 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
     public DbSet<HeroProfile> HeroProfiles => Set<HeroProfile>();
 
+    public DbSet<Quest> Quests => Set<Quest>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new HeroProfileConfiguration());
+        modelBuilder.ApplyConfiguration(new QuestConfiguration());
     }
 }

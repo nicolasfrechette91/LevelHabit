@@ -3,6 +3,7 @@ using LevelHabit.Api.Auth;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Auth;
+using LevelHabit.Api.Services.Quests;
 using LevelHabit.Api.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -78,6 +79,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IQuestService, QuestService>();
 
 builder.Services.AddCors(options =>
 {

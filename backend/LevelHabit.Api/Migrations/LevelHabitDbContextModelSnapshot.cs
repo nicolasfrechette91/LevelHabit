@@ -60,6 +60,65 @@ public partial class LevelHabitDbContextModelSnapshot : ModelSnapshot
             builder.ToTable("hero_profiles", (string)null);
         });
 
+        modelBuilder.Entity("LevelHabit.Api.Domain.Quest", builder =>
+        {
+            builder.Property<Guid>("Id")
+                .HasColumnType("uuid")
+                .HasColumnName("id");
+
+            builder.Property<string>("Category")
+                .IsRequired()
+                .HasMaxLength(40)
+                .HasColumnType("character varying(40)")
+                .HasColumnName("category");
+
+            builder.Property<DateTimeOffset>("CreatedAtUtc")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("created_at_utc");
+
+            builder.Property<string>("Description")
+                .IsRequired()
+                .HasMaxLength(1000)
+                .HasColumnType("character varying(1000)")
+                .HasColumnName("description");
+
+            builder.Property<string>("Difficulty")
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnType("character varying(20)")
+                .HasColumnName("difficulty");
+
+            builder.Property<string>("Frequency")
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnType("character varying(20)")
+                .HasColumnName("frequency");
+
+            builder.Property<bool>("IsArchived")
+                .HasColumnType("boolean")
+                .HasColumnName("is_archived");
+
+            builder.Property<string>("Title")
+                .IsRequired()
+                .HasMaxLength(140)
+                .HasColumnType("character varying(140)")
+                .HasColumnName("title");
+
+            builder.Property<DateTimeOffset>("UpdatedAtUtc")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at_utc");
+
+            builder.Property<Guid>("UserId")
+                .HasColumnType("uuid")
+                .HasColumnName("user_id");
+
+            builder.HasKey("Id");
+
+            builder.HasIndex("UserId", "IsArchived");
+
+            builder.ToTable("quests", (string)null);
+        });
+
         modelBuilder.Entity("LevelHabit.Api.Domain.User", builder =>
         {
             builder.Property<Guid>("Id")
@@ -117,9 +176,22 @@ public partial class LevelHabitDbContextModelSnapshot : ModelSnapshot
             builder.Navigation("User");
         });
 
+        modelBuilder.Entity("LevelHabit.Api.Domain.Quest", builder =>
+        {
+            builder.HasOne("LevelHabit.Api.Domain.User", "User")
+                .WithMany("Quests")
+                .HasForeignKey("UserId")
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+
+            builder.Navigation("User");
+        });
+
         modelBuilder.Entity("LevelHabit.Api.Domain.User", builder =>
         {
             builder.Navigation("HeroProfile");
+
+            builder.Navigation("Quests");
         });
     }
 }

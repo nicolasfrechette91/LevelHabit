@@ -66,14 +66,26 @@ export async function renderPrototypeRoute(path: string): Promise<{
 
 function createAuthenticatedAuthService(): Pick<
   AuthService,
-  'ensureCurrentUser' | 'hasToken' | 'heroProfile' | 'logout' | 'user'
+  | 'authRequired'
+  | 'canUsePrototypeRoutes'
+  | 'ensureCurrentUser'
+  | 'hasToken'
+  | 'heroProfile'
+  | 'isAuthenticated'
+  | 'logout'
+  | 'user'
 > {
   const user = signal(AUTH_ME_RESPONSE.user);
   const heroProfile = signal(AUTH_ME_RESPONSE.heroProfile);
+  const isAuthenticated = signal(true);
+  const canUsePrototypeRoutes = signal(true);
 
   return {
+    authRequired: false,
+    canUsePrototypeRoutes: canUsePrototypeRoutes.asReadonly(),
     user: user.asReadonly(),
     heroProfile: heroProfile.asReadonly(),
+    isAuthenticated: isAuthenticated.asReadonly(),
     hasToken: () => true,
     ensureCurrentUser: () => of(AUTH_ME_RESPONSE),
     logout: () => undefined

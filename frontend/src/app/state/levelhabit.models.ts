@@ -1,5 +1,31 @@
-export type QuestCategory = 'Mind' | 'Body' | 'Craft' | 'Home';
-export type QuestDifficulty = 'Easy' | 'Standard' | 'Boss';
+export const PERSISTED_QUEST_CATEGORIES = [
+  'Health',
+  'Fitness',
+  'Learning',
+  'Coding',
+  'Chores',
+  'Personal'
+] as const;
+
+export const PERSISTED_QUEST_DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const;
+
+export const PERSISTED_QUEST_FREQUENCIES = [
+  'Daily',
+  'Weekdays',
+  'Weekly',
+  'Custom'
+] as const;
+
+export type PersistedQuestCategory = (typeof PERSISTED_QUEST_CATEGORIES)[number];
+export type PersistedQuestDifficulty = (typeof PERSISTED_QUEST_DIFFICULTIES)[number];
+export type PersistedQuestFrequency = (typeof PERSISTED_QUEST_FREQUENCIES)[number];
+export type QuestCategory =
+  | PersistedQuestCategory
+  | 'Mind'
+  | 'Body'
+  | 'Craft'
+  | 'Home';
+export type QuestDifficulty = PersistedQuestDifficulty | 'Standard' | 'Boss';
 export type QuestAccent = 'emerald' | 'indigo' | 'amber' | 'rose' | 'cyan';
 export type PrototypeTitle =
   | 'Streakwarden'
@@ -22,6 +48,10 @@ export type PrototypeQuest = Readonly<{
 export type Quest = PrototypeQuest &
   Readonly<{
     completed: boolean;
+    userId?: string;
+    isArchived?: boolean;
+    createdAtUtc?: string;
+    updatedAtUtc?: string;
   }>;
 
 export type Achievement = Readonly<{

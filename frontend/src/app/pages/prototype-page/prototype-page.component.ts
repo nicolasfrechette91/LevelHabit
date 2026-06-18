@@ -1,9 +1,26 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal
+} from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
-import type { Quest } from '../../state/levelhabit.models';
+import type { QuestUpsertRequest } from '../../quests/quest-api.service';
+import {
+  PERSISTED_QUEST_CATEGORIES,
+  PERSISTED_QUEST_DIFFICULTIES,
+  PERSISTED_QUEST_FREQUENCIES,
+  type PersistedQuestCategory,
+  type PersistedQuestDifficulty,
+  type PersistedQuestFrequency,
+  type Quest
+} from '../../state/levelhabit.models';
 import { LevelHabitStateService } from '../../state/levelhabit-state.service';
 import {
   isPrototypeView,
@@ -11,23 +28,48 @@ import {
   type PrototypeView
 } from './prototype-view.model';
 
-type QuestFilter = 'active' | 'all' | 'completed';
+type QuestFilter = 'active' | 'all' | 'archived';
 
 @Component({
   selector: 'app-prototype-page',
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, ReactiveFormsModule, RouterLink],
   templateUrl: './prototype-page.component.html',
   styleUrls: ['./prototype-page.component.scss']
 })
-export class PrototypePageComponent {
+export class PrototypePageComponent implements OnInit {
   protected readonly game = inject(LevelHabitStateService);
 
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly routeData = toSignal(this.route.data, {
     initialValue: this.route.snapshot.data
   });
 
   protected readonly questFilter = signal<QuestFilter>('active');
+  protected readonly editingQuestId = signal<string | null>(null);
+  protected readonly questCategories = PERSISTED_QUEST_CATEGORIES;
+  protected readonly questDifficulties = PERSISTED_QUEST_DIFFICULTIES;
+  protected readonly questFrequencies = PERSISTED_QUEST_FREQUENCIES;
+  protected readonly questForm = this.formBuilder.group({
+    title: this.formBuilder.control('', [
+      Validators.required,
+      Validators.maxLength(140)
+    ]),
+    description: this.formBuilder.control('', [Validators.maxLength(1000)]),
+    category: this.formBuilder.control<PersistedQuestCategory>(
+      PERSISTED_QUEST_CATEGORIES[0],
+      [Validators.required]
+    ),
+    difficulty: this.formBuilder.control<PersistedQuestDifficulty>(
+      PERSISTED_QUEST_DIFFICULTIES[0],
+      [Validators.required]
+    ),
+    frequency: this.formBuilder.control<PersistedQuestFrequency>(
+      PERSISTED_QUEST_FREQUENCIES[0],
+      [Validators.required]
+    )
+  });
 
   protected readonly view = computed<PrototypeView>(() => {
     const data = this.routeData() as Readonly<Record<string, unknown>>;
@@ -43,23 +85,19 @@ export class PrototypePageComponent {
 
     switch (this.questFilter()) {
       case 'active':
-        return quests.filter((quest) => !quest.completed);
-      case 'completed':
-        return quests.filter((quest) => quest.completed);
+        return quests.filter((quest) => !quest.completed && !quest.isArchived);
+      case 'archived':
+        return quests.filter((quest) => quest.isArchived);
       default:
         return quests;
     }
   });
 
-  protected readonly topQuest = computed<Quest>(() => {
+  protected readonly topQuest = computed<Quest | null>(() => {
     const activeQuest = this.game.activeQuests()[0];
     const fallbackQuest = this.game.quests()[0];
 
-    if (!fallbackQuest) {
-      throw new Error('Prototype data must include at least one quest.');
-    }
-
-    return activeQuest ?? fallbackQuest;
+    return activeQuest ?? fallbackQuest ?? null;
   });
 
   protected readonly achievementPreview = computed(() =>
@@ -71,6 +109,10 @@ export class PrototypePageComponent {
   protected readonly chartMaxXp = computed(() =>
     Math.max(...this.game.weeklyHistory().map((day) => day.xp), 1)
   );
+
+  ngOnInit(): void {
+    this.game.loadQuests();
+  }
 
   protected achievementPercent(progress: number, target: number): number {
     if (target <= 0) {
@@ -86,5 +128,85 @@ export class PrototypePageComponent {
 
   protected setFilter(filter: QuestFilter): void {
     this.questFilter.set(filter);
+  }
+
+  protected saveQuest(): void {
+    if (!this.game.usesQuestApi()) {
+      return;
+    }
+
+    if (this.questForm.invalid) {
+      this.questForm.markAllAsTouched();
+      return;
+    }
+
+    const request = this.readQuestForm();
+    const editingQuestId = this.editingQuestId();
+    const saveQuest = editingQuestId
+      ? this.game.updateQuest(editingQuestId, request)
+      : this.game.createQuest(request);
+
+    saveQuest
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.resetQuestForm(),
+        error: () => undefined
+      });
+  }
+
+  protected startEdit(quest: Quest): void {
+    if (!this.game.usesQuestApi() || quest.isArchived) {
+      return;
+    }
+
+    this.editingQuestId.set(quest.id);
+    this.questForm.setValue({
+      title: quest.title,
+      description: quest.summary === 'No description yet.' ? '' : quest.summary,
+      category: quest.category as PersistedQuestCategory,
+      difficulty: quest.difficulty as PersistedQuestDifficulty,
+      frequency: quest.cadence as PersistedQuestFrequency
+    });
+  }
+
+  protected archiveQuest(quest: Quest): void {
+    if (!this.game.usesQuestApi() || quest.isArchived) {
+      return;
+    }
+
+    this.game
+      .archiveQuest(quest.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          if (this.editingQuestId() === quest.id) {
+            this.resetQuestForm();
+          }
+        },
+        error: () => undefined
+      });
+  }
+
+  protected resetQuestForm(): void {
+    this.editingQuestId.set(null);
+    this.questForm.reset({
+      title: '',
+      description: '',
+      category: PERSISTED_QUEST_CATEGORIES[0],
+      difficulty: PERSISTED_QUEST_DIFFICULTIES[0],
+      frequency: PERSISTED_QUEST_FREQUENCIES[0]
+    });
+  }
+
+  private readQuestForm(): QuestUpsertRequest {
+    const value = this.questForm.getRawValue();
+
+    return {
+      title: value.title.trim(),
+      description: value.description.trim(),
+      category: value.category as PersistedQuestCategory,
+      difficulty: value.difficulty as PersistedQuestDifficulty,
+      frequency: value.frequency as PersistedQuestFrequency
+    };
   }
 }

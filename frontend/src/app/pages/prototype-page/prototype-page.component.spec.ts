@@ -45,7 +45,9 @@ describe('Dashboard view', () => {
     expect(state.levelTitle()).toBe(AUTH_ME_RESPONSE.heroProfile.heroName);
     expect(pageText).toContain(`${state.completedCount()}/${state.questCount()}`);
 
-    for (const quest of PROTOTYPE_QUESTS) {
+    for (const quest of PROTOTYPE_QUESTS.filter(
+      (candidate) => !DEFAULT_COMPLETED_IDS.includes(candidate.id)
+    )) {
       expect(pageText).toContain(quest.title);
     }
   });
@@ -90,7 +92,7 @@ describe('Quests view', () => {
     resetPrototypeStorage();
   });
 
-  it('filters visible quests by completion state', async () => {
+  it('filters visible quests by active and archived state', async () => {
     const { harness, nativeElement, state } = await renderPrototypeRoute('/quests');
     const completedQuest = state.quests().find((quest) => quest.completed);
     const activeQuest = state.quests().find((quest) => !quest.completed);
@@ -106,10 +108,11 @@ describe('Quests view', () => {
 
     expect(textContent(nativeElement)).toContain(completedQuest!.title);
 
-    getButtonByText(nativeElement, /^Done$/).click();
+    getButtonByText(nativeElement, /^Archived$/).click();
     harness.detectChanges();
 
-    expect(textContent(nativeElement)).toContain(completedQuest!.title);
+    expect(textContent(nativeElement)).toContain('No quests shown');
+    expect(textContent(nativeElement)).not.toContain(completedQuest!.title);
     expect(textContent(nativeElement)).not.toContain(activeQuest!.title);
   });
 });

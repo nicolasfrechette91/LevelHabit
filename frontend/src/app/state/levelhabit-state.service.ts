@@ -1,6 +1,13 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, catchError, finalize, map, tap, throwError } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
+import {
+  QuestApiService,
+  type QuestResponse,
+  type QuestUpsertRequest
+} from '../quests/quest-api.service';
 import {
   BASE_XP,
   CURRENT_LEVEL_XP,
@@ -26,19 +33,36 @@ import type {
 })
 export class LevelHabitStateService {
   private readonly auth = inject(AuthService);
+  private readonly questApi = inject(QuestApiService);
   private readonly validQuestIds = new Set<string>(
     PROTOTYPE_QUESTS.map((quest) => quest.id)
   );
   private readonly validTitles = new Set<string>(PROTOTYPE_TITLES);
   private readonly state = signal<StoredPrototypeState>(this.loadState());
+  private readonly persistedQuests = signal<Quest[]>([]);
+  private readonly questsLoadedSignal = signal(false);
+  private readonly questsLoadingSignal = signal(false);
+  private readonly questActionInFlightSignal = signal(false);
+  private readonly questErrorSignal = signal<string | null>(null);
 
   readonly availableTitles = PROTOTYPE_TITLES;
+  readonly questsLoading = this.questsLoadingSignal.asReadonly();
+  readonly questActionInFlight = this.questActionInFlightSignal.asReadonly();
+  readonly questError = this.questErrorSignal.asReadonly();
+  readonly usesQuestApi = computed(() =>
+    this.auth.authRequired && this.auth.isAuthenticated()
+  );
 
   readonly quests = computed<Quest[]>(() => {
+    if (this.usesQuestApi()) {
+      return this.persistedQuests();
+    }
+
     const completedQuestIds = new Set(this.state().completedQuestIds);
 
     return PROTOTYPE_QUESTS.map((quest) => ({
       ...quest,
+      isArchived: false,
       completed: completedQuestIds.has(quest.id)
     }));
   });
@@ -48,11 +72,13 @@ export class LevelHabitStateService {
   );
 
   readonly activeQuests = computed(() =>
-    this.quests().filter((quest) => !quest.completed)
+    this.quests().filter((quest) => !quest.completed && !quest.isArchived)
   );
 
   readonly completedCount = computed(() => this.completedQuests().length);
-  readonly questCount = computed(() => PROTOTYPE_QUESTS.length);
+  readonly questCount = computed(() =>
+    this.quests().filter((quest) => !quest.isArchived).length
+  );
 
   readonly earnedXp = computed(() =>
     this.completedQuests().reduce((total, quest) => total + quest.xp, 0)
@@ -107,7 +133,9 @@ export class LevelHabitStateService {
   });
 
   readonly completionPercent = computed(() =>
-    Math.round((this.completedCount() / this.questCount()) * 100)
+    this.questCount() === 0
+      ? 0
+      : Math.round((this.completedCount() / this.questCount()) * 100)
   );
 
   readonly weeklyHistory = computed<WeekDay[]>(() => [
@@ -126,7 +154,7 @@ export class LevelHabitStateService {
 
   readonly consistencyScore = computed(() => {
     const totalCompletion = this.weeklyHistory().reduce(
-      (total, day) => total + day.completed / day.total,
+      (total, day) => total + (day.total > 0 ? day.completed / day.total : 0),
       0
     );
 
@@ -135,11 +163,17 @@ export class LevelHabitStateService {
 
   readonly categoryBreakdown = computed<CategoryBreakdown[]>(() => {
     const categories = Array.from(
-      new Set(PROTOTYPE_QUESTS.map((quest) => quest.category))
+      new Set(
+        this.quests()
+          .filter((quest) => !quest.isArchived)
+          .map((quest) => quest.category)
+      )
     ) as QuestCategory[];
 
     return categories.map((category) => {
-      const quests = this.quests().filter((quest) => quest.category === category);
+      const quests = this.quests().filter(
+        (quest) => quest.category === category && !quest.isArchived
+      );
       const completed = quests.filter((quest) => quest.completed);
 
       return {
@@ -174,7 +208,7 @@ export class LevelHabitStateService {
         reward: 'Title shard',
         progress: this.completedCount(),
         target: this.questCount(),
-        unlocked: this.completedCount() === this.questCount()
+        unlocked: this.questCount() > 0 && this.completedCount() === this.questCount()
       },
       {
         id: 'streak-adept',
@@ -210,7 +244,94 @@ export class LevelHabitStateService {
     this.achievements().filter((achievement) => achievement.unlocked)
   );
 
+  loadQuests(): void {
+    if (!this.usesQuestApi() || this.questsLoadedSignal() || this.questsLoadingSignal()) {
+      return;
+    }
+
+    this.questsLoadingSignal.set(true);
+    this.questErrorSignal.set(null);
+
+    this.questApi
+      .list(true)
+      .pipe(finalize(() => this.questsLoadingSignal.set(false)))
+      .subscribe({
+        next: (quests) => {
+          this.persistedQuests.set(quests.map((quest) => this.mapPersistedQuest(quest)));
+          this.questsLoadedSignal.set(true);
+        },
+        error: (error: unknown) => {
+          this.questErrorSignal.set(
+            this.describeQuestError(error, 'Quests could not be loaded.')
+          );
+        }
+      });
+  }
+
+  createQuest(request: QuestUpsertRequest): Observable<Quest> {
+    this.questActionInFlightSignal.set(true);
+    this.questErrorSignal.set(null);
+
+    return this.questApi.create(request).pipe(
+      map((quest) => this.mapPersistedQuest(quest)),
+      tap((quest) => {
+        this.persistedQuests.update((quests) => [...quests, quest]);
+        this.questsLoadedSignal.set(true);
+      }),
+      catchError((error: unknown) =>
+        this.captureQuestError<Quest>(error, 'Quest could not be created.')
+      ),
+      finalize(() => this.questActionInFlightSignal.set(false))
+    );
+  }
+
+  updateQuest(id: string, request: QuestUpsertRequest): Observable<Quest> {
+    this.questActionInFlightSignal.set(true);
+    this.questErrorSignal.set(null);
+
+    return this.questApi.update(id, request).pipe(
+      map((quest) => this.mapPersistedQuest(quest)),
+      tap((updatedQuest) => {
+        this.persistedQuests.update((quests) =>
+          quests.map((quest) => quest.id === updatedQuest.id ? updatedQuest : quest)
+        );
+      }),
+      catchError((error: unknown) =>
+        this.captureQuestError<Quest>(error, 'Quest could not be updated.')
+      ),
+      finalize(() => this.questActionInFlightSignal.set(false))
+    );
+  }
+
+  archiveQuest(id: string): Observable<void> {
+    this.questActionInFlightSignal.set(true);
+    this.questErrorSignal.set(null);
+
+    return this.questApi.archive(id).pipe(
+      tap(() => {
+        this.persistedQuests.update((quests) =>
+          quests.map((quest) =>
+            quest.id === id
+              ? {
+                  ...quest,
+                  isArchived: true
+                }
+              : quest
+          )
+        );
+      }),
+      catchError((error: unknown) =>
+        this.captureQuestError<void>(error, 'Quest could not be archived.')
+      ),
+      finalize(() => this.questActionInFlightSignal.set(false))
+    );
+  }
+
   toggleQuest(questId: string): void {
+    if (this.usesQuestApi()) {
+      return;
+    }
+
     const current = this.state();
     const completedQuestIds = new Set(current.completedQuestIds);
 
@@ -227,6 +348,10 @@ export class LevelHabitStateService {
   }
 
   completeAll(): void {
+    if (this.usesQuestApi()) {
+      return;
+    }
+
     this.saveState({
       ...this.state(),
       completedQuestIds: PROTOTYPE_QUESTS.map((quest) => quest.id)
@@ -234,6 +359,10 @@ export class LevelHabitStateService {
   }
 
   resetToday(): void {
+    if (this.usesQuestApi()) {
+      return;
+    }
+
     this.saveState({
       ...this.state(),
       completedQuestIds: []
@@ -333,5 +462,97 @@ export class LevelHabitStateService {
 
   private isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  private mapPersistedQuest(response: QuestResponse): Quest {
+    return {
+      id: response.id,
+      userId: response.userId,
+      title: response.title,
+      category: response.category,
+      summary: response.description || 'No description yet.',
+      cadence: response.frequency,
+      xp: this.mockXpForDifficulty(response.difficulty),
+      streak: 0,
+      difficulty: response.difficulty,
+      accent: this.accentForCategory(response.category),
+      completed: false,
+      isArchived: response.isArchived,
+      createdAtUtc: response.createdAtUtc,
+      updatedAtUtc: response.updatedAtUtc
+    };
+  }
+
+  private mockXpForDifficulty(difficulty: QuestResponse['difficulty']): number {
+    switch (difficulty) {
+      case 'Hard':
+        return 120;
+      case 'Medium':
+        return 80;
+      default:
+        return 50;
+    }
+  }
+
+  private accentForCategory(category: QuestResponse['category']): Quest['accent'] {
+    switch (category) {
+      case 'Fitness':
+      case 'Health':
+        return 'emerald';
+      case 'Learning':
+        return 'cyan';
+      case 'Coding':
+        return 'indigo';
+      case 'Chores':
+        return 'amber';
+      default:
+        return 'rose';
+    }
+  }
+
+  private captureQuestError<T>(error: unknown, fallback: string): Observable<T> {
+    this.questErrorSignal.set(this.describeQuestError(error, fallback));
+
+    return throwError(() => error);
+  }
+
+  private describeQuestError(error: unknown, fallback: string): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return fallback;
+    }
+
+    if (error.status === 0) {
+      return 'The backend is unavailable. Start the API and try again.';
+    }
+
+    if (error.status === 401) {
+      return 'Your session expired. Sign in again to manage quests.';
+    }
+
+    if (error.status === 404) {
+      return 'That quest could not be found.';
+    }
+
+    const problem = this.isRecord(error.error) ? error.error : null;
+    const errors = problem && this.isRecord(problem['errors'])
+      ? problem['errors']
+      : null;
+    const firstValidationError = errors
+      ? Object.values(errors).find((value): value is string[] =>
+          Array.isArray(value) && value.every((item) => typeof item === 'string')
+        )?.[0]
+      : null;
+
+    if (firstValidationError) {
+      return firstValidationError;
+    }
+
+    const detail = problem?.['detail'];
+
+    if (typeof detail === 'string' && detail.trim().length > 0) {
+      return detail;
+    }
+
+    return fallback;
   }
 }
