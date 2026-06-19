@@ -1,6 +1,6 @@
 <div class="app-shell">
   <header class="navbar site-header sticky-top">
-    <div class="container-xl d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2">
+    <div class="container-xl d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2">
       <a
         class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0"
         [routerLink]="auth.canUsePrototypeRoutes() ? '/dashboard' : '/login'"
@@ -10,7 +10,7 @@
         <span>LevelHabit</span>
       </a>
 
-      <nav class="navbar-nav flex-row flex-wrap gap-1 ms-md-auto" aria-label="Primary">
+      <nav class="navbar-nav site-nav flex-row flex-wrap gap-1 ms-md-auto" aria-label="Primary">
         @if (auth.canUsePrototypeRoutes()) {
           @for (item of navItems; track item.path) {
             <a

@@ -14,6 +14,47 @@
   border-color: rgba($lh-ink, 0.12);
   border-radius: $lh-radius-sm;
   box-shadow: var(--lh-shadow-subtle);
+  min-width: 0;
+
+  .card-body {
+    min-width: 0;
+  }
+}
+
+.badge {
+  white-space: normal;
+}
+
+.hero-copy,
+.hero-status,
+.quest-card,
+.achievement-card,
+.stat-card {
+  overflow-wrap: anywhere;
+}
+
+.hero-actions .btn,
+.quest-form-actions .btn,
+.quest-actions .btn,
+.title-button {
+  min-height: 2.75rem;
+}
+
+.quest-actions .btn {
+  flex: 1 1 8.5rem;
+}
+
+.quest-editor .form-control,
+.quest-editor .form-select,
+.segmented-control .btn {
+  min-height: 2.75rem;
+}
+
+.vault-link {
+  align-items: center;
+  display: inline-flex;
+  min-height: 2.5rem;
+  padding-inline: 0.85rem;
 }
 
 .badge-lh-soft {
@@ -89,5 +130,64 @@ progress.lh-progress {
 
   &.slim {
     height: 0.55rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .prototype-page {
+    padding-top: 1rem !important;
+  }
+
+  .page-hero {
+    --bs-gutter-y: 1rem;
+  }
+
+  .hero-copy h1 {
+    font-size: 2.2rem;
+  }
+
+  .hero-summary,
+  .stat-card small {
+    font-size: 0.95rem;
+  }
+
+  .hero-status strong {
+    font-size: 1.25rem;
+  }
+
+  .progress-copy,
+  .achievement-progress {
+    flex-wrap: wrap;
+  }
+
+  .hero-actions .btn,
+  .quest-form-actions .btn {
+    width: 100%;
+  }
+
+  .quest-row {
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .quest-actions {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .quest-actions .btn {
+    width: 100%;
+  }
+
+  .stat-card strong {
+    font-size: 1.55rem;
+  }
+
+  .achievement-card .card-body {
+    gap: 0.75rem !important;
+  }
+
+  .achievement-count {
+    flex-basis: auto;
   }
 }

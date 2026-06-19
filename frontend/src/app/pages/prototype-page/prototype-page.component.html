@@ -6,7 +6,7 @@
         <h1 class="display-2 fw-bold mb-0">{{ copy().title }}</h1>
         <p class="hero-summary lead mb-0 mt-3">{{ copy().summary }}</p>
         @if (!game.usesQuestApi()) {
-          <div class="d-flex flex-wrap gap-2 mt-4">
+          <div class="hero-actions d-flex flex-wrap gap-2 mt-4">
             <button type="button" class="btn btn-lh-gold btn-lg fw-bold" (click)="game.completeAll()">
               Complete all
             </button>
@@ -150,7 +150,7 @@
                     <p class="eyebrow">Rewards</p>
                     <h2 class="h4 fw-bold mb-0">Achievement pulse</h2>
                   </div>
-                  <a class="badge rounded-pill badge-lh-soft text-decoration-none" routerLink="/achievements">Vault</a>
+                  <a class="badge rounded-pill badge-lh-soft vault-link text-decoration-none" routerLink="/achievements">Vault</a>
                 </div>
                 <div class="list-group list-group-flush mini-achievements">
                   @for (achievement of achievementPreview(); track achievement.id) {
@@ -237,7 +237,7 @@
                 </div>
               </div>
 
-              <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+              <div class="quest-form-actions d-flex flex-wrap align-items-center gap-2 mt-3">
                 <button
                   type="submit"
                   class="btn btn-lh-primary fw-bold"
@@ -350,7 +350,7 @@
                     }
                   </div>
                   @if (game.usesQuestApi()) {
-                    <div class="d-flex flex-wrap gap-2 mt-2">
+                    <div class="quest-actions d-flex flex-wrap gap-2 mt-2">
                       <button
                         type="button"
                         class="btn btn-lh-primary fw-bold flex-grow-1"
@@ -517,7 +517,7 @@
                       </div>
                       <h2 class="h5 fw-bold mt-2 mb-2">{{ achievement.title }}</h2>
                       <p class="lh-muted mb-0">{{ achievement.summary }}</p>
-                      <div class="d-flex align-items-center gap-3 mt-3">
+                      <div class="achievement-progress d-flex align-items-center gap-3 mt-3">
                         <span class="achievement-count small fw-bold">{{ achievement.progress | number }}/{{ achievement.target | number }}</span>
                         <progress
                           class="progress lh-progress slim flex-grow-1"
@@ -737,7 +737,7 @@
                                 <strong class="d-block">{{ completion.questTitle }}</strong>
                                 <span class="small lh-muted">{{ completion.completedAtUtc | date: 'mediumDate' }}</span>
                               </div>
-                              <div class="d-flex flex-wrap align-items-center gap-2">
+                              <div class="completion-badges d-flex flex-wrap align-items-center gap-2">
                                 <span class="badge rounded-pill text-bg-light">{{ completion.category }}</span>
                                 <span class="badge rounded-pill text-bg-light">{{ completion.difficulty }}</span>
                                 <span class="badge rounded-pill badge-lh-soft">+{{ completion.xpAwarded | number }} XP</span>

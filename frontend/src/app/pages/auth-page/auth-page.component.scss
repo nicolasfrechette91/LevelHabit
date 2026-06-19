@@ -4,6 +4,7 @@
   min-height: calc(100vh - 4.25rem);
   display: grid;
   align-items: center;
+  min-width: 0;
 }
 
 .auth-layout {
@@ -15,11 +16,17 @@
 
 .auth-intro {
   max-width: 38rem;
+
+  h1 {
+    font-size: clamp(2.2rem, 12vw, 4.5rem);
+    line-height: 1;
+  }
 }
 
 .auth-panel {
   border-color: rgba($lh-emerald, 0.24);
   box-shadow: 0 1.25rem 3rem rgba($lh-ink, 0.12);
+  min-width: 0;
 }
 
 .form-control {
@@ -34,7 +41,11 @@
 }
 
 .auth-switch {
+  align-items: center;
   color: var(--lh-emerald);
+  display: inline-flex;
+  justify-content: center;
+  min-height: 2.75rem;
 }
 
 @media (max-width: 767.98px) {
@@ -44,5 +55,9 @@
 
   .auth-page {
     align-items: start;
+  }
+
+  .auth-intro .lead {
+    font-size: 1rem;
   }
 }
