@@ -37,8 +37,10 @@ const API_QUEST: QuestResponse = {
   category: 'Fitness',
   difficulty: 'Medium',
   frequency: 'Daily',
+  xpReward: 20,
   isArchived: false,
   completedToday: false,
+  completedTodayXpAwarded: null,
   completedTodayAtUtc: null,
   createdAtUtc: '2026-06-18T12:00:00Z',
   updatedAtUtc: '2026-06-18T12:00:00Z'
@@ -47,6 +49,7 @@ const API_QUEST: QuestResponse = {
 const COMPLETED_API_QUEST: QuestResponse = {
   ...API_QUEST,
   completedToday: true,
+  completedTodayXpAwarded: 20,
   completedTodayAtUtc: '2026-06-18T13:00:00Z'
 };
 
@@ -55,7 +58,30 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
   questId: API_QUEST.id,
   userId: API_QUEST.userId,
   completionDateUtc: '2026-06-18',
-  completedAtUtc: '2026-06-18T13:00:00Z'
+  completedAtUtc: '2026-06-18T13:00:00Z',
+  xpAwarded: 20,
+  wasAlreadyCompleted: false,
+  heroProfile: {
+    ...AUTH_ME_RESPONSE.heroProfile,
+    level: 2,
+    totalXp: 120,
+    xpInCurrentLevel: 20,
+    xpRequiredForNextLevel: 200,
+    xpToNextLevel: 180
+  }
+};
+
+const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
+  ...QUEST_COMPLETION_RESPONSE,
+  wasAlreadyCompleted: true,
+  heroProfile: {
+    ...AUTH_ME_RESPONSE.heroProfile,
+    level: 1,
+    totalXp: 20,
+    xpInCurrentLevel: 20,
+    xpRequiredForNextLevel: 100,
+    xpToNextLevel: 80
+  }
 };
 
 const CREATED_API_QUEST_ID = '12e799df-aeca-4bd1-a548-f69f3fabd7d';
@@ -249,7 +275,22 @@ describe('Quests API view', () => {
 
     expect(api.complete).toHaveBeenCalledWith(API_QUEST.id);
     expect(textContent(nativeElement)).toContain('Done today');
+    expect(textContent(nativeElement)).toContain('+20 XP awarded');
     expect(getButtonByText(nativeElement, /^Done today$/).disabled).toBe(true);
+  });
+
+  it('updates hero XP and level when completion returns updated profile data', async () => {
+    const { nativeElement, harness } = await renderApiQuestRoute();
+
+    getButtonByText(nativeElement, /^Complete today$/).click();
+    harness.detectChanges();
+
+    const pageText = textContent(nativeElement);
+
+    expect(pageText).toContain('Level 2');
+    expect(pageText).toContain('120');
+    expect(pageText).toContain('20/200 XP');
+    expect(pageText).toContain('180 to next');
   });
 
   it('displays completed-today state from the API', async () => {
@@ -268,6 +309,18 @@ describe('Quests API view', () => {
     harness.detectChanges();
 
     expect(api.complete).not.toHaveBeenCalled();
+  });
+
+  it('does not show duplicate XP gain when the API returns an existing completion', async () => {
+    const api = new QuestApiServiceStub();
+    api.complete.mockReturnValueOnce(of(DUPLICATE_QUEST_COMPLETION_RESPONSE));
+    const { nativeElement, harness } = await renderApiQuestRoute(api);
+
+    getButtonByText(nativeElement, /^Complete today$/).click();
+    harness.detectChanges();
+
+    expect(textContent(nativeElement)).toContain('Done today');
+    expect(textContent(nativeElement)).not.toContain('+20 XP awarded');
   });
 
   it('shows a friendly error when quest completion fails', async () => {
@@ -403,6 +456,7 @@ function createApiAuthService(): Pick<
   | 'heroProfile'
   | 'isAuthenticated'
   | 'logout'
+  | 'updateHeroProfile'
   | 'user'
 > {
   const user = signal(AUTH_ME_RESPONSE.user);
@@ -418,6 +472,7 @@ function createApiAuthService(): Pick<
     isAuthenticated: isAuthenticated.asReadonly(),
     hasToken: () => true,
     ensureCurrentUser: (): Observable<MeResponse> => of(AUTH_ME_RESPONSE),
+    updateHeroProfile: (nextHeroProfile) => heroProfile.set(nextHeroProfile),
     logout: () => undefined
   };
 }

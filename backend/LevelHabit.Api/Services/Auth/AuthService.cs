@@ -4,6 +4,7 @@ using LevelHabit.Api.Contracts.Auth;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
+using LevelHabit.Api.Services.Heroes;
 using LevelHabit.Api.Services.Security;
 using Microsoft.EntityFrameworkCore;
 
@@ -159,11 +160,16 @@ public sealed class AuthService(
 
     private static HeroProfileResponse MapHeroProfile(HeroProfile heroProfile)
     {
+        HeroProgress progress = HeroProgressCalculator.Calculate(heroProfile.TotalXp);
+
         return new HeroProfileResponse(
             Id: heroProfile.Id,
             HeroName: heroProfile.HeroName,
-            Level: heroProfile.Level,
+            Level: progress.Level,
             TotalXp: heroProfile.TotalXp,
+            XpInCurrentLevel: progress.XpInCurrentLevel,
+            XpRequiredForNextLevel: progress.XpRequiredForNextLevel,
+            XpToNextLevel: progress.XpToNextLevel,
             CurrentStreak: heroProfile.CurrentStreak,
             CreatedAtUtc: heroProfile.CreatedAtUtc);
     }

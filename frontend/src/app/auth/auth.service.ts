@@ -90,6 +90,10 @@ export class AuthService {
     return this.loadCurrentUser();
   }
 
+  updateHeroProfile(heroProfile: HeroProfile): void {
+    this.heroProfileSignal.set(heroProfile);
+  }
+
   logout(): void {
     this.accessTokenSignal.set(null);
     this.expiresAtUtcSignal.set(null);

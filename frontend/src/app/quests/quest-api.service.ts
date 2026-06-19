@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
+import type { HeroProfile } from '../auth/auth.models';
 import type {
   PersistedQuestCategory,
   PersistedQuestDifficulty,
@@ -17,8 +18,10 @@ export type QuestResponse = Readonly<{
   category: PersistedQuestCategory;
   difficulty: PersistedQuestDifficulty;
   frequency: PersistedQuestFrequency;
+  xpReward: number;
   isArchived: boolean;
   completedToday: boolean;
+  completedTodayXpAwarded: number | null;
   completedTodayAtUtc: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
@@ -30,6 +33,9 @@ export type QuestCompletionResponse = Readonly<{
   userId: string;
   completionDateUtc: string;
   completedAtUtc: string;
+  xpAwarded: number;
+  wasAlreadyCompleted: boolean;
+  heroProfile: HeroProfile;
 }>;
 
 export type QuestUpsertRequest = Readonly<{

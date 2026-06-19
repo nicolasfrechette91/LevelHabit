@@ -10,6 +10,9 @@ export type HeroProfile = Readonly<{
   heroName: string;
   level: number;
   totalXp: number;
+  xpInCurrentLevel: number;
+  xpRequiredForNextLevel: number;
+  xpToNextLevel: number;
   currentStreak: number;
   createdAtUtc: string;
 }>;

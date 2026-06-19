@@ -23,6 +23,9 @@ const ME_RESPONSE: MeResponse = {
     heroName: 'Morning Warden',
     level: 1,
     totalXp: 0,
+    xpInCurrentLevel: 0,
+    xpRequiredForNextLevel: 100,
+    xpToNextLevel: 100,
     currentStreak: 0,
     createdAtUtc: '2026-06-17T20:00:00Z'
   }

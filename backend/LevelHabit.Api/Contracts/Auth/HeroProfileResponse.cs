@@ -5,5 +5,8 @@ public sealed record HeroProfileResponse(
     string HeroName,
     int Level,
     int TotalXp,
+    int XpInCurrentLevel,
+    int XpRequiredForNextLevel,
+    int XpToNextLevel,
     int CurrentStreak,
     DateTimeOffset CreatedAtUtc);

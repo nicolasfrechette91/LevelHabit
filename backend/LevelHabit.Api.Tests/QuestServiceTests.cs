@@ -156,11 +156,14 @@ public sealed class QuestServiceTests
         Assert.Equal(created.Id, completion.QuestId);
         Assert.Equal(new DateOnly(2026, 6, 18), completion.CompletionDateUtc);
         Assert.Equal(harness.Time.GetUtcNow(), completion.CompletedAtUtc);
+        Assert.Equal(10, completion.XpAwarded);
+        Assert.False(completion.WasAlreadyCompleted);
 
         QuestCompletion storedCompletion = await harness.DbContext.QuestCompletions.SingleAsync();
         Assert.Equal(completion.Id, storedCompletion.Id);
         Assert.Equal(created.Id, storedCompletion.QuestId);
         Assert.Equal(userId, storedCompletion.UserId);
+        Assert.Equal(10, storedCompletion.XpAwarded);
 
         QuestResponse loadedQuest = await harness.Service.GetAsync(
             harness.CreatePrincipal(userId),
@@ -168,7 +171,89 @@ public sealed class QuestServiceTests
             CancellationToken.None);
 
         Assert.True(loadedQuest.CompletedToday);
+        Assert.Equal(10, loadedQuest.CompletedTodayXpAwarded);
         Assert.Equal(completion.CompletedAtUtc, loadedQuest.CompletedTodayAtUtc);
+    }
+
+    [Theory]
+    [InlineData("Easy", 10)]
+    [InlineData("Medium", 20)]
+    [InlineData("Hard", 35)]
+    public async Task CompleteTodayAsync_awards_expected_xp_for_difficulty(
+        string difficulty,
+        int expectedXp)
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(
+            userId,
+            $"{difficulty} quest",
+            difficulty);
+
+        QuestCompletionResponse completion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.Equal(expectedXp, completion.XpAwarded);
+        Assert.Equal(expectedXp, completion.HeroProfile.TotalXp);
+        Assert.Equal(1, completion.HeroProfile.Level);
+        Assert.Equal(expectedXp, completion.HeroProfile.XpInCurrentLevel);
+        Assert.Equal(100 - expectedXp, completion.HeroProfile.XpToNextLevel);
+
+        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        Assert.Equal(expectedXp, storedProfile.TotalXp);
+        Assert.Equal(1, storedProfile.Level);
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_updates_the_authenticated_users_hero_profile()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(
+            userId,
+            "Focused practice",
+            difficulty: "Hard");
+
+        QuestCompletionResponse completion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.Equal(35, completion.HeroProfile.TotalXp);
+        Assert.Equal(35, completion.HeroProfile.XpInCurrentLevel);
+        Assert.Equal(65, completion.HeroProfile.XpToNextLevel);
+
+        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        Assert.Equal(35, storedProfile.TotalXp);
+        Assert.Equal(1, storedProfile.Level);
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_increases_level_when_total_xp_reaches_threshold()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        await harness.SetHeroXpAsync(userId, totalXp: 90);
+        QuestResponse created = await harness.CreateQuestAsync(
+            userId,
+            "Level break",
+            difficulty: "Easy");
+
+        QuestCompletionResponse completion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.Equal(100, completion.HeroProfile.TotalXp);
+        Assert.Equal(2, completion.HeroProfile.Level);
+        Assert.Equal(0, completion.HeroProfile.XpInCurrentLevel);
+        Assert.Equal(200, completion.HeroProfile.XpRequiredForNextLevel);
+        Assert.Equal(200, completion.HeroProfile.XpToNextLevel);
+
+        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        Assert.Equal(2, storedProfile.Level);
     }
 
     [Fact]
@@ -192,7 +277,13 @@ public sealed class QuestServiceTests
 
         Assert.Equal(firstCompletion.Id, duplicateCompletion.Id);
         Assert.Equal(firstCompletion.CompletedAtUtc, duplicateCompletion.CompletedAtUtc);
+        Assert.Equal(10, duplicateCompletion.XpAwarded);
+        Assert.True(duplicateCompletion.WasAlreadyCompleted);
         Assert.Equal(1, await harness.DbContext.QuestCompletions.CountAsync());
+
+        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        Assert.Equal(10, storedProfile.TotalXp);
+        Assert.Equal(1, storedProfile.Level);
     }
 
     [Fact]
@@ -211,6 +302,10 @@ public sealed class QuestServiceTests
 
         Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
         Assert.Empty(harness.DbContext.QuestCompletions);
+
+        HeroProfile secondUserProfile = await harness.DbContext.HeroProfiles
+            .SingleAsync(profile => profile.UserId == secondUserId);
+        Assert.Equal(0, secondUserProfile.TotalXp);
     }
 
     [Fact]
@@ -233,6 +328,9 @@ public sealed class QuestServiceTests
 
         Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
         Assert.Empty(harness.DbContext.QuestCompletions);
+
+        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        Assert.Equal(0, storedProfile.TotalXp);
     }
 
     [Fact]
@@ -319,12 +417,38 @@ public sealed class QuestServiceTests
                 UpdatedAtUtc = now
             });
 
+            DbContext.HeroProfiles.Add(new HeroProfile
+            {
+                UserId = userId,
+                HeroName = "Test Hero",
+                Level = 1,
+                TotalXp = 0,
+                CurrentStreak = 0,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now
+            });
+
             await DbContext.SaveChangesAsync();
 
             return userId;
         }
 
-        public Task<QuestResponse> CreateQuestAsync(Guid userId, string title)
+        public Task SetHeroXpAsync(Guid userId, int totalXp)
+        {
+            HeroProfile heroProfile = DbContext.HeroProfiles.Single(
+                profile => profile.UserId == userId);
+
+            heroProfile.TotalXp = totalXp;
+            heroProfile.Level = 1;
+            heroProfile.UpdatedAtUtc = Time.GetUtcNow();
+
+            return DbContext.SaveChangesAsync();
+        }
+
+        public Task<QuestResponse> CreateQuestAsync(
+            Guid userId,
+            string title,
+            string difficulty = "Easy")
         {
             return Service.CreateAsync(
                 CreatePrincipal(userId),
@@ -332,7 +456,7 @@ public sealed class QuestServiceTests
                     Title: title,
                     Description: "Test quest",
                     Category: "Health",
-                    Difficulty: "Easy",
+                    Difficulty: difficulty,
                     Frequency: "Daily"),
                 CancellationToken.None);
         }

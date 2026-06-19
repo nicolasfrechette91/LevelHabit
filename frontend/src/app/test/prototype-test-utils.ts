@@ -22,6 +22,9 @@ export const AUTH_ME_RESPONSE: MeResponse = {
     heroName: 'Morning Warden',
     level: 1,
     totalXp: 0,
+    xpInCurrentLevel: 0,
+    xpRequiredForNextLevel: 100,
+    xpToNextLevel: 100,
     currentStreak: 0,
     createdAtUtc: '2026-06-17T20:00:00Z'
   }
@@ -73,6 +76,7 @@ function createAuthenticatedAuthService(): Pick<
   | 'heroProfile'
   | 'isAuthenticated'
   | 'logout'
+  | 'updateHeroProfile'
   | 'user'
 > {
   const user = signal(AUTH_ME_RESPONSE.user);
@@ -88,6 +92,7 @@ function createAuthenticatedAuthService(): Pick<
     isAuthenticated: isAuthenticated.asReadonly(),
     hasToken: () => true,
     ensureCurrentUser: () => of(AUTH_ME_RESPONSE),
+    updateHeroProfile: (nextHeroProfile) => heroProfile.set(nextHeroProfile),
     logout: () => undefined
   };
 }

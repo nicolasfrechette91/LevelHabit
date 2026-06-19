@@ -19,8 +19,10 @@ const QUEST_RESPONSE: QuestResponse = {
   category: 'Fitness',
   difficulty: 'Medium',
   frequency: 'Daily',
+  xpReward: 20,
   isArchived: false,
   completedToday: false,
+  completedTodayXpAwarded: null,
   completedTodayAtUtc: null,
   createdAtUtc: '2026-06-18T12:00:00Z',
   updatedAtUtc: '2026-06-18T12:00:00Z'
@@ -31,7 +33,20 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
   questId: QUEST_RESPONSE.id,
   userId: QUEST_RESPONSE.userId,
   completionDateUtc: '2026-06-18',
-  completedAtUtc: '2026-06-18T13:00:00Z'
+  completedAtUtc: '2026-06-18T13:00:00Z',
+  xpAwarded: 20,
+  wasAlreadyCompleted: false,
+  heroProfile: {
+    id: '883089e0-6d74-4564-814d-1a3c5fe1fcff',
+    heroName: 'Morning Warden',
+    level: 1,
+    totalXp: 20,
+    xpInCurrentLevel: 20,
+    xpRequiredForNextLevel: 100,
+    xpToNextLevel: 80,
+    currentStreak: 0,
+    createdAtUtc: '2026-06-17T20:00:00Z'
+  }
 };
 
 describe('QuestApiService', () => {

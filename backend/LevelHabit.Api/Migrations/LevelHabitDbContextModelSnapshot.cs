@@ -52,6 +52,10 @@ public partial class LevelHabitDbContextModelSnapshot : ModelSnapshot
                 .HasColumnType("uuid")
                 .HasColumnName("user_id");
 
+            builder.Property<int>("XpAwarded")
+                .HasColumnType("integer")
+                .HasColumnName("xp_awarded");
+
             builder.HasKey("Id");
 
             builder.HasIndex("UserId")

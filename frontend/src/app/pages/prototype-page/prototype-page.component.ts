@@ -106,8 +106,18 @@ export class PrototypePageComponent implements OnInit {
     () => this.profileHero()?.currentStreak ?? this.game.currentStreak()
   );
 
-  protected readonly profileLevelProgress = computed(() =>
-    this.profileHero() ? 0 : this.game.levelProgress()
+  protected readonly profileLevelProgress = computed(() => this.game.levelProgress());
+
+  protected readonly profileXpInCurrentLevel = computed(() =>
+    this.game.xpInCurrentLevel()
+  );
+
+  protected readonly profileXpRequiredForNextLevel = computed(() =>
+    this.game.xpRequiredForNextLevel()
+  );
+
+  protected readonly profileXpToNextLevel = computed(() =>
+    this.game.xpToNextLevel()
   );
 
   protected readonly profileInitials = computed(() => {

@@ -82,10 +82,6 @@ export class LevelHabitStateService {
   );
 
   readonly earnedXp = computed(() => {
-    if (this.usesQuestApi()) {
-      return 0;
-    }
-
     return this.completedQuests().reduce((total, quest) => total + quest.xp, 0);
   });
 
@@ -110,12 +106,26 @@ export class LevelHabitStateService {
   );
 
   readonly xpToNextLevel = computed(() =>
-    this.heroProfile() ? 0 : Math.max(0, NEXT_LEVEL_XP - this.totalXp())
+    this.heroProfile()?.xpToNextLevel ?? Math.max(0, NEXT_LEVEL_XP - this.totalXp())
   );
 
   readonly levelProgress = computed(() => {
-    if (this.heroProfile()) {
-      return 0;
+    const profile = this.heroProfile();
+
+    if (profile) {
+      if (profile.xpRequiredForNextLevel <= 0) {
+        return 100;
+      }
+
+      return Math.min(
+        100,
+        Math.max(
+          0,
+          Math.round(
+            (profile.xpInCurrentLevel / profile.xpRequiredForNextLevel) * 100
+          )
+        )
+      );
     }
 
     const progress = this.totalXp() - CURRENT_LEVEL_XP;
@@ -123,6 +133,20 @@ export class LevelHabitStateService {
 
     return Math.min(100, Math.max(0, Math.round((progress / span) * 100)));
   });
+
+  readonly xpInCurrentLevel = computed(() => {
+    const profile = this.heroProfile();
+
+    if (profile) {
+      return profile.xpInCurrentLevel;
+    }
+
+    return Math.max(0, this.totalXp() - CURRENT_LEVEL_XP);
+  });
+
+  readonly xpRequiredForNextLevel = computed(() =>
+    this.heroProfile()?.xpRequiredForNextLevel ?? NEXT_LEVEL_XP - CURRENT_LEVEL_XP
+  );
 
   readonly currentStreak = computed(() => {
     const profile = this.heroProfile();
@@ -359,10 +383,16 @@ export class LevelHabitStateService {
     this.questErrorSignal.set(null);
 
     return this.questApi.complete(id).pipe(
+      tap((completion) => this.auth.updateHeroProfile(completion.heroProfile)),
       map((completion) => ({
         ...quest,
         completed: true,
-        completedTodayAtUtc: completion.completedAtUtc
+        xp: completion.xpAwarded,
+        completedTodayAtUtc: completion.completedAtUtc,
+        completedTodayXpAwarded: completion.xpAwarded,
+        ...(completion.wasAlreadyCompleted
+          ? {}
+          : { xpAwardedJustNow: completion.xpAwarded })
       })),
       tap((completedQuest) => {
         this.persistedQuests.update((quests) =>
@@ -527,7 +557,7 @@ export class LevelHabitStateService {
       category: response.category,
       summary: response.description || 'No description yet.',
       cadence: response.frequency,
-      xp: 0,
+      xp: response.xpReward,
       streak: 0,
       difficulty: response.difficulty,
       accent: this.accentForCategory(response.category),
@@ -540,7 +570,10 @@ export class LevelHabitStateService {
     return response.completedTodayAtUtc
       ? {
           ...quest,
-          completedTodayAtUtc: response.completedTodayAtUtc
+          completedTodayAtUtc: response.completedTodayAtUtc,
+          ...(response.completedTodayXpAwarded === null
+            ? {}
+            : { completedTodayXpAwarded: response.completedTodayXpAwarded })
         }
       : quest;
   }

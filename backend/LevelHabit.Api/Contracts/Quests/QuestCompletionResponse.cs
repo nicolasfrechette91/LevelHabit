@@ -1,3 +1,5 @@
+using LevelHabit.Api.Contracts.Auth;
+
 namespace LevelHabit.Api.Contracts.Quests;
 
 public sealed record QuestCompletionResponse(
@@ -5,4 +7,7 @@ public sealed record QuestCompletionResponse(
     Guid QuestId,
     Guid UserId,
     DateOnly CompletionDateUtc,
-    DateTimeOffset CompletedAtUtc);
+    DateTimeOffset CompletedAtUtc,
+    int XpAwarded,
+    bool WasAlreadyCompleted,
+    HeroProfileResponse HeroProfile);

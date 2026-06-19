@@ -31,6 +31,10 @@ public sealed class QuestCompletionConfiguration : IEntityTypeConfiguration<Ques
             .HasColumnName("completed_at_utc")
             .IsRequired();
 
+        builder.Property(completion => completion.XpAwarded)
+            .HasColumnName("xp_awarded")
+            .IsRequired();
+
         builder.HasOne(completion => completion.User)
             .WithMany(user => user.QuestCompletions)
             .HasForeignKey(completion => completion.UserId)

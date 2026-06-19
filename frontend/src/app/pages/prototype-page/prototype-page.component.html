@@ -32,6 +32,10 @@
           <strong>{{ profileHero() ? 'Hero profile' : game.levelTitle() }}</strong>
         </div>
         <progress class="progress lh-progress hero-progress" [value]="profileLevelProgress()" max="100" aria-label="Level progress"></progress>
+        <div class="d-flex justify-content-between gap-3 small progress-copy">
+          <span>{{ profileXpInCurrentLevel() | number }}/{{ profileXpRequiredForNextLevel() | number }} XP</span>
+          <span>{{ profileXpToNextLevel() | number }} to next</span>
+        </div>
         <div class="row g-2 text-center status-grid">
           <div class="col-4">
             <strong>{{ profileTotalXp() | number }}</strong>
@@ -93,10 +97,13 @@
                       <strong class="d-block">{{ quest.title }}</strong>
                       <span class="small lh-muted">
                         {{ quest.category }} &middot; {{ quest.cadence }}
-                        @if (!game.usesQuestApi()) {
+                        @if (quest.xp > 0) {
                           <span>&middot; {{ quest.xp }} XP</span>
                         }
                       </span>
+                      @if (quest.xpAwardedJustNow) {
+                        <span class="small fw-bold text-success d-block mt-1">+{{ quest.xpAwardedJustNow }} XP awarded</span>
+                      }
                     </div>
                     @if (!game.usesQuestApi()) {
                       <span class="badge rounded-pill streak-badge">{{ quest.streak }}d</span>
@@ -119,8 +126,10 @@
                   <p class="lh-muted mb-0">{{ quest.summary }}</p>
                   <div class="d-flex flex-wrap gap-2 mt-3">
                     <span class="badge rounded-pill text-bg-light">{{ quest.difficulty }}</span>
-                    @if (!game.usesQuestApi()) {
+                    @if (quest.xp > 0) {
                       <span class="badge rounded-pill text-bg-light">{{ quest.xp }} XP</span>
+                    }
+                    @if (!game.usesQuestApi()) {
                       <span class="badge rounded-pill text-bg-light">{{ quest.streak }} day streak</span>
                     }
                   </div>
@@ -324,7 +333,12 @@
                     <span class="badge rounded-pill text-bg-light">{{ quest.cadence }}</span>
                     @if (!game.usesQuestApi()) {
                       <span class="badge rounded-pill text-bg-light">{{ quest.streak }} day streak</span>
+                    }
+                    @if (quest.xp > 0) {
                       <span class="badge rounded-pill text-bg-light">{{ quest.xp }} XP</span>
+                    }
+                    @if (quest.xpAwardedJustNow) {
+                      <span class="badge rounded-pill text-bg-success">+{{ quest.xpAwardedJustNow }} XP awarded</span>
                     }
                   </div>
                   @if (game.usesQuestApi()) {
@@ -385,6 +399,10 @@
                 }
               </p>
               <progress class="progress lh-progress" [value]="profileLevelProgress()" max="100" aria-label="Hero level progress"></progress>
+              <div class="d-flex justify-content-between gap-3 small lh-muted mt-2">
+                <span>{{ profileXpInCurrentLevel() | number }}/{{ profileXpRequiredForNextLevel() | number }} XP</span>
+                <span>{{ profileXpToNextLevel() | number }} to next level</span>
+              </div>
             </div>
           </article>
         </div>
