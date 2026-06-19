@@ -139,6 +139,21 @@ public sealed class QuestServiceTests
         Assert.True(archivedQuest.IsArchived);
     }
 
+    [Fact]
+    public async Task ListAsync_without_authenticated_user_is_rejected()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        ClaimsPrincipal unauthenticatedUser = new(new ClaimsIdentity());
+
+        ApiException exception = await Assert.ThrowsAsync<ApiException>(() =>
+            harness.Service.ListAsync(
+                unauthenticatedUser,
+                includeArchived: false,
+                CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status401Unauthorized, exception.StatusCode);
+    }
+
     private sealed class QuestServiceHarness : IDisposable
     {
         private QuestServiceHarness(

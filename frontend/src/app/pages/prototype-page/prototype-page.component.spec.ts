@@ -1,5 +1,19 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { Observable, of, throwError } from 'rxjs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { routes } from '../../app.routes';
+import { AuthService } from '../../auth/auth.service';
+import type { MeResponse } from '../../auth/auth.models';
+import {
+  QuestApiService,
+  type QuestResponse,
+  type QuestUpsertRequest
+} from '../../quests/quest-api.service';
 import {
   DEFAULT_COMPLETED_IDS,
   PROTOTYPE_QUESTS
@@ -12,6 +26,22 @@ import {
   AUTH_ME_RESPONSE,
   textContent
 } from '../../test/prototype-test-utils';
+import { PrototypePageComponent } from './prototype-page.component';
+
+const API_QUEST: QuestResponse = {
+  id: 'f3d9d772-8e0d-47f7-970b-56f757f85f4d',
+  userId: AUTH_ME_RESPONSE.user.id,
+  title: 'Morning training',
+  description: 'Move before work.',
+  category: 'Fitness',
+  difficulty: 'Medium',
+  frequency: 'Daily',
+  isArchived: false,
+  createdAtUtc: '2026-06-18T12:00:00Z',
+  updatedAtUtc: '2026-06-18T12:00:00Z'
+};
+
+const CREATED_API_QUEST_ID = '12e799df-aeca-4bd1-a548-f69f3fabd7d';
 
 describe('Prototype routes', () => {
   beforeEach(() => {
@@ -132,3 +162,224 @@ describe('Quests view', () => {
     expect(textContent(nativeElement)).not.toContain(activeQuest!.title);
   });
 });
+
+describe('Quests API view', () => {
+  beforeEach(() => {
+    resetPrototypeStorage();
+  });
+
+  it('loads quests from the API', async () => {
+    const { api, nativeElement } = await renderApiQuestRoute();
+
+    expect(api.list).toHaveBeenCalledWith(true);
+    expect(textContent(nativeElement)).toContain(API_QUEST.title);
+    expect(textContent(nativeElement)).toContain(API_QUEST.description);
+  });
+
+  it('creates quests through the API', async () => {
+    const api = new QuestApiServiceStub([]);
+    const { nativeElement, harness } = await renderApiQuestRoute(api);
+
+    setFormField(harness, nativeElement, '#quest-title', 'Study sprint');
+    setFormField(harness, nativeElement, '#quest-description', 'Read one chapter.');
+    submitQuestForm(harness, nativeElement);
+
+    expect(api.create).toHaveBeenCalledWith({
+      title: 'Study sprint',
+      description: 'Read one chapter.',
+      category: 'Health',
+      difficulty: 'Easy',
+      frequency: 'Daily'
+    });
+    expect(textContent(nativeElement)).toContain('Study sprint');
+  });
+
+  it('updates quests through the API', async () => {
+    const { api, nativeElement, harness } = await renderApiQuestRoute();
+
+    getButtonByText(nativeElement, /^Edit$/).click();
+    harness.detectChanges();
+
+    setFormField(harness, nativeElement, '#quest-title', 'Evening training');
+    setFormField(harness, nativeElement, '#quest-description', 'Move after work.');
+    submitQuestForm(harness, nativeElement);
+
+    expect(api.update).toHaveBeenCalledWith(API_QUEST.id, {
+      title: 'Evening training',
+      description: 'Move after work.',
+      category: 'Fitness',
+      difficulty: 'Medium',
+      frequency: 'Daily'
+    });
+    expect(textContent(nativeElement)).toContain('Evening training');
+  });
+
+  it('archives quests through the API', async () => {
+    const { api, nativeElement, harness } = await renderApiQuestRoute();
+
+    getButtonByText(nativeElement, /^Archive$/).click();
+    harness.detectChanges();
+
+    expect(api.archive).toHaveBeenCalledWith(API_QUEST.id);
+    expect(textContent(nativeElement)).toContain('No quests shown');
+  });
+
+  it('shows a friendly error when the API cannot be reached', async () => {
+    const api = new QuestApiServiceStub();
+    api.list.mockReturnValueOnce(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 0,
+            statusText: 'Unknown Error'
+          })
+      )
+    );
+
+    const { nativeElement } = await renderApiQuestRoute(api);
+
+    expect(textContent(nativeElement)).toContain(
+      'The backend is unavailable. Start the API and try again.'
+    );
+  });
+});
+
+class QuestApiServiceStub
+  implements Pick<QuestApiService, 'list' | 'get' | 'create' | 'update' | 'archive'>
+{
+  constructor(private readonly responses: QuestResponse[] = [API_QUEST]) {}
+
+  readonly list = vi.fn((_includeArchived = true): Observable<QuestResponse[]> =>
+    of(this.responses)
+  );
+
+  readonly get = vi.fn((id: string): Observable<QuestResponse> => {
+    const response = this.responses.find((quest) => quest.id === id) ?? API_QUEST;
+
+    return of(response);
+  });
+
+  readonly create = vi.fn((request: QuestUpsertRequest): Observable<QuestResponse> =>
+    of({
+      ...API_QUEST,
+      ...request,
+      id: CREATED_API_QUEST_ID,
+      userId: AUTH_ME_RESPONSE.user.id,
+      isArchived: false,
+      createdAtUtc: '2026-06-19T12:00:00Z',
+      updatedAtUtc: '2026-06-19T12:00:00Z'
+    })
+  );
+
+  readonly update = vi.fn((
+    id: string,
+    request: QuestUpsertRequest
+  ): Observable<QuestResponse> =>
+    of({
+      ...API_QUEST,
+      ...request,
+      id,
+      updatedAtUtc: '2026-06-19T12:05:00Z'
+    })
+  );
+
+  readonly archive = vi.fn((_id: string): Observable<void> => of(void 0));
+}
+
+async function renderApiQuestRoute(
+  api: QuestApiServiceStub = new QuestApiServiceStub()
+): Promise<{
+  api: QuestApiServiceStub;
+  harness: RouterTestingHarness;
+  nativeElement: HTMLElement;
+}> {
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter(routes),
+      {
+        provide: AuthService,
+        useValue: createApiAuthService()
+      },
+      {
+        provide: QuestApiService,
+        useValue: api
+      }
+    ]
+  });
+
+  const harness = await RouterTestingHarness.create();
+  await harness.navigateByUrl('/quests', PrototypePageComponent);
+  const nativeElement = harness.routeNativeElement;
+
+  if (!nativeElement) {
+    throw new Error('Quests route did not render a native element.');
+  }
+
+  return {
+    api,
+    harness,
+    nativeElement
+  };
+}
+
+function createApiAuthService(): Pick<
+  AuthService,
+  | 'authRequired'
+  | 'canUsePrototypeRoutes'
+  | 'ensureCurrentUser'
+  | 'hasToken'
+  | 'heroProfile'
+  | 'isAuthenticated'
+  | 'logout'
+  | 'user'
+> {
+  const user = signal(AUTH_ME_RESPONSE.user);
+  const heroProfile = signal(AUTH_ME_RESPONSE.heroProfile);
+  const isAuthenticated = signal(true);
+  const canUsePrototypeRoutes = signal(true);
+
+  return {
+    authRequired: true,
+    canUsePrototypeRoutes: canUsePrototypeRoutes.asReadonly(),
+    user: user.asReadonly(),
+    heroProfile: heroProfile.asReadonly(),
+    isAuthenticated: isAuthenticated.asReadonly(),
+    hasToken: () => true,
+    ensureCurrentUser: (): Observable<MeResponse> => of(AUTH_ME_RESPONSE),
+    logout: () => undefined
+  };
+}
+
+function setFormField(
+  harness: RouterTestingHarness,
+  container: ParentNode,
+  selector: string,
+  value: string
+): void {
+  const field = container.querySelector(selector);
+
+  if (
+    !(field instanceof HTMLInputElement) &&
+    !(field instanceof HTMLTextAreaElement)
+  ) {
+    throw new Error(`Form field not found: ${selector}`);
+  }
+
+  field.value = value;
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+  harness.detectChanges();
+}
+
+function submitQuestForm(
+  harness: RouterTestingHarness,
+  container: ParentNode
+): void {
+  const form = container.querySelector('.quest-editor form');
+
+  if (!(form instanceof HTMLFormElement)) {
+    throw new Error('Quest form not found.');
+  }
+
+  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  harness.detectChanges();
+}

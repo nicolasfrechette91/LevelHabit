@@ -85,9 +85,16 @@
                     }
                     <div class="flex-grow-1 min-content">
                       <strong class="d-block">{{ quest.title }}</strong>
-                      <span class="small lh-muted">{{ quest.category }} &middot; {{ quest.cadence }} &middot; {{ quest.xp }} XP</span>
+                      <span class="small lh-muted">
+                        {{ quest.category }} &middot; {{ quest.cadence }}
+                        @if (!game.usesQuestApi()) {
+                          <span>&middot; {{ quest.xp }} XP</span>
+                        }
+                      </span>
                     </div>
-                    <span class="badge rounded-pill streak-badge">{{ quest.streak }}d</span>
+                    @if (!game.usesQuestApi()) {
+                      <span class="badge rounded-pill streak-badge">{{ quest.streak }}d</span>
+                    }
                   </div>
                   }
                 }
@@ -106,8 +113,10 @@
                   <p class="lh-muted mb-0">{{ quest.summary }}</p>
                   <div class="d-flex flex-wrap gap-2 mt-3">
                     <span class="badge rounded-pill text-bg-light">{{ quest.difficulty }}</span>
-                    <span class="badge rounded-pill text-bg-light">{{ quest.xp }} XP</span>
-                    <span class="badge rounded-pill text-bg-light">{{ quest.streak }} day streak</span>
+                    @if (!game.usesQuestApi()) {
+                      <span class="badge rounded-pill text-bg-light">{{ quest.xp }} XP</span>
+                      <span class="badge rounded-pill text-bg-light">{{ quest.streak }} day streak</span>
+                    }
                   </div>
                 } @else {
                   <h2 class="h4 fw-bold mb-2">No quest queued</h2>
@@ -306,8 +315,8 @@
                     <span class="badge rounded-pill text-bg-light">{{ quest.cadence }}</span>
                     @if (!game.usesQuestApi()) {
                       <span class="badge rounded-pill text-bg-light">{{ quest.streak }} day streak</span>
+                      <span class="badge rounded-pill text-bg-light">{{ quest.xp }} XP</span>
                     }
-                    <span class="badge rounded-pill text-bg-light">{{ quest.xp }} XP</span>
                   </div>
                   @if (game.usesQuestApi()) {
                     <div class="d-flex flex-wrap gap-2 mt-2">
