@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { routes } from '../../app.routes';
@@ -11,6 +11,10 @@ import {
   AchievementApiService,
   type AchievementResponse
 } from '../../achievements/achievement-api.service';
+import {
+  AnalyticsApiService,
+  type AnalyticsSummaryResponse
+} from '../../analytics/analytics-api.service';
 import { AuthService } from '../../auth/auth.service';
 import type { MeResponse } from '../../auth/auth.models';
 import {
@@ -128,6 +132,67 @@ const API_ACHIEVEMENTS: AchievementResponse[] = [
     progressText: '1/5 quest completions'
   }
 ];
+
+const API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
+  totalQuests: 3,
+  activeQuests: 2,
+  archivedQuests: 1,
+  totalCompletions: 6,
+  completionsToday: 1,
+  completionsThisWeek: 4,
+  completionsThisMonth: 5,
+  totalXp: 320,
+  currentLevel: 3,
+  xpToNextLevel: 280,
+  currentLevelProgressPercent: 7,
+  currentStreakMax: 3,
+  bestStreakMax: 5,
+  achievementsUnlocked: 2,
+  achievementsTotal: 9,
+  completionCountByCategory: [
+    { name: 'Health', count: 3 },
+    { name: 'Coding', count: 2 },
+    { name: 'Chores', count: 1 }
+  ],
+  completionCountByDifficulty: [
+    { name: 'Easy', count: 3 },
+    { name: 'Hard', count: 2 },
+    { name: 'Medium', count: 1 }
+  ],
+  recentCompletions: [
+    {
+      id: '889c6254-b88e-4606-98eb-651453c82382',
+      questId: API_QUEST.id,
+      questTitle: 'Morning training',
+      category: 'Health',
+      difficulty: 'Easy',
+      completionDateUtc: '2026-06-19',
+      completedAtUtc: '2026-06-19T08:00:00Z',
+      xpAwarded: 10
+    }
+  ]
+};
+
+const EMPTY_API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
+  totalQuests: 0,
+  activeQuests: 0,
+  archivedQuests: 0,
+  totalCompletions: 0,
+  completionsToday: 0,
+  completionsThisWeek: 0,
+  completionsThisMonth: 0,
+  totalXp: 0,
+  currentLevel: 1,
+  xpToNextLevel: 100,
+  currentLevelProgressPercent: 0,
+  currentStreakMax: 0,
+  bestStreakMax: 0,
+  achievementsUnlocked: 0,
+  achievementsTotal: 9,
+  completionCountByCategory: [],
+  completionCountByDifficulty: [],
+  recentCompletions: []
+};
 
 describe('Prototype routes', () => {
   beforeEach(() => {
@@ -259,6 +324,82 @@ describe('Achievements API view', () => {
     expect(textContent(nativeElement)).toContain(
       'Achievements could not be loaded.'
     );
+  });
+});
+
+describe('Analytics API view', () => {
+  beforeEach(() => {
+    resetPrototypeStorage();
+  });
+
+  it('loads the analytics summary from the API', async () => {
+    const { analyticsApi, nativeElement } = await renderApiAnalyticsRoute();
+
+    expect(analyticsApi.summary).toHaveBeenCalledTimes(1);
+    expect(textContent(nativeElement)).toContain('Quest library');
+    expect(textContent(nativeElement)).toContain('3 quests');
+  });
+
+  it('shows the loading state while analytics are pending', async () => {
+    const analyticsApi = new AnalyticsApiServiceStub();
+    const pendingSummary = new Subject<AnalyticsSummaryResponse>();
+    analyticsApi.summary.mockReturnValueOnce(pendingSummary.asObservable());
+
+    const { nativeElement, harness } = await renderApiAnalyticsRoute(analyticsApi);
+
+    expect(textContent(nativeElement)).toContain('Loading analytics...');
+
+    pendingSummary.next(API_ANALYTICS_SUMMARY);
+    pendingSummary.complete();
+    harness.detectChanges();
+  });
+
+  it('shows a friendly error when analytics cannot be loaded', async () => {
+    const analyticsApi = new AnalyticsApiServiceStub();
+    analyticsApi.summary.mockReturnValueOnce(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 500,
+            statusText: 'Server Error'
+          })
+      )
+    );
+
+    const { nativeElement } = await renderApiAnalyticsRoute(analyticsApi);
+
+    expect(textContent(nativeElement)).toContain('Analytics could not be loaded.');
+  });
+
+  it('displays empty/default analytics from the API', async () => {
+    const analyticsApi = new AnalyticsApiServiceStub(EMPTY_API_ANALYTICS_SUMMARY);
+    const { nativeElement } = await renderApiAnalyticsRoute(analyticsApi);
+    const pageText = textContent(nativeElement);
+
+    expect(pageText).toContain('No persisted activity yet');
+    expect(pageText).toContain('0 quests');
+    expect(pageText).toContain('Level 1');
+    expect(pageText).toContain('0/9');
+    expect(pageText).toContain('No completion categories yet.');
+    expect(pageText).toContain('Recent completions will appear');
+  });
+
+  it('renders real analytics summary values', async () => {
+    const { nativeElement } = await renderApiAnalyticsRoute();
+    const pageText = textContent(nativeElement);
+
+    expect(pageText).toContain('6');
+    expect(pageText).toContain('1 today');
+    expect(pageText).toContain('4 this week');
+    expect(pageText).toContain('320 XP');
+    expect(pageText).toContain('Level 3');
+    expect(pageText).toContain('280 XP to next');
+    expect(pageText).toContain('2/9');
+    expect(pageText).toContain('5 days');
+    expect(pageText).toContain('Health');
+    expect(pageText).toContain('Easy');
+    expect(pageText).toContain('Morning training');
+    expect(pageText).toContain('+10 XP');
   });
 });
 
@@ -517,6 +658,16 @@ class AchievementApiServiceStub implements Pick<AchievementApiService, 'list'> {
   );
 }
 
+class AnalyticsApiServiceStub implements Pick<AnalyticsApiService, 'summary'> {
+  constructor(
+    private readonly response: AnalyticsSummaryResponse = API_ANALYTICS_SUMMARY
+  ) {}
+
+  readonly summary = vi.fn((): Observable<AnalyticsSummaryResponse> =>
+    of(this.response)
+  );
+}
+
 async function renderApiAchievementRoute(
   achievementApi: AchievementApiServiceStub = new AchievementApiServiceStub()
 ): Promise<{
@@ -538,6 +689,10 @@ async function renderApiAchievementRoute(
       {
         provide: AchievementApiService,
         useValue: achievementApi
+      },
+      {
+        provide: AnalyticsApiService,
+        useValue: new AnalyticsApiServiceStub()
       }
     ]
   });
@@ -552,6 +707,50 @@ async function renderApiAchievementRoute(
 
   return {
     achievementApi,
+    harness,
+    nativeElement
+  };
+}
+
+async function renderApiAnalyticsRoute(
+  analyticsApi: AnalyticsApiServiceStub = new AnalyticsApiServiceStub()
+): Promise<{
+  analyticsApi: AnalyticsApiServiceStub;
+  harness: RouterTestingHarness;
+  nativeElement: HTMLElement;
+}> {
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter(routes),
+      {
+        provide: AuthService,
+        useValue: createApiAuthService()
+      },
+      {
+        provide: QuestApiService,
+        useValue: new QuestApiServiceStub()
+      },
+      {
+        provide: AchievementApiService,
+        useValue: new AchievementApiServiceStub()
+      },
+      {
+        provide: AnalyticsApiService,
+        useValue: analyticsApi
+      }
+    ]
+  });
+
+  const harness = await RouterTestingHarness.create();
+  await harness.navigateByUrl('/analytics', PrototypePageComponent);
+  const nativeElement = harness.routeNativeElement;
+
+  if (!nativeElement) {
+    throw new Error('Analytics route did not render a native element.');
+  }
+
+  return {
+    analyticsApi,
     harness,
     nativeElement
   };
@@ -580,6 +779,10 @@ async function renderApiQuestRoute(
       {
         provide: AchievementApiService,
         useValue: achievementApi
+      },
+      {
+        provide: AnalyticsApiService,
+        useValue: new AnalyticsApiServiceStub()
       }
     ]
   });

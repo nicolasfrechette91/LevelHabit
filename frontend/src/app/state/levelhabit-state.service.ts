@@ -6,6 +6,10 @@ import {
   AchievementApiService,
   type AchievementResponse
 } from '../achievements/achievement-api.service';
+import {
+  AnalyticsApiService,
+  type AnalyticsSummaryResponse
+} from '../analytics/analytics-api.service';
 import { AuthService } from '../auth/auth.service';
 import {
   QuestApiService,
@@ -39,6 +43,7 @@ export class LevelHabitStateService {
   private readonly auth = inject(AuthService);
   private readonly questApi = inject(QuestApiService);
   private readonly achievementApi = inject(AchievementApiService);
+  private readonly analyticsApi = inject(AnalyticsApiService);
   private readonly validQuestIds = new Set<string>(
     PROTOTYPE_QUESTS.map((quest) => quest.id)
   );
@@ -54,6 +59,11 @@ export class LevelHabitStateService {
   private readonly achievementsLoadedSignal = signal(false);
   private readonly achievementsLoadingSignal = signal(false);
   private readonly achievementErrorSignal = signal<string | null>(null);
+  private readonly analyticsSummarySignal =
+    signal<AnalyticsSummaryResponse | null>(null);
+  private readonly analyticsLoadedSignal = signal(false);
+  private readonly analyticsLoadingSignal = signal(false);
+  private readonly analyticsErrorSignal = signal<string | null>(null);
 
   readonly availableTitles = PROTOTYPE_TITLES;
   readonly questsLoading = this.questsLoadingSignal.asReadonly();
@@ -61,6 +71,9 @@ export class LevelHabitStateService {
   readonly questError = this.questErrorSignal.asReadonly();
   readonly achievementsLoading = this.achievementsLoadingSignal.asReadonly();
   readonly achievementError = this.achievementErrorSignal.asReadonly();
+  readonly analyticsSummary = this.analyticsSummarySignal.asReadonly();
+  readonly analyticsLoading = this.analyticsLoadingSignal.asReadonly();
+  readonly analyticsError = this.analyticsErrorSignal.asReadonly();
   readonly usesQuestApi = computed(() =>
     this.auth.authRequired && this.auth.isAuthenticated()
   );
@@ -347,6 +360,34 @@ export class LevelHabitStateService {
       });
   }
 
+  loadAnalytics(force = false): void {
+    if (
+      !this.usesQuestApi()
+      || (!force && this.analyticsLoadedSignal())
+      || this.analyticsLoadingSignal()
+    ) {
+      return;
+    }
+
+    this.analyticsLoadingSignal.set(true);
+    this.analyticsErrorSignal.set(null);
+
+    this.analyticsApi
+      .summary()
+      .pipe(finalize(() => this.analyticsLoadingSignal.set(false)))
+      .subscribe({
+        next: (summary) => {
+          this.analyticsSummarySignal.set(summary);
+          this.analyticsLoadedSignal.set(true);
+        },
+        error: (error: unknown) => {
+          this.analyticsErrorSignal.set(
+            this.describeAnalyticsError(error, 'Analytics could not be loaded.')
+          );
+        }
+      });
+  }
+
   createQuest(request: QuestUpsertRequest): Observable<Quest> {
     this.questActionInFlightSignal.set(true);
     this.questErrorSignal.set(null);
@@ -356,6 +397,7 @@ export class LevelHabitStateService {
       tap((quest) => {
         this.persistedQuests.update((quests) => [...quests, quest]);
         this.questsLoadedSignal.set(true);
+        this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
         this.captureQuestError<Quest>(error, 'Quest could not be created.')
@@ -374,6 +416,7 @@ export class LevelHabitStateService {
         this.persistedQuests.update((quests) =>
           quests.map((quest) => quest.id === updatedQuest.id ? updatedQuest : quest)
         );
+        this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
         this.captureQuestError<Quest>(error, 'Quest could not be updated.')
@@ -398,6 +441,7 @@ export class LevelHabitStateService {
               : quest
           )
         );
+        this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
         this.captureQuestError<void>(error, 'Quest could not be archived.')
@@ -451,6 +495,7 @@ export class LevelHabitStateService {
             candidate.id === completedQuest.id ? completedQuest : candidate
           )
         );
+        this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
         this.captureQuestError<Quest>(error, 'Quest could not be completed.')
@@ -742,6 +787,35 @@ export class LevelHabitStateService {
     }
 
     return fallback;
+  }
+
+  private describeAnalyticsError(error: unknown, fallback: string): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return fallback;
+    }
+
+    if (error.status === 0) {
+      return 'The backend is unavailable. Start the API and try again.';
+    }
+
+    if (error.status === 401) {
+      return 'Your session expired. Sign in again to view analytics.';
+    }
+
+    const problem = this.isRecord(error.error) ? error.error : null;
+    const detail = problem?.['detail'];
+
+    if (typeof detail === 'string' && detail.trim().length > 0) {
+      return detail;
+    }
+
+    return fallback;
+  }
+
+  private refreshAnalyticsIfLoaded(): void {
+    if (this.analyticsLoadedSignal()) {
+      this.loadAnalytics(true);
+    }
   }
 
   private setQuestCompletionInFlight(questId: string, inFlight: boolean): void {

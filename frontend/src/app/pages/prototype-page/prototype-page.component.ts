@@ -11,6 +11,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import type { AnalyticsBucketResponse } from '../../analytics/analytics-api.service';
 import { AuthService } from '../../auth/auth.service';
 import type { QuestUpsertRequest } from '../../quests/quest-api.service';
 import {
@@ -164,9 +165,25 @@ export class PrototypePageComponent implements OnInit {
     Math.max(...this.game.weeklyHistory().map((day) => day.xp), 1)
   );
 
+  protected readonly analyticsCategoryMax = computed(() =>
+    this.maxBucketCount(
+      this.game.analyticsSummary()?.completionCountByCategory ?? []
+    )
+  );
+
+  protected readonly analyticsDifficultyMax = computed(() =>
+    this.maxBucketCount(
+      this.game.analyticsSummary()?.completionCountByDifficulty ?? []
+    )
+  );
+
   ngOnInit(): void {
     this.game.loadQuests();
     this.game.loadAchievements();
+
+    if (this.view() === 'analytics') {
+      this.game.loadAnalytics();
+    }
   }
 
   protected achievementPercent(progress: number, target: number): number {
@@ -175,6 +192,10 @@ export class PrototypePageComponent implements OnInit {
     }
 
     return Math.min(100, Math.round((progress / target) * 100));
+  }
+
+  private maxBucketCount(buckets: readonly AnalyticsBucketResponse[]): number {
+    return Math.max(...buckets.map((bucket) => bucket.count), 1);
   }
 
   protected toggleQuest(quest: Quest): void {
