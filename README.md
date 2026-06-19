@@ -1,20 +1,21 @@
 # LevelHabit
 
-LevelHabit is a gamified habit tracker where users complete daily habits as quests,
-earn XP, build streaks, unlock achievements, and level up a personal hero profile
-over time.
+LevelHabit is a gamified habit tracker where users complete daily habits as
+quests, earn XP, build streaks, unlock achievements, and level up a personal
+hero profile over time.
 
-This repository currently contains the initial full-stack project setup and the
-authentication / hero profile milestone. Habit management, XP, streaks,
-achievements, and analytics are still prototype-only.
+The current MVP loop includes authentication, user-scoped quests, quest
+completion tracking, XP rewards, basic hero leveling, streaks, achievements,
+and analytics.
 
 ## Tech stack
 
 - Angular 21 frontend with routing
 - ASP.NET Core Web API targeting .NET 10
 - Entity Framework Core with the Npgsql PostgreSQL provider
-- PostgreSQL for local development
+- PostgreSQL for local development and Supabase for production
 - Docker Compose for the local database
+- GitHub Pages for the frontend and Render for the backend
 
 ## Prerequisites
 
@@ -27,25 +28,27 @@ achievements, and analytics are still prototype-only.
 
 ```text
 .
-├── backend/
-│   └── LevelHabit.Api/
-│       ├── Controllers/
-│       ├── Data/
-│       ├── Program.cs
-│       └── appsettings*.json
-├── frontend/
-│   ├── public/
-│   └── src/
-│       ├── app/
-│       └── environments/
-├── docker-compose.yml
-├── .env.example
-└── global.json
+|-- backend/
+|   |-- LevelHabit.Api/
+|   |   |-- Controllers/
+|   |   |-- Data/
+|   |   |-- Migrations/
+|   |   |-- Program.cs
+|   |   `-- appsettings*.json
+|   `-- LevelHabit.Api.Tests/
+|-- frontend/
+|   |-- public/
+|   `-- src/
+|       |-- app/
+|       `-- environments/
+|-- docker-compose.yml
+|-- .env.example
+`-- global.json
 ```
 
 ## Local setup
 
-Create your local environment file:
+Create your local Docker environment file:
 
 ```powershell
 Copy-Item .env.example .env
@@ -63,19 +66,17 @@ Check the database container:
 docker compose ps
 ```
 
-Restore and build the backend:
-
 ```powershell
 cd backend/LevelHabit.Api
-dotnet restore
-dotnet build
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=levelhabit;Username=levelhabit;Password=levelhabit_dev_password"
+dotnet user-secrets set "Jwt:Secret" "replace-with-at-least-32-random-characters"
 ```
 
-Configure the backend API for the current PowerShell session:
+Apply local EF migrations. If `dotnet ef` is not installed yet, see the
+database migration section below.
 
 ```powershell
-$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=<database>;Username=<user>;Password=<password>"
-$env:Jwt__Secret = "replace-with-at-least-32-random-characters"
+dotnet ef database update
 ```
 
 Run the backend API:
@@ -93,15 +94,9 @@ curl http://localhost:5118/api/health
 Install and run the frontend:
 
 ```powershell
-cd frontend
+cd ../../frontend
 npm install
 npm start
-```
-
-Build the frontend:
-
-```powershell
-npm run build
 ```
 
 The frontend runs at `http://localhost:4200`.
@@ -110,35 +105,30 @@ PostgreSQL is exposed locally on port `5432` by default.
 
 ## Configuration
 
-- Root `.env` values are used by Docker Compose for PostgreSQL.
-- `backend/LevelHabit.Api/appsettings.json` contains safe local defaults.
-- `backend/LevelHabit.Api/appsettings.Example.json` shows the expected backend configuration shape.
-- `frontend/src/environments/environment.development.ts` points Angular to the local API.
-- `frontend/src/environments/environment.ts` points GitHub Pages to
-  `https://level-habit-api.onrender.com/api` and keeps `authRequired` enabled.
-- Backend CORS allows `https://nicolasfrechette91.github.io` and
-  `http://localhost:4200`.
+- Root `.env` values are used by Docker Compose for PostgreSQL only.
+- Local backend secrets belong in .NET user-secrets or temporary environment
+  variables, not in source.
+- `backend/LevelHabit.Api/appsettings.json` contains safe defaults and empty
+  secret placeholders.
+- `backend/LevelHabit.Api/appsettings.Example.json` shows the expected backend
+  configuration shape.
+- `frontend/src/environments/environment.development.ts` points Angular to
+  `http://localhost:5118/api`.
+- `frontend/src/environments/environment.ts` points the production GitHub Pages
+  build to `https://level-habit-api.onrender.com/api`.
+- Backend CORS must allow the exact frontend origin, currently
+  `https://nicolasfrechette91.github.io`, plus `http://localhost:4200` for
+  local development.
 
-### Backend secrets
-
-The API requires a PostgreSQL connection string and a JWT signing secret at
-runtime. Do not commit real values. For local PowerShell sessions, set temporary
-environment variables before running the API:
+You can also use temporary PowerShell environment variables instead of
+user-secrets for a single local session:
 
 ```powershell
-$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=<database>;Username=<user>;Password=<password>"
+$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=levelhabit;Username=levelhabit;Password=levelhabit_dev_password"
 $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
 ```
 
-Alternatively, use .NET user secrets from `backend/LevelHabit.Api`:
-
-```powershell
-dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=<database>;Username=<user>;Password=<password>"
-dotnet user-secrets set "Jwt:Secret" "replace-with-at-least-32-random-characters"
-```
-
-### Render environment variables
+## Render environment variables
 
 Set these on the Render backend service. Use real values from Supabase and a
 long random JWT secret; do not commit them.
@@ -153,6 +143,10 @@ Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
 Cors__AllowedOrigins__1=http://localhost:4200
 ```
 
+The production frontend API URL is compiled from
+`frontend/src/environments/environment.ts`. If the Render service URL changes,
+update that file before rebuilding and redeploying the GitHub Pages frontend.
+
 ## Database migrations
 
 Install the EF Core CLI if needed:
@@ -161,18 +155,14 @@ Install the EF Core CLI if needed:
 dotnet tool install --global dotnet-ef
 ```
 
-Apply the authentication and hero profile schema:
+Apply migrations locally against Docker PostgreSQL:
 
 ```powershell
 cd backend/LevelHabit.Api
 dotnet ef database update
 ```
 
-The current migration creates `users` and `hero_profiles`. Registering a user
-automatically creates the related hero profile.
-
-For Supabase, apply the migrations against the Supabase PostgreSQL connection
-string before or during the Render release:
+Apply migrations to Supabase before or during a Render release:
 
 ```powershell
 cd backend/LevelHabit.Api
@@ -181,40 +171,79 @@ $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
 dotnet ef database update
 ```
 
+Production reminder: Supabase needs every EF migration in
+`backend/LevelHabit.Api/Migrations`, including the authentication and hero
+profile schema, quests, quest completions, completion XP, achievements, and the
+tables used by analytics queries. If production has 500 responses around quests,
+achievements, or analytics, check migrations first.
+
+## CI/CD
+
+GitHub Actions validates pull requests and pushes with:
+
+- backend restore, build, and tests
+- frontend `npm ci`
+- Angular tests with `ng test --watch=false`
+- Angular production build with the GitHub Pages base href
+
+The same workflow deploys the frontend artifact to GitHub Pages on pushes to
+`main` and manual `workflow_dispatch` runs. The Render backend still deploys
+from the Render service configuration.
+
 ## Validation commands
 
-Run these after installing the prerequisites:
+Run these after installing prerequisites:
 
 ```powershell
-docker compose up -d
-docker compose ps
-cd backend/LevelHabit.Api
-dotnet restore
-dotnet build
-dotnet test ../LevelHabit.Api.Tests/LevelHabit.Api.Tests.csproj
-$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=<database>;Username=<user>;Password=<password>"
-$env:Jwt__Secret = "replace-with-at-least-32-random-characters"
-dotnet run --launch-profile http
-curl http://localhost:5118/api/health
-cd ../../frontend
-npm install
-npm run test
-npm run build
+dotnet test backend\LevelHabit.Api.Tests\LevelHabit.Api.Tests.csproj
 ```
 
-Website available here : https://nicolasfrechette91.github.io/LevelHabit/#/dashboard
+```powershell
+cd frontend
+npm install
+.\node_modules\.bin\ng.cmd test --watch=false
+.\node_modules\.bin\ng.cmd build --configuration production
+```
+
+For the GitHub Pages build locally, include the repository base href:
+
+```powershell
+.\node_modules\.bin\ng.cmd build --configuration production --base-href /LevelHabit/
+```
 
 ## Production smoke test
 
 After Render deploys the backend and Supabase has the current migrations:
 
-1. Open https://nicolasfrechette91.github.io/LevelHabit/#/register.
-2. Register with email, password, display name, and hero name.
-3. Confirm the app lands on the dashboard and shows the registered player and hero.
-4. Logout, then login again from https://nicolasfrechette91.github.io/LevelHabit/#/login.
-5. Confirm `GET https://level-habit-api.onrender.com/api/auth/me` returns the current user/profile when sent the saved bearer token.
+1. Open `https://nicolasfrechette91.github.io/LevelHabit/#/dashboard`.
+2. Register a new account.
+3. Log in.
+4. Create a quest.
+5. Complete the quest.
+6. Verify XP and level updates.
+7. Verify streaks update.
+8. Verify achievements unlock when criteria are met.
+9. Verify analytics reflects completions and XP.
+10. Log out and log in again.
+11. Verify the same user data persists.
 
-Render should redeploy from the repository; no real secrets belong in source.
+## Production troubleshooting
+
+- CORS failure: ensure `Cors__AllowedOrigins__0` on Render is exactly
+  `https://nicolasfrechette91.github.io` with no path or trailing slash.
+- Missing Supabase migration: run `dotnet ef database update` against the
+  Supabase connection string and confirm all migrations are applied.
+- Wrong API URL: confirm `frontend/src/environments/environment.ts` points to
+  the Render API URL and the browser network tab calls that host.
+- Expired or missing JWT: log out and log in again, then confirm API requests
+  include an `Authorization: Bearer <token>` header.
+- Render cold start: the first API request after inactivity can be slow or fail;
+  retry after the service wakes up.
+
+## Links
+
+- Deployed frontend: https://nicolasfrechette91.github.io/LevelHabit/#/dashboard
+- Production API base URL: https://level-habit-api.onrender.com/api
 
 ## Roadmap
 
@@ -225,5 +254,5 @@ Render should redeploy from the repository; no real secrets belong in source.
 5. Achievements
 6. Analytics dashboard
 7. Automated tests
-8. CI/CD
-9. Deployment
+8. CI/CD and deployment hardening
+9. Notifications and reminders
