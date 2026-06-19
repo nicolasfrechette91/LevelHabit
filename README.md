@@ -1,35 +1,25 @@
 # LevelHabit
 
-LevelHabit is a full-stack gamified habit tracker where users manage daily
-habits as quests, complete them for XP, build streaks, unlock achievements, and
-level up a personal hero profile over time.
+LevelHabit is a production-deployed gamified habit tracker where users manage
+daily habits as quests, complete them for XP, build streaks, unlock
+achievements, and level up a personal hero profile.
 
-The project exists to demonstrate a production-deployed, user-authenticated
-application with a practical product loop, real persistence, automated tests,
-and CI/CD. It is intentionally scoped as an MVP rather than a large habit
-platform.
-
-- Frontend: https://nicolasfrechette91.github.io/LevelHabit/#/dashboard
-- API base URL: https://level-habit-api.onrender.com/api
+- Live demo: [GitHub Pages app](https://nicolasfrechette91.github.io/LevelHabit/#/dashboard)
+- API health: [Render health endpoint](https://level-habit-api.onrender.com/api/health)
+- API base URL: `https://level-habit-api.onrender.com/api`
 - Case study: [docs/case-study.md](docs/case-study.md)
 
-## Feature Checklist
+## Project Summary
 
-- [x] Authentication
-- [x] Hero profile
-- [x] Quest/habit management
-- [x] Daily completion tracking
-- [x] XP rewards
-- [x] Leveling
-- [x] Streaks
-- [x] Achievements
-- [x] Analytics dashboard
-- [x] User data isolation
-- [x] Frontend validation
-- [x] CI/CD
-- [x] Production deployment
+LevelHabit turns daily habit tracking into a lightweight progression loop:
+create quests, complete them, and see XP, levels, streaks, achievements, and
+analytics update over time. The project solves the common habit-tracker problem
+of progress feeling static by giving users immediate feedback and a persistent
+sense of momentum. Technically, it demonstrates a full-stack Angular and
+ASP.NET Core MVP with JWT authentication, user-scoped persistence, EF Core
+migrations, automated tests, and CI/CD-backed production deployment.
 
-## Key Features
+## Feature Summary
 
 - Account registration, login, JWT-protected API access, and authenticated
   frontend routes.
@@ -41,6 +31,21 @@ platform.
   impact of Render cold starts.
 - Automated backend and frontend validation through GitHub Actions.
 
+## Technical Highlights
+
+- Production full-stack deployment across GitHub Pages, Render, and Supabase.
+- User-scoped data isolation for quests, completions, achievements, and
+  analytics.
+- JWT authentication with protected API endpoints, frontend route guards, and
+  token-bearing HTTP requests.
+- EF Core migrations for PostgreSQL schema changes in local and production
+  environments.
+- Gamification loop covering XP rewards, hero levels, streaks, achievements,
+  and analytics.
+- Automated backend and frontend tests run through GitHub Actions.
+- CI/CD workflow for validation, GitHub Pages deployment, and Render deploy
+  hook triggering.
+
 ## Tech Stack
 
 - Angular 21 frontend with routing, route guards, HTTP services, and SCSS.
@@ -50,19 +55,25 @@ platform.
 - Supabase PostgreSQL in production.
 - GitHub Pages for the production frontend.
 - Render for the production backend API.
-- GitHub Actions for CI and frontend deployment.
+- GitHub Actions for CI, frontend deployment, and Render deploy hook
+  triggering.
 
-## Architecture
+## Architecture Overview
 
 ```mermaid
 flowchart LR
-  Browser["User browser"] --> Pages["GitHub Pages\nAngular app"]
-  Pages -->|"HTTPS JSON API"| Api["Render\nASP.NET Core API"]
-  Api -->|"EF Core + Npgsql"| Database[("Supabase\nPostgreSQL")]
-  Api -->|"Issues and validates"| Jwt["JWT bearer tokens"]
-  Developer["Local developer"] --> LocalFrontend["Angular dev server"]
-  Developer --> LocalApi["ASP.NET Core API"]
-  LocalApi -->|"EF Core migrations"| LocalDb[("Docker PostgreSQL")]
+  Browser["User browser"] --> Frontend["Angular frontend\nGitHub Pages"]
+  Frontend -->|"HTTPS API calls\nwith JWT bearer token"| Api["ASP.NET Core API\nRender"]
+  Api -->|"EF Core + Npgsql"| Database[("PostgreSQL\nSupabase")]
+  Api --> Auth["JWT authentication\nissue + validate tokens"]
+
+  Developer["Developer"] -->|"push / pull request"| Actions["GitHub Actions CI/CD"]
+  Actions -->|"test + build + deploy"| Frontend
+  Actions -->|"restore + build + test"| Api
+  Actions -->|"Render deploy hook"| Api
+
+  Developer -->|"dotnet ef database update"| Migrations["EF Core migrations"]
+  Migrations --> Database
 ```
 
 The Angular app is deployed as a static GitHub Pages site using the
@@ -71,6 +82,14 @@ on Render. The API validates JWT bearer tokens, applies CORS rules for the
 production and local frontend origins, and uses EF Core migrations to manage
 the PostgreSQL schema. Supabase provides the production database, while Docker
 Compose provides a local PostgreSQL instance.
+
+## Project Case Study
+
+The full project write-up is available in
+[docs/case-study.md](docs/case-study.md). It covers the product problem,
+architecture, backend and frontend design, database model, authentication and
+security considerations, testing strategy, deployment approach, key challenges,
+and next improvements.
 
 ## Repository Structure
 
@@ -99,10 +118,12 @@ Compose provides a local PostgreSQL instance.
 
 ## Screenshots
 
-Screenshots are not committed yet. When they are captured, place production
-screenshots at these paths and then embed them in this section:
+Screenshots are not committed yet. Capture screenshots from the production
+deployment using a demo account with non-sensitive sample data, save them to
+these paths, and then replace this placeholder list with Markdown image tags:
 
 ```text
+docs/screenshots/login.png
 docs/screenshots/dashboard.png
 docs/screenshots/quests.png
 docs/screenshots/achievements.png
@@ -113,7 +134,8 @@ Recommended capture flow:
 
 1. Open the deployed frontend.
 2. Use a demo account with non-sensitive sample data.
-3. Capture dashboard, quest management, achievements, and analytics views.
+3. Capture login, dashboard, quest management, achievements, and analytics
+   views.
 4. Save the PNG files under `docs/screenshots/`.
 5. Update this section to use Markdown image tags after the files exist.
 
@@ -281,7 +303,7 @@ Documentation whitespace validation:
 git diff --check
 ```
 
-## CI/CD
+## CI/CD and Deployment Notes
 
 GitHub Actions runs on pull requests, pushes, and manual `workflow_dispatch`
 runs.
@@ -334,7 +356,7 @@ After Render deploys the backend and Supabase has the current migrations:
 - Render cold starts can affect the first request after inactivity.
 - Screenshots are not yet committed to the repository.
 
-## Roadmap
+## Future Roadmap
 
 Completed MVP:
 
