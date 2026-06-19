@@ -42,6 +42,10 @@ const API_QUEST: QuestResponse = {
   completedToday: false,
   completedTodayXpAwarded: null,
   completedTodayAtUtc: null,
+  currentStreak: 3,
+  bestStreak: 7,
+  lastCompletedDateUtc: '2026-06-17',
+  lastCompletedAtUtc: '2026-06-17T13:00:00Z',
   createdAtUtc: '2026-06-18T12:00:00Z',
   updatedAtUtc: '2026-06-18T12:00:00Z'
 };
@@ -50,7 +54,10 @@ const COMPLETED_API_QUEST: QuestResponse = {
   ...API_QUEST,
   completedToday: true,
   completedTodayXpAwarded: 20,
-  completedTodayAtUtc: '2026-06-18T13:00:00Z'
+  completedTodayAtUtc: '2026-06-18T13:00:00Z',
+  currentStreak: 4,
+  lastCompletedDateUtc: '2026-06-18',
+  lastCompletedAtUtc: '2026-06-18T13:00:00Z'
 };
 
 const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
@@ -68,7 +75,8 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
     xpInCurrentLevel: 20,
     xpRequiredForNextLevel: 200,
     xpToNextLevel: 180
-  }
+  },
+  quest: COMPLETED_API_QUEST
 };
 
 const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
@@ -81,6 +89,12 @@ const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
     xpInCurrentLevel: 20,
     xpRequiredForNextLevel: 100,
     xpToNextLevel: 80
+  },
+  quest: {
+    ...COMPLETED_API_QUEST,
+    currentStreak: API_QUEST.currentStreak,
+    lastCompletedDateUtc: '2026-06-18',
+    lastCompletedAtUtc: '2026-06-18T13:00:00Z'
   }
 };
 
@@ -217,6 +231,8 @@ describe('Quests API view', () => {
     expect(api.list).toHaveBeenCalledWith(true);
     expect(textContent(nativeElement)).toContain(API_QUEST.title);
     expect(textContent(nativeElement)).toContain(API_QUEST.description);
+    expect(textContent(nativeElement)).toContain('3-day streak');
+    expect(textContent(nativeElement)).toContain('Best: 7');
   });
 
   it('creates quests through the API', async () => {
@@ -275,6 +291,7 @@ describe('Quests API view', () => {
 
     expect(api.complete).toHaveBeenCalledWith(API_QUEST.id);
     expect(textContent(nativeElement)).toContain('Done today');
+    expect(textContent(nativeElement)).toContain('4-day streak');
     expect(textContent(nativeElement)).toContain('+20 XP awarded');
     expect(getButtonByText(nativeElement, /^Done today$/).disabled).toBe(true);
   });
@@ -320,6 +337,8 @@ describe('Quests API view', () => {
     harness.detectChanges();
 
     expect(textContent(nativeElement)).toContain('Done today');
+    expect(textContent(nativeElement)).toContain('3-day streak');
+    expect(textContent(nativeElement)).not.toContain('4-day streak');
     expect(textContent(nativeElement)).not.toContain('+20 XP awarded');
   });
 
@@ -387,6 +406,10 @@ class QuestApiServiceStub
       id: CREATED_API_QUEST_ID,
       userId: AUTH_ME_RESPONSE.user.id,
       isArchived: false,
+      currentStreak: 0,
+      bestStreak: 0,
+      lastCompletedDateUtc: null,
+      lastCompletedAtUtc: null,
       createdAtUtc: '2026-06-19T12:00:00Z',
       updatedAtUtc: '2026-06-19T12:00:00Z'
     })

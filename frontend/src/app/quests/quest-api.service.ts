@@ -23,6 +23,10 @@ export type QuestResponse = Readonly<{
   completedToday: boolean;
   completedTodayXpAwarded: number | null;
   completedTodayAtUtc: string | null;
+  currentStreak: number;
+  bestStreak: number;
+  lastCompletedDateUtc: string | null;
+  lastCompletedAtUtc: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
 }>;
@@ -36,6 +40,7 @@ export type QuestCompletionResponse = Readonly<{
   xpAwarded: number;
   wasAlreadyCompleted: boolean;
   heroProfile: HeroProfile;
+  quest: QuestResponse;
 }>;
 
 export type QuestUpsertRequest = Readonly<{

@@ -52,6 +52,9 @@ export type Quest = PrototypeQuest &
     isArchived?: boolean;
     completedTodayAtUtc?: string;
     completedTodayXpAwarded?: number;
+    bestStreak?: number;
+    lastCompletedDateUtc?: string;
+    lastCompletedAtUtc?: string;
     xpAwardedJustNow?: number;
     createdAtUtc?: string;
     updatedAtUtc?: string;

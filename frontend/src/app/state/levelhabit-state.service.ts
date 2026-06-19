@@ -384,16 +384,16 @@ export class LevelHabitStateService {
 
     return this.questApi.complete(id).pipe(
       tap((completion) => this.auth.updateHeroProfile(completion.heroProfile)),
-      map((completion) => ({
-        ...quest,
-        completed: true,
-        xp: completion.xpAwarded,
-        completedTodayAtUtc: completion.completedAtUtc,
-        completedTodayXpAwarded: completion.xpAwarded,
-        ...(completion.wasAlreadyCompleted
-          ? {}
-          : { xpAwardedJustNow: completion.xpAwarded })
-      })),
+      map((completion) => {
+        const completedQuest = this.mapPersistedQuest(completion.quest);
+
+        return {
+          ...completedQuest,
+          ...(completion.wasAlreadyCompleted
+            ? {}
+            : { xpAwardedJustNow: completion.xpAwarded })
+        };
+      }),
       tap((completedQuest) => {
         this.persistedQuests.update((quests) =>
           quests.map((candidate) =>
@@ -558,24 +558,31 @@ export class LevelHabitStateService {
       summary: response.description || 'No description yet.',
       cadence: response.frequency,
       xp: response.xpReward,
-      streak: 0,
+      streak: response.currentStreak,
       difficulty: response.difficulty,
       accent: this.accentForCategory(response.category),
       completed: response.completedToday,
       isArchived: response.isArchived,
+      bestStreak: response.bestStreak,
       createdAtUtc: response.createdAtUtc,
       updatedAtUtc: response.updatedAtUtc
     };
 
-    return response.completedTodayAtUtc
-      ? {
-          ...quest,
-          completedTodayAtUtc: response.completedTodayAtUtc,
-          ...(response.completedTodayXpAwarded === null
-            ? {}
-            : { completedTodayXpAwarded: response.completedTodayXpAwarded })
-        }
-      : quest;
+    return {
+      ...quest,
+      ...(response.completedTodayAtUtc === null
+        ? {}
+        : { completedTodayAtUtc: response.completedTodayAtUtc }),
+      ...(response.completedTodayXpAwarded === null
+        ? {}
+        : { completedTodayXpAwarded: response.completedTodayXpAwarded }),
+      ...(response.lastCompletedDateUtc === null
+        ? {}
+        : { lastCompletedDateUtc: response.lastCompletedDateUtc }),
+      ...(response.lastCompletedAtUtc === null
+        ? {}
+        : { lastCompletedAtUtc: response.lastCompletedAtUtc })
+    };
   }
 
   private accentForCategory(category: QuestResponse['category']): Quest['accent'] {

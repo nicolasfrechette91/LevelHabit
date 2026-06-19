@@ -24,6 +24,10 @@ const QUEST_RESPONSE: QuestResponse = {
   completedToday: false,
   completedTodayXpAwarded: null,
   completedTodayAtUtc: null,
+  currentStreak: 3,
+  bestStreak: 7,
+  lastCompletedDateUtc: '2026-06-17',
+  lastCompletedAtUtc: '2026-06-17T13:00:00Z',
   createdAtUtc: '2026-06-18T12:00:00Z',
   updatedAtUtc: '2026-06-18T12:00:00Z'
 };
@@ -46,6 +50,15 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
     xpToNextLevel: 80,
     currentStreak: 0,
     createdAtUtc: '2026-06-17T20:00:00Z'
+  },
+  quest: {
+    ...QUEST_RESPONSE,
+    completedToday: true,
+    completedTodayXpAwarded: 20,
+    completedTodayAtUtc: '2026-06-18T13:00:00Z',
+    currentStreak: 4,
+    lastCompletedDateUtc: '2026-06-18',
+    lastCompletedAtUtc: '2026-06-18T13:00:00Z'
   }
 };
 

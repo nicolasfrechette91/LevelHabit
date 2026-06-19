@@ -105,9 +105,7 @@
                         <span class="small fw-bold text-success d-block mt-1">+{{ quest.xpAwardedJustNow }} XP awarded</span>
                       }
                     </div>
-                    @if (!game.usesQuestApi()) {
-                      <span class="badge rounded-pill streak-badge">{{ quest.streak }}d</span>
-                    }
+                    <span class="badge rounded-pill streak-badge">{{ quest.streak }}d</span>
                   </div>
                   }
                 }
@@ -129,7 +127,12 @@
                     @if (quest.xp > 0) {
                       <span class="badge rounded-pill text-bg-light">{{ quest.xp }} XP</span>
                     }
-                    @if (!game.usesQuestApi()) {
+                    @if (game.usesQuestApi()) {
+                      <span class="badge rounded-pill text-bg-light">{{ quest.streak }}-day streak</span>
+                      @if (quest.bestStreak !== undefined) {
+                        <span class="badge rounded-pill text-bg-light">Best: {{ quest.bestStreak }}</span>
+                      }
+                    } @else {
                       <span class="badge rounded-pill text-bg-light">{{ quest.streak }} day streak</span>
                     }
                   </div>
@@ -331,7 +334,12 @@
                   <p class="lh-muted mb-0">{{ quest.summary }}</p>
                   <div class="d-flex flex-wrap gap-2 mt-auto pt-2">
                     <span class="badge rounded-pill text-bg-light">{{ quest.cadence }}</span>
-                    @if (!game.usesQuestApi()) {
+                    @if (game.usesQuestApi()) {
+                      <span class="badge rounded-pill text-bg-light">{{ quest.streak }}-day streak</span>
+                      @if (quest.bestStreak !== undefined) {
+                        <span class="badge rounded-pill text-bg-light">Best: {{ quest.bestStreak }}</span>
+                      }
+                    } @else {
                       <span class="badge rounded-pill text-bg-light">{{ quest.streak }} day streak</span>
                     }
                     @if (quest.xp > 0) {

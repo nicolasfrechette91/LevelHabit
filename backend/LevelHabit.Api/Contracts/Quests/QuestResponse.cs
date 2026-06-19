@@ -13,5 +13,9 @@ public sealed record QuestResponse(
     bool CompletedToday,
     int? CompletedTodayXpAwarded,
     DateTimeOffset? CompletedTodayAtUtc,
+    int CurrentStreak,
+    int BestStreak,
+    DateOnly? LastCompletedDateUtc,
+    DateTimeOffset? LastCompletedAtUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);

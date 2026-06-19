@@ -102,7 +102,12 @@ public sealed class QuestService(
         return MapQuest(
             quest,
             completedTodayAtUtc: null,
-            completedTodayXpAwarded: null);
+            completedTodayXpAwarded: null,
+            streak: new QuestStreak(
+                CurrentStreak: 0,
+                BestStreak: 0,
+                LastCompletedDateUtc: null,
+                LastCompletedAtUtc: null));
     }
 
     public async Task<QuestResponse> UpdateAsync(
@@ -167,10 +172,13 @@ public sealed class QuestService(
                 asNoTracking: true,
                 cancellationToken);
 
+            QuestResponse questResponse = await MapQuestAsync(userId, quest, cancellationToken);
+
             return MapCompletion(
                 existingCompletion,
                 existingHeroProfile,
-                wasAlreadyCompleted: true);
+                wasAlreadyCompleted: true,
+                quest: questResponse);
         }
 
         HeroProfile heroProfile = await FindHeroProfileAsync(
@@ -224,19 +232,28 @@ public sealed class QuestService(
                     asNoTracking: true,
                     cancellationToken);
 
+                QuestResponse questResponse = await MapQuestAsync(userId, quest, cancellationToken);
+
                 return MapCompletion(
                     existingCompletion,
                     existingHeroProfile,
-                    wasAlreadyCompleted: true);
+                    wasAlreadyCompleted: true,
+                    quest: questResponse);
             }
 
             throw;
         }
 
+        QuestResponse completedQuestResponse = await MapQuestAsync(
+            userId,
+            quest,
+            cancellationToken);
+
         return MapCompletion(
             completion,
             heroProfile,
-            wasAlreadyCompleted: false);
+            wasAlreadyCompleted: false,
+            quest: completedQuestResponse);
     }
 
     public async Task ArchiveAsync(
@@ -321,42 +338,45 @@ public sealed class QuestService(
 
         DateOnly todayUtc = GetTodayUtc();
         Guid[] questIds = quests.Select(quest => quest.Id).ToArray();
-        Dictionary<Guid, QuestCompletionToday> completionsToday = await dbContext.QuestCompletions
+        List<QuestCompletionSummary> completions = await dbContext.QuestCompletions
             .AsNoTracking()
             .Where(completion =>
                 completion.UserId == userId
-                && completion.CompletionDateUtc == todayUtc
                 && questIds.Contains(completion.QuestId))
-            .Select(completion => new
-            {
+            .Select(completion => new QuestCompletionSummary(
                 completion.QuestId,
+                completion.CompletionDateUtc,
                 completion.CompletedAtUtc,
                 completion.XpAwarded
-            })
-            .ToDictionaryAsync(
-                completion => completion.QuestId,
-                completion => new QuestCompletionToday(
-                    completion.CompletedAtUtc,
-                    completion.XpAwarded),
-                cancellationToken);
+            ))
+            .ToListAsync(cancellationToken);
+
+        Dictionary<Guid, List<QuestCompletionSummary>> completionsByQuestId = completions
+            .GroupBy(completion => completion.QuestId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.ToList());
 
         return quests
             .Select(quest =>
             {
-                if (!completionsToday.TryGetValue(
-                    quest.Id,
-                    out QuestCompletionToday? completionToday))
-                {
-                    return MapQuest(
-                        quest,
-                        completedTodayAtUtc: null,
-                        completedTodayXpAwarded: null);
-                }
+                List<QuestCompletionSummary> questCompletions =
+                    completionsByQuestId.GetValueOrDefault(quest.Id) ?? [];
+                QuestCompletionSummary? completionToday = questCompletions
+                    .Where(completion => completion.CompletionDateUtc == todayUtc)
+                    .OrderByDescending(completion => completion.CompletedAtUtc)
+                    .FirstOrDefault();
+                QuestStreak streak = QuestStreakCalculator.Calculate(
+                    questCompletions.Select(completion => new QuestCompletionStreakEntry(
+                        completion.CompletionDateUtc,
+                        completion.CompletedAtUtc)),
+                    todayUtc);
 
                 return MapQuest(
                     quest,
-                    completionToday.CompletedAtUtc,
-                    completionToday.XpAwarded);
+                    completionToday?.CompletedAtUtc,
+                    completionToday?.XpAwarded,
+                    streak);
             })
             .ToList();
     }
@@ -367,24 +387,124 @@ public sealed class QuestService(
         CancellationToken cancellationToken)
     {
         DateOnly todayUtc = GetTodayUtc();
-        var completionToday = await dbContext.QuestCompletions
+        List<QuestCompletionSummary> completions = await dbContext.QuestCompletions
             .AsNoTracking()
             .Where(completion =>
                 completion.UserId == userId
-                && completion.QuestId == quest.Id
-                && completion.CompletionDateUtc == todayUtc)
-            .Select(completion => new
-            {
+                && completion.QuestId == quest.Id)
+            .Select(completion => new QuestCompletionSummary(
+                completion.QuestId,
+                completion.CompletionDateUtc,
                 completion.CompletedAtUtc,
-                completion.XpAwarded
-            })
-            .SingleOrDefaultAsync(cancellationToken);
+                completion.XpAwarded))
+            .ToListAsync(cancellationToken);
+
+        QuestCompletionSummary? completionToday = completions
+            .Where(completion => completion.CompletionDateUtc == todayUtc)
+            .OrderByDescending(completion => completion.CompletedAtUtc)
+            .FirstOrDefault();
+        QuestStreak streak = QuestStreakCalculator.Calculate(
+            completions.Select(completion => new QuestCompletionStreakEntry(
+                completion.CompletionDateUtc,
+                completion.CompletedAtUtc)),
+            todayUtc);
 
         return MapQuest(
             quest,
             completionToday?.CompletedAtUtc,
-            completionToday?.XpAwarded);
+            completionToday?.XpAwarded,
+            streak);
     }
+
+    private static QuestResponse MapQuest(
+        Quest quest,
+        DateTimeOffset? completedTodayAtUtc,
+        int? completedTodayXpAwarded,
+        QuestStreak streak)
+    {
+        return new QuestResponse(
+            Id: quest.Id,
+            UserId: quest.UserId,
+            Title: quest.Title,
+            Description: quest.Description,
+            Category: quest.Category,
+            Difficulty: quest.Difficulty,
+            Frequency: quest.Frequency,
+            XpReward: QuestXpRewards.GetRewardForDifficulty(quest.Difficulty),
+            IsArchived: quest.IsArchived,
+            CompletedToday: completedTodayAtUtc.HasValue,
+            CompletedTodayXpAwarded: completedTodayXpAwarded,
+            CompletedTodayAtUtc: completedTodayAtUtc,
+            CurrentStreak: streak.CurrentStreak,
+            BestStreak: streak.BestStreak,
+            LastCompletedDateUtc: streak.LastCompletedDateUtc,
+            LastCompletedAtUtc: streak.LastCompletedAtUtc,
+            CreatedAtUtc: quest.CreatedAtUtc,
+            UpdatedAtUtc: quest.UpdatedAtUtc);
+    }
+
+    private static QuestCompletionResponse MapCompletion(
+        QuestCompletion completion,
+        HeroProfile heroProfile,
+        bool wasAlreadyCompleted,
+        QuestResponse quest)
+    {
+        return new QuestCompletionResponse(
+            Id: completion.Id,
+            QuestId: completion.QuestId,
+            UserId: completion.UserId,
+            CompletionDateUtc: completion.CompletionDateUtc,
+            CompletedAtUtc: completion.CompletedAtUtc,
+            XpAwarded: completion.XpAwarded,
+            WasAlreadyCompleted: wasAlreadyCompleted,
+            HeroProfile: MapHeroProfile(heroProfile),
+            Quest: quest);
+    }
+
+    private static HeroProfileResponse MapHeroProfile(HeroProfile heroProfile)
+    {
+        HeroProgress progress = HeroProgressCalculator.Calculate(heroProfile.TotalXp);
+
+        return new HeroProfileResponse(
+            Id: heroProfile.Id,
+            HeroName: heroProfile.HeroName,
+            Level: progress.Level,
+            TotalXp: progress.TotalXp,
+            XpInCurrentLevel: progress.XpInCurrentLevel,
+            XpRequiredForNextLevel: progress.XpRequiredForNextLevel,
+            XpToNextLevel: progress.XpToNextLevel,
+            CurrentStreak: heroProfile.CurrentStreak,
+            CreatedAtUtc: heroProfile.CreatedAtUtc);
+    }
+
+    private static string Clean(string value) => value.Trim();
+
+    private static string Canonicalize(string value, HashSet<string> allowedValues)
+    {
+        return allowedValues.Single(allowedValue =>
+            string.Equals(allowedValue, value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static ApiException QuestNotFound()
+    {
+        return new ApiException(
+            StatusCodes.Status404NotFound,
+            "Quest not found",
+            "The requested quest could not be found.");
+    }
+
+    private sealed record CleanQuestInput(
+        string Title,
+        string Description,
+        string Category,
+        string Difficulty,
+        string Frequency);
+
+    private sealed record QuestCompletionSummary(
+        Guid QuestId,
+        DateOnly CompletionDateUtc,
+        DateTimeOffset CompletedAtUtc,
+        int XpAwarded);
 
     private static CleanQuestInput CleanAndValidate(CreateQuestRequest request)
     {
@@ -489,85 +609,4 @@ public sealed class QuestService(
     {
         return DateOnly.FromDateTime(timestamp.UtcDateTime);
     }
-
-    private static QuestResponse MapQuest(
-        Quest quest,
-        DateTimeOffset? completedTodayAtUtc,
-        int? completedTodayXpAwarded)
-    {
-        return new QuestResponse(
-            Id: quest.Id,
-            UserId: quest.UserId,
-            Title: quest.Title,
-            Description: quest.Description,
-            Category: quest.Category,
-            Difficulty: quest.Difficulty,
-            Frequency: quest.Frequency,
-            XpReward: QuestXpRewards.GetRewardForDifficulty(quest.Difficulty),
-            IsArchived: quest.IsArchived,
-            CompletedToday: completedTodayAtUtc.HasValue,
-            CompletedTodayXpAwarded: completedTodayXpAwarded,
-            CompletedTodayAtUtc: completedTodayAtUtc,
-            CreatedAtUtc: quest.CreatedAtUtc,
-            UpdatedAtUtc: quest.UpdatedAtUtc);
-    }
-
-    private static QuestCompletionResponse MapCompletion(
-        QuestCompletion completion,
-        HeroProfile heroProfile,
-        bool wasAlreadyCompleted)
-    {
-        return new QuestCompletionResponse(
-            Id: completion.Id,
-            QuestId: completion.QuestId,
-            UserId: completion.UserId,
-            CompletionDateUtc: completion.CompletionDateUtc,
-            CompletedAtUtc: completion.CompletedAtUtc,
-            XpAwarded: completion.XpAwarded,
-            WasAlreadyCompleted: wasAlreadyCompleted,
-            HeroProfile: MapHeroProfile(heroProfile));
-    }
-
-    private static HeroProfileResponse MapHeroProfile(HeroProfile heroProfile)
-    {
-        HeroProgress progress = HeroProgressCalculator.Calculate(heroProfile.TotalXp);
-
-        return new HeroProfileResponse(
-            Id: heroProfile.Id,
-            HeroName: heroProfile.HeroName,
-            Level: progress.Level,
-            TotalXp: progress.TotalXp,
-            XpInCurrentLevel: progress.XpInCurrentLevel,
-            XpRequiredForNextLevel: progress.XpRequiredForNextLevel,
-            XpToNextLevel: progress.XpToNextLevel,
-            CurrentStreak: heroProfile.CurrentStreak,
-            CreatedAtUtc: heroProfile.CreatedAtUtc);
-    }
-
-    private static string Clean(string value) => value.Trim();
-
-    private static string Canonicalize(string value, HashSet<string> allowedValues)
-    {
-        return allowedValues.Single(allowedValue =>
-            string.Equals(allowedValue, value, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static ApiException QuestNotFound()
-    {
-        return new ApiException(
-            StatusCodes.Status404NotFound,
-            "Quest not found",
-            "The requested quest could not be found.");
-    }
-
-    private sealed record CleanQuestInput(
-        string Title,
-        string Description,
-        string Category,
-        string Difficulty,
-        string Frequency);
-
-    private sealed record QuestCompletionToday(
-        DateTimeOffset CompletedAtUtc,
-        int XpAwarded);
 }

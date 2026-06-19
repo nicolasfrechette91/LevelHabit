@@ -158,6 +158,10 @@ public sealed class QuestServiceTests
         Assert.Equal(harness.Time.GetUtcNow(), completion.CompletedAtUtc);
         Assert.Equal(10, completion.XpAwarded);
         Assert.False(completion.WasAlreadyCompleted);
+        Assert.Equal(1, completion.Quest.CurrentStreak);
+        Assert.Equal(1, completion.Quest.BestStreak);
+        Assert.Equal(new DateOnly(2026, 6, 18), completion.Quest.LastCompletedDateUtc);
+        Assert.Equal(completion.CompletedAtUtc, completion.Quest.LastCompletedAtUtc);
 
         QuestCompletion storedCompletion = await harness.DbContext.QuestCompletions.SingleAsync();
         Assert.Equal(completion.Id, storedCompletion.Id);
@@ -173,6 +177,78 @@ public sealed class QuestServiceTests
         Assert.True(loadedQuest.CompletedToday);
         Assert.Equal(10, loadedQuest.CompletedTodayXpAwarded);
         Assert.Equal(completion.CompletedAtUtc, loadedQuest.CompletedTodayAtUtc);
+        Assert.Equal(completion.Quest.CurrentStreak, loadedQuest.CurrentStreak);
+        Assert.Equal(completion.Quest.BestStreak, loadedQuest.BestStreak);
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_increases_quest_streak_for_consecutive_completion_days()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero));
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(userId, "Daily practice");
+
+        await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero));
+        await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero));
+        QuestCompletionResponse completion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.Equal(3, completion.Quest.CurrentStreak);
+        Assert.Equal(3, completion.Quest.BestStreak);
+        Assert.Equal(new DateOnly(2026, 6, 18), completion.Quest.LastCompletedDateUtc);
+    }
+
+    [Fact]
+    public async Task GetAsync_keeps_yesterday_streak_active_and_resets_after_missed_day()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero));
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(userId, "Daily reading");
+
+        await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero));
+        await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero));
+        QuestResponse activeStreak = await harness.Service.GetAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.False(activeStreak.CompletedToday);
+        Assert.Equal(2, activeStreak.CurrentStreak);
+        Assert.Equal(2, activeStreak.BestStreak);
+        Assert.Equal(new DateOnly(2026, 6, 17), activeStreak.LastCompletedDateUtc);
+
+        harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 19, 12, 0, 0, TimeSpan.Zero));
+        QuestResponse resetStreak = await harness.Service.GetAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.Equal(0, resetStreak.CurrentStreak);
+        Assert.Equal(2, resetStreak.BestStreak);
     }
 
     [Theory]
@@ -279,11 +355,41 @@ public sealed class QuestServiceTests
         Assert.Equal(firstCompletion.CompletedAtUtc, duplicateCompletion.CompletedAtUtc);
         Assert.Equal(10, duplicateCompletion.XpAwarded);
         Assert.True(duplicateCompletion.WasAlreadyCompleted);
+        Assert.Equal(1, duplicateCompletion.Quest.CurrentStreak);
+        Assert.Equal(1, duplicateCompletion.Quest.BestStreak);
         Assert.Equal(1, await harness.DbContext.QuestCompletions.CountAsync());
 
         HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
         Assert.Equal(10, storedProfile.TotalXp);
         Assert.Equal(1, storedProfile.Level);
+    }
+
+    [Fact]
+    public async Task GetAsync_uses_only_the_authenticated_users_completions_for_streaks()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid firstUserId = await harness.AddUserAsync("first@example.com");
+        Guid secondUserId = await harness.AddUserAsync("second@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(firstUserId, "Private streak");
+
+        harness.DbContext.QuestCompletions.Add(new QuestCompletion
+        {
+            UserId = secondUserId,
+            QuestId = created.Id,
+            CompletionDateUtc = new DateOnly(2026, 6, 18),
+            CompletedAtUtc = harness.Time.GetUtcNow(),
+            XpAwarded = 35
+        });
+        await harness.DbContext.SaveChangesAsync();
+
+        QuestResponse firstUserQuest = await harness.Service.GetAsync(
+            harness.CreatePrincipal(firstUserId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.False(firstUserQuest.CompletedToday);
+        Assert.Equal(0, firstUserQuest.CurrentStreak);
+        Assert.Equal(0, firstUserQuest.BestStreak);
     }
 
     [Fact]
@@ -331,6 +437,43 @@ public sealed class QuestServiceTests
 
         HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
         Assert.Equal(0, storedProfile.TotalXp);
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_does_not_add_streak_progress_to_archived_quest()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(userId, "Archived streak");
+
+        QuestCompletionResponse firstCompletion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        await harness.Service.ArchiveAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        harness.Time.Advance(TimeSpan.FromDays(1));
+
+        ApiException exception = await Assert.ThrowsAsync<ApiException>(() =>
+            harness.Service.CompleteTodayAsync(
+                harness.CreatePrincipal(userId),
+                created.Id,
+                CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
+        Assert.Equal(1, await harness.DbContext.QuestCompletions.CountAsync());
+
+        QuestResponse archivedQuest = await harness.Service.GetAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.Equal(firstCompletion.Quest.CurrentStreak, archivedQuest.CurrentStreak);
+        Assert.Equal(firstCompletion.Quest.BestStreak, archivedQuest.BestStreak);
     }
 
     [Fact]
@@ -476,6 +619,11 @@ public sealed class QuestServiceTests
         public void Advance(TimeSpan duration)
         {
             currentUtc = currentUtc.Add(duration);
+        }
+
+        public void SetUtcNow(DateTimeOffset timestamp)
+        {
+            currentUtc = timestamp.ToUniversalTime();
         }
     }
 }
