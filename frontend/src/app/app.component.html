@@ -19,12 +19,18 @@
               routerLinkActive="active"
               ariaCurrentWhenActive="page"
               [routerLinkActiveOptions]="{ exact: true }"
+              [attr.data-testid]="'nav-' + item.path.slice(1)"
             >
               {{ item.label }}
             </a>
           }
           @if (auth.isAuthenticated()) {
-            <button type="button" class="nav-link logout-button rounded-3 px-3 py-2" (click)="logout()">
+            <button
+              type="button"
+              class="nav-link logout-button rounded-3 px-3 py-2"
+              data-testid="logout-button"
+              (click)="logout()"
+            >
               Logout
             </button>
           }

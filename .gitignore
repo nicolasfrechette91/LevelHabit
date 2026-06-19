@@ -441,6 +441,8 @@ frontend/coverage/
 frontend/.npm/
 frontend/.npm-cache/
 frontend/.vite/
+frontend/playwright-report/
+frontend/test-results/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

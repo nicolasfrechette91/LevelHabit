@@ -19,6 +19,7 @@
               <input
                 id="register-email"
                 class="form-control form-control-lg"
+                data-testid="register-email-input"
                 [class.is-invalid]="shouldShowRegisterError(registerForm.controls.email)"
                 [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.email) ? 'true' : null"
                 [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.email) ? 'register-email-error' : null"
@@ -44,6 +45,7 @@
               <input
                 id="register-password"
                 class="form-control form-control-lg"
+                data-testid="register-password-input"
                 [class.is-invalid]="shouldShowRegisterError(registerForm.controls.password)"
                 [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.password) ? 'true' : null"
                 [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.password) ? 'register-password-error' : null"
@@ -70,6 +72,7 @@
               <input
                 id="display-name"
                 class="form-control form-control-lg"
+                data-testid="register-display-name-input"
                 [class.is-invalid]="shouldShowRegisterError(registerForm.controls.displayName)"
                 [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.displayName) ? 'true' : null"
                 [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.displayName) ? 'display-name-error' : null"
@@ -99,6 +102,7 @@
               <input
                 id="hero-name"
                 class="form-control form-control-lg"
+                data-testid="register-hero-name-input"
                 [class.is-invalid]="shouldShowRegisterError(registerForm.controls.heroName)"
                 [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.heroName) ? 'true' : null"
                 [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.heroName) ? 'hero-name-error' : null"
@@ -126,7 +130,12 @@
               <p class="alert alert-danger mb-0" role="alert">{{ errorMessage() }}</p>
             }
 
-            <button type="submit" class="btn btn-lh-gold btn-lg fw-bold" [disabled]="pending()">
+            <button
+              type="submit"
+              class="btn btn-lh-gold btn-lg fw-bold"
+              data-testid="register-submit-button"
+              [disabled]="pending()"
+            >
               {{ pending() ? 'Creating...' : 'Create account' }}
             </button>
 
@@ -139,6 +148,7 @@
               <input
                 id="login-email"
                 class="form-control form-control-lg"
+                data-testid="login-email-input"
                 [class.is-invalid]="shouldShowLoginError(loginForm.controls.email)"
                 [attr.aria-invalid]="shouldShowLoginError(loginForm.controls.email) ? 'true' : null"
                 [attr.aria-describedby]="shouldShowLoginError(loginForm.controls.email) ? 'login-email-error' : null"
@@ -164,6 +174,7 @@
               <input
                 id="login-password"
                 class="form-control form-control-lg"
+                data-testid="login-password-input"
                 [class.is-invalid]="shouldShowLoginError(loginForm.controls.password)"
                 [attr.aria-invalid]="shouldShowLoginError(loginForm.controls.password) ? 'true' : null"
                 [attr.aria-describedby]="shouldShowLoginError(loginForm.controls.password) ? 'login-password-error' : null"
@@ -184,7 +195,12 @@
               <p class="alert alert-danger mb-0" role="alert">{{ errorMessage() }}</p>
             }
 
-            <button type="submit" class="btn btn-lh-gold btn-lg fw-bold" [disabled]="pending()">
+            <button
+              type="submit"
+              class="btn btn-lh-gold btn-lg fw-bold"
+              data-testid="login-submit-button"
+              [disabled]="pending()"
+            >
               {{ pending() ? 'Signing in...' : 'Sign in' }}
             </button>
 

@@ -290,6 +290,18 @@ npm test
 npm run build -- --configuration production
 ```
 
+Local Playwright E2E tests:
+
+```powershell
+cd frontend
+npm run e2e:install
+npm run e2e
+```
+
+See [docs/e2e-testing.md](docs/e2e-testing.md) for the required local Docker,
+backend API, migrations, and Playwright setup. The E2E suite is local/manual and
+is not part of the required GitHub Actions workflow.
+
 GitHub Pages production build:
 
 ```powershell
@@ -394,5 +406,6 @@ Future improvements:
 ## Documentation
 
 - [Portfolio case study](docs/case-study.md)
+- [End-to-end testing guide](docs/e2e-testing.md)
 - [Angular frontend review notes](docs/frontend-angular-review.md)
 - [C# backend instructions](docs/csharp-best-practices.instructions.md)
