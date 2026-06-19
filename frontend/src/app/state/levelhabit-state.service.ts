@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Observable, catchError, finalize, map, of, tap, throwError } from 'rxjs';
 
 import {
@@ -64,6 +64,7 @@ export class LevelHabitStateService {
   private readonly analyticsLoadedSignal = signal(false);
   private readonly analyticsLoadingSignal = signal(false);
   private readonly analyticsErrorSignal = signal<string | null>(null);
+  private activeApiUserId: string | null = null;
 
   readonly availableTitles = PROTOTYPE_TITLES;
   readonly questsLoading = this.questsLoadingSignal.asReadonly();
@@ -79,7 +80,7 @@ export class LevelHabitStateService {
   );
 
   readonly quests = computed<Quest[]>(() => {
-    if (this.usesQuestApi()) {
+    if (this.auth.authRequired) {
       return this.persistedQuests();
     }
 
@@ -112,25 +113,35 @@ export class LevelHabitStateService {
   readonly heroProfile = computed(() => this.auth.heroProfile());
 
   readonly totalXp = computed(() =>
-    this.heroProfile()?.totalXp ?? BASE_XP + this.earnedXp()
+    this.heroProfile()?.totalXp
+      ?? (this.auth.authRequired ? 0 : BASE_XP + this.earnedXp())
   );
 
   readonly level = computed(() =>
-    this.heroProfile()?.level ?? (this.totalXp() >= NEXT_LEVEL_XP ? 8 : 7)
+    this.heroProfile()?.level
+      ?? (this.auth.authRequired
+        ? 1
+        : this.totalXp() >= NEXT_LEVEL_XP ? 8 : 7)
   );
 
   readonly levelTitle = computed(() =>
-    this.heroProfile()?.heroName ?? this.state().selectedTitle
+    this.heroProfile()?.heroName
+      ?? (this.auth.authRequired ? 'Hero' : this.state().selectedTitle)
   );
 
   readonly nextLevelLabel = computed(() =>
     this.heroProfile()
       ? `Level ${this.level() + 1}`
-      : this.level() >= 8 ? 'Level 9' : 'Level 8'
+      : this.auth.authRequired
+        ? 'Level 2'
+        : this.level() >= 8 ? 'Level 9' : 'Level 8'
   );
 
   readonly xpToNextLevel = computed(() =>
-    this.heroProfile()?.xpToNextLevel ?? Math.max(0, NEXT_LEVEL_XP - this.totalXp())
+    this.heroProfile()?.xpToNextLevel
+      ?? (this.auth.authRequired
+        ? 100
+        : Math.max(0, NEXT_LEVEL_XP - this.totalXp()))
   );
 
   readonly levelProgress = computed(() => {
@@ -152,6 +163,10 @@ export class LevelHabitStateService {
       );
     }
 
+    if (this.auth.authRequired) {
+      return 0;
+    }
+
     const progress = this.totalXp() - CURRENT_LEVEL_XP;
     const span = NEXT_LEVEL_XP - CURRENT_LEVEL_XP;
 
@@ -165,11 +180,16 @@ export class LevelHabitStateService {
       return profile.xpInCurrentLevel;
     }
 
+    if (this.auth.authRequired) {
+      return 0;
+    }
+
     return Math.max(0, this.totalXp() - CURRENT_LEVEL_XP);
   });
 
   readonly xpRequiredForNextLevel = computed(() =>
-    this.heroProfile()?.xpRequiredForNextLevel ?? NEXT_LEVEL_XP - CURRENT_LEVEL_XP
+    this.heroProfile()?.xpRequiredForNextLevel
+      ?? (this.auth.authRequired ? 100 : NEXT_LEVEL_XP - CURRENT_LEVEL_XP)
   );
 
   readonly currentStreak = computed(() => {
@@ -177,6 +197,10 @@ export class LevelHabitStateService {
 
     if (profile) {
       return profile.currentStreak;
+    }
+
+    if (this.auth.authRequired) {
+      return 0;
     }
 
     const completedStreaks = this.completedQuests().map((quest) => quest.streak);
@@ -240,7 +264,7 @@ export class LevelHabitStateService {
   });
 
   readonly achievements = computed<Achievement[]>(() => {
-    if (this.usesQuestApi()) {
+    if (this.auth.authRequired) {
       return this.persistedAchievements();
     }
 
@@ -301,8 +325,17 @@ export class LevelHabitStateService {
     this.achievements().filter((achievement) => achievement.unlocked)
   );
 
+  constructor() {
+    effect(() => {
+      this.ensureApiUserBoundary(this.currentApiUserId());
+    });
+  }
+
   loadQuests(): void {
-    if (!this.usesQuestApi() || this.questsLoadedSignal() || this.questsLoadingSignal()) {
+    const apiUserId = this.currentApiUserId();
+    this.ensureApiUserBoundary(apiUserId);
+
+    if (!apiUserId || this.questsLoadedSignal() || this.questsLoadingSignal()) {
       return;
     }
 
@@ -311,13 +344,25 @@ export class LevelHabitStateService {
 
     this.questApi
       .list(true)
-      .pipe(finalize(() => this.questsLoadingSignal.set(false)))
+      .pipe(finalize(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.questsLoadingSignal.set(false);
+        }
+      }))
       .subscribe({
         next: (quests) => {
+          if (!this.isCurrentApiUser(apiUserId)) {
+            return;
+          }
+
           this.persistedQuests.set(quests.map((quest) => this.mapPersistedQuest(quest)));
           this.questsLoadedSignal.set(true);
         },
         error: (error: unknown) => {
+          if (!this.isCurrentApiUser(apiUserId)) {
+            return;
+          }
+
           this.questErrorSignal.set(
             this.describeQuestError(error, 'Quests could not be loaded.')
           );
@@ -326,8 +371,11 @@ export class LevelHabitStateService {
   }
 
   loadAchievements(force = false): void {
+    const apiUserId = this.currentApiUserId();
+    this.ensureApiUserBoundary(apiUserId);
+
     if (
-      !this.usesQuestApi()
+      !apiUserId
       || (!force && this.achievementsLoadedSignal())
       || this.achievementsLoadingSignal()
     ) {
@@ -339,9 +387,17 @@ export class LevelHabitStateService {
 
     this.achievementApi
       .list()
-      .pipe(finalize(() => this.achievementsLoadingSignal.set(false)))
+      .pipe(finalize(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.achievementsLoadingSignal.set(false);
+        }
+      }))
       .subscribe({
         next: (achievements) => {
+          if (!this.isCurrentApiUser(apiUserId)) {
+            return;
+          }
+
           this.persistedAchievements.set(
             achievements.map((achievement) =>
               this.mapPersistedAchievement(achievement)
@@ -350,6 +406,10 @@ export class LevelHabitStateService {
           this.achievementsLoadedSignal.set(true);
         },
         error: (error: unknown) => {
+          if (!this.isCurrentApiUser(apiUserId)) {
+            return;
+          }
+
           this.achievementErrorSignal.set(
             this.describeAchievementError(
               error,
@@ -361,8 +421,11 @@ export class LevelHabitStateService {
   }
 
   loadAnalytics(force = false): void {
+    const apiUserId = this.currentApiUserId();
+    this.ensureApiUserBoundary(apiUserId);
+
     if (
-      !this.usesQuestApi()
+      !apiUserId
       || (!force && this.analyticsLoadedSignal())
       || this.analyticsLoadingSignal()
     ) {
@@ -374,13 +437,25 @@ export class LevelHabitStateService {
 
     this.analyticsApi
       .summary()
-      .pipe(finalize(() => this.analyticsLoadingSignal.set(false)))
+      .pipe(finalize(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.analyticsLoadingSignal.set(false);
+        }
+      }))
       .subscribe({
         next: (summary) => {
+          if (!this.isCurrentApiUser(apiUserId)) {
+            return;
+          }
+
           this.analyticsSummarySignal.set(summary);
           this.analyticsLoadedSignal.set(true);
         },
         error: (error: unknown) => {
+          if (!this.isCurrentApiUser(apiUserId)) {
+            return;
+          }
+
           this.analyticsErrorSignal.set(
             this.describeAnalyticsError(error, 'Analytics could not be loaded.')
           );
@@ -389,48 +464,97 @@ export class LevelHabitStateService {
   }
 
   createQuest(request: QuestUpsertRequest): Observable<Quest> {
+    const apiUserId = this.currentApiUserId();
+    this.ensureApiUserBoundary(apiUserId);
+
+    if (!apiUserId) {
+      return throwError(() => new Error('A current authenticated user is required.'));
+    }
+
     this.questActionInFlightSignal.set(true);
     this.questErrorSignal.set(null);
 
     return this.questApi.create(request).pipe(
       map((quest) => this.mapPersistedQuest(quest)),
       tap((quest) => {
+        if (!this.isCurrentApiUser(apiUserId)) {
+          return;
+        }
+
         this.persistedQuests.update((quests) => [...quests, quest]);
         this.questsLoadedSignal.set(true);
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<Quest>(error, 'Quest could not be created.')
+        this.captureQuestError<Quest>(
+          error,
+          'Quest could not be created.',
+          apiUserId
+        )
       ),
-      finalize(() => this.questActionInFlightSignal.set(false))
+      finalize(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.questActionInFlightSignal.set(false);
+        }
+      })
     );
   }
 
   updateQuest(id: string, request: QuestUpsertRequest): Observable<Quest> {
+    const apiUserId = this.currentApiUserId();
+    this.ensureApiUserBoundary(apiUserId);
+
+    if (!apiUserId) {
+      return throwError(() => new Error('A current authenticated user is required.'));
+    }
+
     this.questActionInFlightSignal.set(true);
     this.questErrorSignal.set(null);
 
     return this.questApi.update(id, request).pipe(
       map((quest) => this.mapPersistedQuest(quest)),
       tap((updatedQuest) => {
+        if (!this.isCurrentApiUser(apiUserId)) {
+          return;
+        }
+
         this.persistedQuests.update((quests) =>
           quests.map((quest) => quest.id === updatedQuest.id ? updatedQuest : quest)
         );
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<Quest>(error, 'Quest could not be updated.')
+        this.captureQuestError<Quest>(
+          error,
+          'Quest could not be updated.',
+          apiUserId
+        )
       ),
-      finalize(() => this.questActionInFlightSignal.set(false))
+      finalize(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.questActionInFlightSignal.set(false);
+        }
+      })
     );
   }
 
   archiveQuest(id: string): Observable<void> {
+    const apiUserId = this.currentApiUserId();
+    this.ensureApiUserBoundary(apiUserId);
+
+    if (!apiUserId) {
+      return throwError(() => new Error('A current authenticated user is required.'));
+    }
+
     this.questActionInFlightSignal.set(true);
     this.questErrorSignal.set(null);
 
     return this.questApi.archive(id).pipe(
       tap(() => {
+        if (!this.isCurrentApiUser(apiUserId)) {
+          return;
+        }
+
         this.persistedQuests.update((quests) =>
           quests.map((quest) =>
             quest.id === id
@@ -444,9 +568,17 @@ export class LevelHabitStateService {
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<void>(error, 'Quest could not be archived.')
+        this.captureQuestError<void>(
+          error,
+          'Quest could not be archived.',
+          apiUserId
+        )
       ),
-      finalize(() => this.questActionInFlightSignal.set(false))
+      finalize(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.questActionInFlightSignal.set(false);
+        }
+      })
     );
   }
 
@@ -459,6 +591,13 @@ export class LevelHabitStateService {
       return toggledQuest
         ? of(toggledQuest)
         : throwError(() => new Error('Quest not found.'));
+    }
+
+    const apiUserId = this.currentApiUserId();
+    this.ensureApiUserBoundary(apiUserId);
+
+    if (!apiUserId) {
+      return throwError(() => new Error('A current authenticated user is required.'));
     }
 
     const quest = this.persistedQuests().find((candidate) => candidate.id === id);
@@ -477,8 +616,16 @@ export class LevelHabitStateService {
     this.questErrorSignal.set(null);
 
     return this.questApi.complete(id).pipe(
-      tap((completion) => this.auth.updateHeroProfile(completion.heroProfile)),
-      tap(() => this.loadAchievements(true)),
+      tap((completion) => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.auth.updateHeroProfile(completion.heroProfile);
+        }
+      }),
+      tap(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.loadAchievements(true);
+        }
+      }),
       map((completion) => {
         const completedQuest = this.mapPersistedQuest(completion.quest);
 
@@ -490,6 +637,10 @@ export class LevelHabitStateService {
         };
       }),
       tap((completedQuest) => {
+        if (!this.isCurrentApiUser(apiUserId)) {
+          return;
+        }
+
         this.persistedQuests.update((quests) =>
           quests.map((candidate) =>
             candidate.id === completedQuest.id ? completedQuest : candidate
@@ -498,9 +649,17 @@ export class LevelHabitStateService {
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<Quest>(error, 'Quest could not be completed.')
+        this.captureQuestError<Quest>(
+          error,
+          'Quest could not be completed.',
+          apiUserId
+        )
       ),
-      finalize(() => this.setQuestCompletionInFlight(id, false))
+      finalize(() => {
+        if (this.isCurrentApiUser(apiUserId)) {
+          this.setQuestCompletionInFlight(id, false);
+        }
+      })
     );
   }
 
@@ -716,8 +875,52 @@ export class LevelHabitStateService {
     }
   }
 
-  private captureQuestError<T>(error: unknown, fallback: string): Observable<T> {
-    this.questErrorSignal.set(this.describeQuestError(error, fallback));
+  private currentApiUserId(): string | null {
+    if (!this.usesQuestApi()) {
+      return null;
+    }
+
+    return this.auth.user()?.id ?? null;
+  }
+
+  private isCurrentApiUser(apiUserId: string): boolean {
+    return this.currentApiUserId() === apiUserId;
+  }
+
+  private ensureApiUserBoundary(apiUserId: string | null): void {
+    if (apiUserId === this.activeApiUserId) {
+      return;
+    }
+
+    this.activeApiUserId = apiUserId;
+    this.clearAuthenticatedState();
+  }
+
+  private clearAuthenticatedState(): void {
+    this.persistedQuests.set([]);
+    this.questsLoadedSignal.set(false);
+    this.questsLoadingSignal.set(false);
+    this.questActionInFlightSignal.set(false);
+    this.completionActionQuestIdsSignal.set([]);
+    this.questErrorSignal.set(null);
+    this.persistedAchievements.set([]);
+    this.achievementsLoadedSignal.set(false);
+    this.achievementsLoadingSignal.set(false);
+    this.achievementErrorSignal.set(null);
+    this.analyticsSummarySignal.set(null);
+    this.analyticsLoadedSignal.set(false);
+    this.analyticsLoadingSignal.set(false);
+    this.analyticsErrorSignal.set(null);
+  }
+
+  private captureQuestError<T>(
+    error: unknown,
+    fallback: string,
+    apiUserId: string
+  ): Observable<T> {
+    if (this.isCurrentApiUser(apiUserId)) {
+      this.questErrorSignal.set(this.describeQuestError(error, fallback));
+    }
 
     return throwError(() => error);
   }

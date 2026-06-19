@@ -66,6 +66,31 @@ public sealed class QuestServiceTests
     }
 
     [Fact]
+    public async Task ListAsync_does_not_return_another_users_completed_quest()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid firstUserId = await harness.AddUserAsync("first@example.com");
+        Guid secondUserId = await harness.AddUserAsync("second@example.com");
+        QuestResponse drinkWater = await harness.CreateQuestAsync(firstUserId, "Drink Water");
+
+        await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(firstUserId),
+            drinkWater.Id,
+            CancellationToken.None);
+
+        IReadOnlyList<QuestResponse> secondUserQuests = await harness.Service.ListAsync(
+            harness.CreatePrincipal(secondUserId),
+            includeArchived: true,
+            CancellationToken.None);
+
+        Assert.Empty(secondUserQuests);
+
+        HeroProfile secondUserProfile = await harness.DbContext.HeroProfiles
+            .SingleAsync(profile => profile.UserId == secondUserId);
+        Assert.Equal(0, secondUserProfile.TotalXp);
+    }
+
+    [Fact]
     public async Task UpdateAsync_updates_the_authenticated_users_quest()
     {
         using QuestServiceHarness harness = QuestServiceHarness.Create();
@@ -112,6 +137,33 @@ public sealed class QuestServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_returns_not_found_for_another_users_quest()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid firstUserId = await harness.AddUserAsync("first@example.com");
+        Guid secondUserId = await harness.AddUserAsync("second@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(firstUserId, "Private quest");
+
+        ApiException exception = await Assert.ThrowsAsync<ApiException>(() =>
+            harness.Service.UpdateAsync(
+                harness.CreatePrincipal(secondUserId),
+                created.Id,
+                new UpdateQuestRequest(
+                    Title: "Stolen title",
+                    Description: "Should not save.",
+                    Category: "Learning",
+                    Difficulty: "Hard",
+                    Frequency: "Weekly"),
+                CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
+
+        Quest storedQuest = await harness.DbContext.Quests.SingleAsync(
+            quest => quest.Id == created.Id);
+        Assert.Equal("Private quest", storedQuest.Title);
+    }
+
+    [Fact]
     public async Task ArchiveAsync_marks_quest_archived_and_hides_it_from_default_list()
     {
         using QuestServiceHarness harness = QuestServiceHarness.Create();
@@ -138,6 +190,27 @@ public sealed class QuestServiceTests
             CancellationToken.None);
         QuestResponse archivedQuest = Assert.Single(allQuests);
         Assert.True(archivedQuest.IsArchived);
+    }
+
+    [Fact]
+    public async Task ArchiveAsync_returns_not_found_for_another_users_quest()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid firstUserId = await harness.AddUserAsync("first@example.com");
+        Guid secondUserId = await harness.AddUserAsync("second@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(firstUserId, "Private quest");
+
+        ApiException exception = await Assert.ThrowsAsync<ApiException>(() =>
+            harness.Service.ArchiveAsync(
+                harness.CreatePrincipal(secondUserId),
+                created.Id,
+                CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
+
+        Quest storedQuest = await harness.DbContext.Quests.SingleAsync(
+            quest => quest.Id == created.Id);
+        Assert.False(storedQuest.IsArchived);
     }
 
     [Fact]
