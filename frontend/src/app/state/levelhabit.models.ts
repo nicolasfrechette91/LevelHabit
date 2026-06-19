@@ -50,6 +50,7 @@ export type Quest = PrototypeQuest &
     completed: boolean;
     userId?: string;
     isArchived?: boolean;
+    completedTodayAtUtc?: string;
     createdAtUtc?: string;
     updatedAtUtc?: string;
   }>;

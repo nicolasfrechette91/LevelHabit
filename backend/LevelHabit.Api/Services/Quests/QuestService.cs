@@ -53,10 +53,11 @@ public sealed class QuestService(
             query = query.Where(quest => !quest.IsArchived);
         }
 
-        return await query
+        List<Quest> quests = await query
             .OrderBy(quest => quest.CreatedAtUtc)
-            .Select(quest => MapQuest(quest))
             .ToListAsync(cancellationToken);
+
+        return await MapQuestsAsync(userId, quests, cancellationToken);
     }
 
     public async Task<QuestResponse> GetAsync(
@@ -67,7 +68,7 @@ public sealed class QuestService(
         Guid userId = GetCurrentUserId(principal);
         Quest quest = await FindOwnedQuestAsync(userId, questId, cancellationToken);
 
-        return MapQuest(quest);
+        return await MapQuestAsync(userId, quest, cancellationToken);
     }
 
     public async Task<QuestResponse> CreateAsync(
@@ -95,7 +96,7 @@ public sealed class QuestService(
         dbContext.Quests.Add(quest);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapQuest(quest);
+        return MapQuest(quest, completedTodayAtUtc: null);
     }
 
     public async Task<QuestResponse> UpdateAsync(
@@ -123,7 +124,67 @@ public sealed class QuestService(
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return MapQuest(quest);
+        return await MapQuestAsync(userId, quest, cancellationToken);
+    }
+
+    public async Task<QuestCompletionResponse> CompleteTodayAsync(
+        ClaimsPrincipal principal,
+        Guid questId,
+        CancellationToken cancellationToken)
+    {
+        Guid userId = GetCurrentUserId(principal);
+        Quest quest = await FindOwnedQuestAsync(userId, questId, cancellationToken);
+
+        if (quest.IsArchived)
+        {
+            throw QuestNotFound();
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        DateOnly todayUtc = ToUtcDate(now);
+        QuestCompletion? existingCompletion = await FindCompletionAsync(
+            userId,
+            questId,
+            todayUtc,
+            cancellationToken);
+
+        if (existingCompletion is not null)
+        {
+            return MapCompletion(existingCompletion);
+        }
+
+        QuestCompletion completion = new()
+        {
+            UserId = userId,
+            QuestId = quest.Id,
+            CompletionDateUtc = todayUtc,
+            CompletedAtUtc = now
+        };
+
+        dbContext.QuestCompletions.Add(completion);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            dbContext.Entry(completion).State = EntityState.Detached;
+            existingCompletion = await FindCompletionAsync(
+                userId,
+                questId,
+                todayUtc,
+                cancellationToken);
+
+            if (existingCompletion is not null)
+            {
+                return MapCompletion(existingCompletion);
+            }
+
+            throw;
+        }
+
+        return MapCompletion(completion);
     }
 
     public async Task ArchiveAsync(
@@ -156,6 +217,77 @@ public sealed class QuestService(
                 cancellationToken);
 
         return quest ?? throw QuestNotFound();
+    }
+
+    private async Task<QuestCompletion?> FindCompletionAsync(
+        Guid userId,
+        Guid questId,
+        DateOnly completionDateUtc,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.QuestCompletions
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                completion =>
+                    completion.UserId == userId
+                    && completion.QuestId == questId
+                    && completion.CompletionDateUtc == completionDateUtc,
+                cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<QuestResponse>> MapQuestsAsync(
+        Guid userId,
+        IReadOnlyList<Quest> quests,
+        CancellationToken cancellationToken)
+    {
+        if (quests.Count == 0)
+        {
+            return [];
+        }
+
+        DateOnly todayUtc = GetTodayUtc();
+        Guid[] questIds = quests.Select(quest => quest.Id).ToArray();
+        Dictionary<Guid, DateTimeOffset> completionTimes = await dbContext.QuestCompletions
+            .AsNoTracking()
+            .Where(completion =>
+                completion.UserId == userId
+                && completion.CompletionDateUtc == todayUtc
+                && questIds.Contains(completion.QuestId))
+            .ToDictionaryAsync(
+                completion => completion.QuestId,
+                completion => completion.CompletedAtUtc,
+                cancellationToken);
+
+        return quests
+            .Select(quest =>
+            {
+                DateTimeOffset? completedTodayAtUtc = completionTimes.TryGetValue(
+                    quest.Id,
+                    out DateTimeOffset completedAtUtc)
+                    ? completedAtUtc
+                    : null;
+
+                return MapQuest(quest, completedTodayAtUtc);
+            })
+            .ToList();
+    }
+
+    private async Task<QuestResponse> MapQuestAsync(
+        Guid userId,
+        Quest quest,
+        CancellationToken cancellationToken)
+    {
+        DateOnly todayUtc = GetTodayUtc();
+        DateTimeOffset? completedTodayAtUtc = await dbContext.QuestCompletions
+            .AsNoTracking()
+            .Where(completion =>
+                completion.UserId == userId
+                && completion.QuestId == quest.Id
+                && completion.CompletionDateUtc == todayUtc)
+            .Select(completion => (DateTimeOffset?)completion.CompletedAtUtc)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return MapQuest(quest, completedTodayAtUtc);
     }
 
     private static CleanQuestInput CleanAndValidate(CreateQuestRequest request)
@@ -252,7 +384,19 @@ public sealed class QuestService(
         return userId;
     }
 
-    private static QuestResponse MapQuest(Quest quest)
+    private DateOnly GetTodayUtc()
+    {
+        return ToUtcDate(timeProvider.GetUtcNow());
+    }
+
+    private static DateOnly ToUtcDate(DateTimeOffset timestamp)
+    {
+        return DateOnly.FromDateTime(timestamp.UtcDateTime);
+    }
+
+    private static QuestResponse MapQuest(
+        Quest quest,
+        DateTimeOffset? completedTodayAtUtc)
     {
         return new QuestResponse(
             Id: quest.Id,
@@ -263,8 +407,20 @@ public sealed class QuestService(
             Difficulty: quest.Difficulty,
             Frequency: quest.Frequency,
             IsArchived: quest.IsArchived,
+            CompletedToday: completedTodayAtUtc.HasValue,
+            CompletedTodayAtUtc: completedTodayAtUtc,
             CreatedAtUtc: quest.CreatedAtUtc,
             UpdatedAtUtc: quest.UpdatedAtUtc);
+    }
+
+    private static QuestCompletionResponse MapCompletion(QuestCompletion completion)
+    {
+        return new QuestCompletionResponse(
+            Id: completion.Id,
+            QuestId: completion.QuestId,
+            UserId: completion.UserId,
+            CompletionDateUtc: completion.CompletionDateUtc,
+            CompletedAtUtc: completion.CompletedAtUtc);
     }
 
     private static string Clean(string value) => value.Trim();

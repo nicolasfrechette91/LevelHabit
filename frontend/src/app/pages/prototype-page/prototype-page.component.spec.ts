@@ -11,6 +11,7 @@ import { AuthService } from '../../auth/auth.service';
 import type { MeResponse } from '../../auth/auth.models';
 import {
   QuestApiService,
+  type QuestCompletionResponse,
   type QuestResponse,
   type QuestUpsertRequest
 } from '../../quests/quest-api.service';
@@ -37,8 +38,24 @@ const API_QUEST: QuestResponse = {
   difficulty: 'Medium',
   frequency: 'Daily',
   isArchived: false,
+  completedToday: false,
+  completedTodayAtUtc: null,
   createdAtUtc: '2026-06-18T12:00:00Z',
   updatedAtUtc: '2026-06-18T12:00:00Z'
+};
+
+const COMPLETED_API_QUEST: QuestResponse = {
+  ...API_QUEST,
+  completedToday: true,
+  completedTodayAtUtc: '2026-06-18T13:00:00Z'
+};
+
+const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
+  id: '889c6254-b88e-4606-98eb-651453c82382',
+  questId: API_QUEST.id,
+  userId: API_QUEST.userId,
+  completionDateUtc: '2026-06-18',
+  completedAtUtc: '2026-06-18T13:00:00Z'
 };
 
 const CREATED_API_QUEST_ID = '12e799df-aeca-4bd1-a548-f69f3fabd7d';
@@ -224,6 +241,54 @@ describe('Quests API view', () => {
     expect(textContent(nativeElement)).toContain('No quests shown');
   });
 
+  it('completes quests through the API', async () => {
+    const { api, nativeElement, harness } = await renderApiQuestRoute();
+
+    getButtonByText(nativeElement, /^Complete today$/).click();
+    harness.detectChanges();
+
+    expect(api.complete).toHaveBeenCalledWith(API_QUEST.id);
+    expect(textContent(nativeElement)).toContain('Done today');
+    expect(getButtonByText(nativeElement, /^Done today$/).disabled).toBe(true);
+  });
+
+  it('displays completed-today state from the API', async () => {
+    const api = new QuestApiServiceStub([COMPLETED_API_QUEST]);
+    const { nativeElement } = await renderApiQuestRoute(api);
+
+    expect(textContent(nativeElement)).toContain('Done today');
+    expect(getButtonByText(nativeElement, /^Done today$/).disabled).toBe(true);
+  });
+
+  it('does not call the completion API for a quest already completed today', async () => {
+    const api = new QuestApiServiceStub([COMPLETED_API_QUEST]);
+    const { nativeElement, harness } = await renderApiQuestRoute(api);
+
+    getButtonByText(nativeElement, /^Done today$/).click();
+    harness.detectChanges();
+
+    expect(api.complete).not.toHaveBeenCalled();
+  });
+
+  it('shows a friendly error when quest completion fails', async () => {
+    const api = new QuestApiServiceStub();
+    api.complete.mockReturnValueOnce(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 500,
+            statusText: 'Server Error'
+          })
+      )
+    );
+    const { nativeElement, harness } = await renderApiQuestRoute(api);
+
+    getButtonByText(nativeElement, /^Complete today$/).click();
+    harness.detectChanges();
+
+    expect(textContent(nativeElement)).toContain('Quest could not be completed.');
+  });
+
   it('shows a friendly error when the API cannot be reached', async () => {
     const api = new QuestApiServiceStub();
     api.list.mockReturnValueOnce(
@@ -245,7 +310,10 @@ describe('Quests API view', () => {
 });
 
 class QuestApiServiceStub
-  implements Pick<QuestApiService, 'list' | 'get' | 'create' | 'update' | 'archive'>
+  implements Pick<
+    QuestApiService,
+    'list' | 'get' | 'create' | 'update' | 'complete' | 'archive'
+  >
 {
   constructor(private readonly responses: QuestResponse[] = [API_QUEST]) {}
 
@@ -281,6 +349,10 @@ class QuestApiServiceStub
       id,
       updatedAtUtc: '2026-06-19T12:05:00Z'
     })
+  );
+
+  readonly complete = vi.fn((_id: string): Observable<QuestCompletionResponse> =>
+    of(QUEST_COMPLETION_RESPONSE)
   );
 
   readonly archive = vi.fn((_id: string): Observable<void> => of(void 0));

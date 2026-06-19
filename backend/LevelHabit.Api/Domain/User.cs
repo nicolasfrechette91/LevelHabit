@@ -23,4 +23,6 @@ public sealed class User
     public HeroProfile? HeroProfile { get; set; }
 
     public ICollection<Quest> Quests { get; set; } = [];
+
+    public ICollection<QuestCompletion> QuestCompletions { get; set; } = [];
 }

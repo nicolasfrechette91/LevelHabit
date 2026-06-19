@@ -29,4 +29,6 @@ public sealed class Quest
     public DateTimeOffset UpdatedAtUtc { get; set; }
 
     public User? User { get; set; }
+
+    public ICollection<QuestCompletion> Completions { get; set; } = [];
 }

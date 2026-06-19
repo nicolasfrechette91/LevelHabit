@@ -26,6 +26,11 @@ public interface IQuestService
         UpdateQuestRequest request,
         CancellationToken cancellationToken);
 
+    Task<QuestCompletionResponse> CompleteTodayAsync(
+        ClaimsPrincipal principal,
+        Guid questId,
+        CancellationToken cancellationToken);
+
     Task ArchiveAsync(
         ClaimsPrincipal principal,
         Guid questId,

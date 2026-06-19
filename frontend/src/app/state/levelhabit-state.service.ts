@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, finalize, map, tap, throwError } from 'rxjs';
+import { Observable, catchError, finalize, map, of, tap, throwError } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import {
@@ -43,6 +43,7 @@ export class LevelHabitStateService {
   private readonly questsLoadedSignal = signal(false);
   private readonly questsLoadingSignal = signal(false);
   private readonly questActionInFlightSignal = signal(false);
+  private readonly completionActionQuestIdsSignal = signal<readonly string[]>([]);
   private readonly questErrorSignal = signal<string | null>(null);
 
   readonly availableTitles = PROTOTYPE_TITLES;
@@ -80,9 +81,13 @@ export class LevelHabitStateService {
     this.quests().filter((quest) => !quest.isArchived).length
   );
 
-  readonly earnedXp = computed(() =>
-    this.completedQuests().reduce((total, quest) => total + quest.xp, 0)
-  );
+  readonly earnedXp = computed(() => {
+    if (this.usesQuestApi()) {
+      return 0;
+    }
+
+    return this.completedQuests().reduce((total, quest) => total + quest.xp, 0);
+  });
 
   readonly heroProfile = computed(() => this.auth.heroProfile());
 
@@ -327,6 +332,56 @@ export class LevelHabitStateService {
     );
   }
 
+  completeQuest(id: string): Observable<Quest> {
+    if (!this.usesQuestApi()) {
+      this.toggleQuest(id);
+
+      const toggledQuest = this.quests().find((quest) => quest.id === id);
+
+      return toggledQuest
+        ? of(toggledQuest)
+        : throwError(() => new Error('Quest not found.'));
+    }
+
+    const quest = this.persistedQuests().find((candidate) => candidate.id === id);
+
+    if (!quest || quest.isArchived) {
+      this.questErrorSignal.set('That quest could not be found.');
+
+      return throwError(() => new Error('Quest not found.'));
+    }
+
+    if (quest.completed || this.isQuestCompletionInFlight(id)) {
+      return of(quest);
+    }
+
+    this.setQuestCompletionInFlight(id, true);
+    this.questErrorSignal.set(null);
+
+    return this.questApi.complete(id).pipe(
+      map((completion) => ({
+        ...quest,
+        completed: true,
+        completedTodayAtUtc: completion.completedAtUtc
+      })),
+      tap((completedQuest) => {
+        this.persistedQuests.update((quests) =>
+          quests.map((candidate) =>
+            candidate.id === completedQuest.id ? completedQuest : candidate
+          )
+        );
+      }),
+      catchError((error: unknown) =>
+        this.captureQuestError<Quest>(error, 'Quest could not be completed.')
+      ),
+      finalize(() => this.setQuestCompletionInFlight(id, false))
+    );
+  }
+
+  isQuestCompletionInFlight(questId: string): boolean {
+    return this.completionActionQuestIdsSignal().includes(questId);
+  }
+
   toggleQuest(questId: string): void {
     if (this.usesQuestApi()) {
       return;
@@ -465,33 +520,29 @@ export class LevelHabitStateService {
   }
 
   private mapPersistedQuest(response: QuestResponse): Quest {
-    return {
+    const quest: Quest = {
       id: response.id,
       userId: response.userId,
       title: response.title,
       category: response.category,
       summary: response.description || 'No description yet.',
       cadence: response.frequency,
-      xp: this.mockXpForDifficulty(response.difficulty),
+      xp: 0,
       streak: 0,
       difficulty: response.difficulty,
       accent: this.accentForCategory(response.category),
-      completed: false,
+      completed: response.completedToday,
       isArchived: response.isArchived,
       createdAtUtc: response.createdAtUtc,
       updatedAtUtc: response.updatedAtUtc
     };
-  }
 
-  private mockXpForDifficulty(difficulty: QuestResponse['difficulty']): number {
-    switch (difficulty) {
-      case 'Hard':
-        return 120;
-      case 'Medium':
-        return 80;
-      default:
-        return 50;
-    }
+    return response.completedTodayAtUtc
+      ? {
+          ...quest,
+          completedTodayAtUtc: response.completedTodayAtUtc
+        }
+      : quest;
   }
 
   private accentForCategory(category: QuestResponse['category']): Quest['accent'] {
@@ -533,6 +584,10 @@ export class LevelHabitStateService {
       return 'That quest could not be found.';
     }
 
+    if (error.status === 409) {
+      return 'That quest is already completed today.';
+    }
+
     const problem = this.isRecord(error.error) ? error.error : null;
     const errors = problem && this.isRecord(problem['errors'])
       ? problem['errors']
@@ -554,5 +609,19 @@ export class LevelHabitStateService {
     }
 
     return fallback;
+  }
+
+  private setQuestCompletionInFlight(questId: string, inFlight: boolean): void {
+    this.completionActionQuestIdsSignal.update((questIds) => {
+      const nextQuestIds = new Set(questIds);
+
+      if (inFlight) {
+        nextQuestIds.add(questId);
+      } else {
+        nextQuestIds.delete(questId);
+      }
+
+      return Array.from(nextQuestIds);
+    });
   }
 }

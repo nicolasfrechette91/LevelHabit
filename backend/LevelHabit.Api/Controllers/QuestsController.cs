@@ -61,6 +61,19 @@ public sealed class QuestsController(IQuestService questService) : ControllerBas
         return Ok(quest);
     }
 
+    [HttpPost("{id:guid}/complete")]
+    public async Task<ActionResult<QuestCompletionResponse>> CompleteToday(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        QuestCompletionResponse completion = await questService.CompleteTodayAsync(
+            User,
+            id,
+            cancellationToken);
+
+        return Ok(completion);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Archive(
         Guid id,

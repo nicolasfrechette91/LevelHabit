@@ -9,5 +9,7 @@ public sealed record QuestResponse(
     string Difficulty,
     string Frequency,
     bool IsArchived,
+    bool CompletedToday,
+    DateTimeOffset? CompletedTodayAtUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);

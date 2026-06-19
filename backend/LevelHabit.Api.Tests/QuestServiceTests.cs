@@ -140,6 +140,102 @@ public sealed class QuestServiceTests
     }
 
     [Fact]
+    public async Task CompleteTodayAsync_completes_the_authenticated_users_active_quest()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(userId, "Complete me");
+
+        QuestCompletionResponse completion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.NotEqual(Guid.Empty, completion.Id);
+        Assert.Equal(userId, completion.UserId);
+        Assert.Equal(created.Id, completion.QuestId);
+        Assert.Equal(new DateOnly(2026, 6, 18), completion.CompletionDateUtc);
+        Assert.Equal(harness.Time.GetUtcNow(), completion.CompletedAtUtc);
+
+        QuestCompletion storedCompletion = await harness.DbContext.QuestCompletions.SingleAsync();
+        Assert.Equal(completion.Id, storedCompletion.Id);
+        Assert.Equal(created.Id, storedCompletion.QuestId);
+        Assert.Equal(userId, storedCompletion.UserId);
+
+        QuestResponse loadedQuest = await harness.Service.GetAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.True(loadedQuest.CompletedToday);
+        Assert.Equal(completion.CompletedAtUtc, loadedQuest.CompletedTodayAtUtc);
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_returns_existing_completion_for_duplicate_same_day()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(userId, "Only once");
+
+        QuestCompletionResponse firstCompletion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        harness.Time.Advance(TimeSpan.FromHours(2));
+
+        QuestCompletionResponse duplicateCompletion = await harness.Service.CompleteTodayAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        Assert.Equal(firstCompletion.Id, duplicateCompletion.Id);
+        Assert.Equal(firstCompletion.CompletedAtUtc, duplicateCompletion.CompletedAtUtc);
+        Assert.Equal(1, await harness.DbContext.QuestCompletions.CountAsync());
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_returns_not_found_for_another_users_quest()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid firstUserId = await harness.AddUserAsync("first@example.com");
+        Guid secondUserId = await harness.AddUserAsync("second@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(firstUserId, "Private quest");
+
+        ApiException exception = await Assert.ThrowsAsync<ApiException>(() =>
+            harness.Service.CompleteTodayAsync(
+                harness.CreatePrincipal(secondUserId),
+                created.Id,
+                CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
+        Assert.Empty(harness.DbContext.QuestCompletions);
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_returns_not_found_for_archived_quest()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        Guid userId = await harness.AddUserAsync("player@example.com");
+        QuestResponse created = await harness.CreateQuestAsync(userId, "Archived quest");
+
+        await harness.Service.ArchiveAsync(
+            harness.CreatePrincipal(userId),
+            created.Id,
+            CancellationToken.None);
+
+        ApiException exception = await Assert.ThrowsAsync<ApiException>(() =>
+            harness.Service.CompleteTodayAsync(
+                harness.CreatePrincipal(userId),
+                created.Id,
+                CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
+        Assert.Empty(harness.DbContext.QuestCompletions);
+    }
+
+    [Fact]
     public async Task ListAsync_without_authenticated_user_is_rejected()
     {
         using QuestServiceHarness harness = QuestServiceHarness.Create();
@@ -149,6 +245,21 @@ public sealed class QuestServiceTests
             harness.Service.ListAsync(
                 unauthenticatedUser,
                 includeArchived: false,
+                CancellationToken.None));
+
+        Assert.Equal(StatusCodes.Status401Unauthorized, exception.StatusCode);
+    }
+
+    [Fact]
+    public async Task CompleteTodayAsync_without_authenticated_user_is_rejected()
+    {
+        using QuestServiceHarness harness = QuestServiceHarness.Create();
+        ClaimsPrincipal unauthenticatedUser = new(new ClaimsIdentity());
+
+        ApiException exception = await Assert.ThrowsAsync<ApiException>(() =>
+            harness.Service.CompleteTodayAsync(
+                unauthenticatedUser,
+                Guid.NewGuid(),
                 CancellationToken.None));
 
         Assert.Equal(StatusCodes.Status401Unauthorized, exception.StatusCode);

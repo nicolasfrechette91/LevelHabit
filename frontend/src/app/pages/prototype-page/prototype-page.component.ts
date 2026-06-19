@@ -127,7 +127,9 @@ export class PrototypePageComponent implements OnInit {
 
     switch (this.questFilter()) {
       case 'active':
-        return quests.filter((quest) => !quest.completed && !quest.isArchived);
+        return quests.filter((quest) =>
+          !quest.isArchived && (this.game.usesQuestApi() || !quest.completed)
+        );
       case 'archived':
         return quests.filter((quest) => quest.isArchived);
       default:
@@ -166,6 +168,24 @@ export class PrototypePageComponent implements OnInit {
 
   protected toggleQuest(quest: Quest): void {
     this.game.toggleQuest(quest.id);
+  }
+
+  protected completeQuest(quest: Quest): void {
+    if (
+      !this.game.usesQuestApi()
+      || quest.isArchived
+      || quest.completed
+      || this.game.isQuestCompletionInFlight(quest.id)
+    ) {
+      return;
+    }
+
+    this.game
+      .completeQuest(quest.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: () => undefined
+      });
   }
 
   protected setFilter(filter: QuestFilter): void {

@@ -60,6 +60,38 @@ public partial class LevelHabitDbContextModelSnapshot : ModelSnapshot
             builder.ToTable("hero_profiles", (string)null);
         });
 
+        modelBuilder.Entity("LevelHabit.Api.Domain.QuestCompletion", builder =>
+        {
+            builder.Property<Guid>("Id")
+                .HasColumnType("uuid")
+                .HasColumnName("id");
+
+            builder.Property<DateTimeOffset>("CompletedAtUtc")
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("completed_at_utc");
+
+            builder.Property<DateOnly>("CompletionDateUtc")
+                .HasColumnType("date")
+                .HasColumnName("completion_date_utc");
+
+            builder.Property<Guid>("QuestId")
+                .HasColumnType("uuid")
+                .HasColumnName("quest_id");
+
+            builder.Property<Guid>("UserId")
+                .HasColumnType("uuid")
+                .HasColumnName("user_id");
+
+            builder.HasKey("Id");
+
+            builder.HasIndex("QuestId");
+
+            builder.HasIndex("UserId", "QuestId", "CompletionDateUtc")
+                .IsUnique();
+
+            builder.ToTable("quest_completions", (string)null);
+        });
+
         modelBuilder.Entity("LevelHabit.Api.Domain.Quest", builder =>
         {
             builder.Property<Guid>("Id")
@@ -176,6 +208,25 @@ public partial class LevelHabitDbContextModelSnapshot : ModelSnapshot
             builder.Navigation("User");
         });
 
+        modelBuilder.Entity("LevelHabit.Api.Domain.QuestCompletion", builder =>
+        {
+            builder.HasOne("LevelHabit.Api.Domain.Quest", "Quest")
+                .WithMany("Completions")
+                .HasForeignKey("QuestId")
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+
+            builder.HasOne("LevelHabit.Api.Domain.User", "User")
+                .WithMany("QuestCompletions")
+                .HasForeignKey("UserId")
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+
+            builder.Navigation("Quest");
+
+            builder.Navigation("User");
+        });
+
         modelBuilder.Entity("LevelHabit.Api.Domain.Quest", builder =>
         {
             builder.HasOne("LevelHabit.Api.Domain.User", "User")
@@ -184,12 +235,16 @@ public partial class LevelHabitDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
+            builder.Navigation("Completions");
+
             builder.Navigation("User");
         });
 
         modelBuilder.Entity("LevelHabit.Api.Domain.User", builder =>
         {
             builder.Navigation("HeroProfile");
+
+            builder.Navigation("QuestCompletions");
 
             builder.Navigation("Quests");
         });

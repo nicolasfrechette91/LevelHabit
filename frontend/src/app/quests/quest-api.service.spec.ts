@@ -5,7 +5,11 @@ import { firstValueFrom } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { environment } from '../../environments/environment';
-import { QuestApiService, type QuestResponse } from './quest-api.service';
+import {
+  QuestApiService,
+  type QuestCompletionResponse,
+  type QuestResponse
+} from './quest-api.service';
 
 const QUEST_RESPONSE: QuestResponse = {
   id: 'f3d9d772-8e0d-47f7-970b-56f757f85f4d',
@@ -16,8 +20,18 @@ const QUEST_RESPONSE: QuestResponse = {
   difficulty: 'Medium',
   frequency: 'Daily',
   isArchived: false,
+  completedToday: false,
+  completedTodayAtUtc: null,
   createdAtUtc: '2026-06-18T12:00:00Z',
   updatedAtUtc: '2026-06-18T12:00:00Z'
+};
+
+const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
+  id: '889c6254-b88e-4606-98eb-651453c82382',
+  questId: QUEST_RESPONSE.id,
+  userId: QUEST_RESPONSE.userId,
+  completionDateUtc: '2026-06-18',
+  completedAtUtc: '2026-06-18T13:00:00Z'
 };
 
 describe('QuestApiService', () => {
@@ -115,6 +129,22 @@ describe('QuestApiService', () => {
     request.flush(null);
 
     await responsePromise;
+    http.verify();
+  });
+
+  it('completes a quest for today through the API', async () => {
+    const service = TestBed.inject(QuestApiService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const responsePromise = firstValueFrom(service.complete(QUEST_RESPONSE.id));
+    const request = http.expectOne(
+      `${environment.apiUrl}/quests/${QUEST_RESPONSE.id}/complete`
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toBeNull();
+    request.flush(QUEST_COMPLETION_RESPONSE);
+
+    expect(await responsePromise).toEqual(QUEST_COMPLETION_RESPONSE);
     http.verify();
   });
 });

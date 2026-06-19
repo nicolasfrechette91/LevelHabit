@@ -18,8 +18,18 @@ export type QuestResponse = Readonly<{
   difficulty: PersistedQuestDifficulty;
   frequency: PersistedQuestFrequency;
   isArchived: boolean;
+  completedToday: boolean;
+  completedTodayAtUtc: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
+}>;
+
+export type QuestCompletionResponse = Readonly<{
+  id: string;
+  questId: string;
+  userId: string;
+  completionDateUtc: string;
+  completedAtUtc: string;
 }>;
 
 export type QuestUpsertRequest = Readonly<{
@@ -55,6 +65,13 @@ export class QuestApiService {
 
   update(id: string, request: QuestUpsertRequest): Observable<QuestResponse> {
     return this.http.put<QuestResponse>(`${this.questsUrl}/${id}`, request);
+  }
+
+  complete(id: string): Observable<QuestCompletionResponse> {
+    return this.http.post<QuestCompletionResponse>(
+      `${this.questsUrl}/${id}/complete`,
+      null
+    );
   }
 
   archive(id: string): Observable<void> {

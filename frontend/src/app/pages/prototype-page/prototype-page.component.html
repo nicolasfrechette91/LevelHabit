@@ -73,7 +73,13 @@
                   @for (quest of game.activeQuests(); track quest.id) {
                   <div class="list-group-item quest-row px-0 py-3 d-flex align-items-center gap-3" [class.done]="quest.completed">
                     @if (game.usesQuestApi()) {
-                      <span class="quest-check quest-marker flex-shrink-0" aria-hidden="true"></span>
+                      <button
+                        type="button"
+                        class="quest-check flex-shrink-0"
+                        [disabled]="game.isQuestCompletionInFlight(quest.id)"
+                        [attr.aria-label]="'Complete ' + quest.title + ' today'"
+                        (click)="completeQuest(quest)"
+                      ></button>
                     } @else {
                       <button
                         type="button"
@@ -306,6 +312,9 @@
                       @if (quest.isArchived) {
                         <small class="badge rounded-pill text-bg-secondary">Archived</small>
                       }
+                      @if (quest.completed) {
+                        <small class="badge rounded-pill text-bg-success">Done today</small>
+                      }
                       <small class="badge rounded-pill difficulty-badge">{{ quest.difficulty }}</small>
                     </div>
                   </div>
@@ -320,6 +329,14 @@
                   </div>
                   @if (game.usesQuestApi()) {
                     <div class="d-flex flex-wrap gap-2 mt-2">
+                      <button
+                        type="button"
+                        class="btn btn-lh-primary fw-bold flex-grow-1"
+                        [disabled]="quest.isArchived || quest.completed || game.isQuestCompletionInFlight(quest.id)"
+                        (click)="completeQuest(quest)"
+                      >
+                        {{ game.isQuestCompletionInFlight(quest.id) ? 'Completing...' : (quest.completed ? 'Done today' : 'Complete today') }}
+                      </button>
                       <button
                         type="button"
                         class="btn btn-outline-success fw-bold flex-grow-1"
