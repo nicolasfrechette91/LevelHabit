@@ -2,6 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, finalize, map, of, tap, throwError } from 'rxjs';
 
+import {
+  AchievementApiService,
+  type AchievementResponse
+} from '../achievements/achievement-api.service';
 import { AuthService } from '../auth/auth.service';
 import {
   QuestApiService,
@@ -34,6 +38,7 @@ import type {
 export class LevelHabitStateService {
   private readonly auth = inject(AuthService);
   private readonly questApi = inject(QuestApiService);
+  private readonly achievementApi = inject(AchievementApiService);
   private readonly validQuestIds = new Set<string>(
     PROTOTYPE_QUESTS.map((quest) => quest.id)
   );
@@ -45,11 +50,17 @@ export class LevelHabitStateService {
   private readonly questActionInFlightSignal = signal(false);
   private readonly completionActionQuestIdsSignal = signal<readonly string[]>([]);
   private readonly questErrorSignal = signal<string | null>(null);
+  private readonly persistedAchievements = signal<Achievement[]>([]);
+  private readonly achievementsLoadedSignal = signal(false);
+  private readonly achievementsLoadingSignal = signal(false);
+  private readonly achievementErrorSignal = signal<string | null>(null);
 
   readonly availableTitles = PROTOTYPE_TITLES;
   readonly questsLoading = this.questsLoadingSignal.asReadonly();
   readonly questActionInFlight = this.questActionInFlightSignal.asReadonly();
   readonly questError = this.questErrorSignal.asReadonly();
+  readonly achievementsLoading = this.achievementsLoadingSignal.asReadonly();
+  readonly achievementError = this.achievementErrorSignal.asReadonly();
   readonly usesQuestApi = computed(() =>
     this.auth.authRequired && this.auth.isAuthenticated()
   );
@@ -216,6 +227,10 @@ export class LevelHabitStateService {
   });
 
   readonly achievements = computed<Achievement[]>(() => {
+    if (this.usesQuestApi()) {
+      return this.persistedAchievements();
+    }
+
     const completedCategories = this.categoryBreakdown().filter(
       (category) => category.completed > 0
     ).length;
@@ -223,48 +238,48 @@ export class LevelHabitStateService {
     return [
       {
         id: 'first-light',
-        title: 'First Light',
+        title: 'First Step',
         summary: 'Complete the first quest of the day.',
-        reward: '+25 XP',
         progress: Math.min(this.completedCount(), 1),
         target: 1,
+        progressText: `${Math.min(this.completedCount(), 1)}/1 quest completions`,
         unlocked: this.completedCount() >= 1
       },
       {
         id: 'clean-sweep',
-        title: 'Clean Sweep',
-        summary: 'Finish every active quest in a daily run.',
-        reward: 'Title shard',
-        progress: this.completedCount(),
-        target: this.questCount(),
-        unlocked: this.questCount() > 0 && this.completedCount() === this.questCount()
+        title: 'Getting Started',
+        summary: 'Complete 5 quests total.',
+        progress: Math.min(this.completedCount(), 5),
+        target: 5,
+        progressText: `${Math.min(this.completedCount(), 5)}/5 quest completions`,
+        unlocked: this.completedCount() >= 5
       },
       {
         id: 'streak-adept',
-        title: 'Streak Adept',
-        summary: 'Keep a protected streak at 21 days.',
-        reward: '+90 XP',
-        progress: Math.min(this.currentStreak(), 21),
-        target: 21,
-        unlocked: this.currentStreak() >= 21
+        title: 'On Fire',
+        summary: 'Reach a 3-day streak on any quest.',
+        progress: Math.min(this.currentStreak(), 3),
+        target: 3,
+        progressText: `${Math.min(this.currentStreak(), 3)}/3 day streak`,
+        unlocked: this.currentStreak() >= 3
       },
       {
         id: 'balanced-build',
-        title: 'Balanced Build',
-        summary: 'Complete quests across four life areas.',
-        reward: 'Profile frame',
-        progress: completedCategories,
-        target: 4,
-        unlocked: completedCategories >= 4
+        title: 'Balanced Hero',
+        summary: 'Complete quests across 3 life areas.',
+        progress: Math.min(completedCategories, 3),
+        target: 3,
+        progressText: `${Math.min(completedCategories, 3)}/3 categories`,
+        unlocked: completedCategories >= 3
       },
       {
         id: 'level-break',
-        title: 'Level Break',
-        summary: 'Reach 2,250 total XP.',
-        reward: '+1 stat point',
-        progress: Math.min(this.totalXp(), 2250),
-        target: 2250,
-        unlocked: this.totalXp() >= 2250
+        title: 'Level Up',
+        summary: 'Reach hero level 2.',
+        progress: Math.min(this.level(), 2),
+        target: 2,
+        progressText: `Level ${Math.min(this.level(), 2)}/2`,
+        unlocked: this.level() >= 2
       }
     ];
   });
@@ -292,6 +307,41 @@ export class LevelHabitStateService {
         error: (error: unknown) => {
           this.questErrorSignal.set(
             this.describeQuestError(error, 'Quests could not be loaded.')
+          );
+        }
+      });
+  }
+
+  loadAchievements(force = false): void {
+    if (
+      !this.usesQuestApi()
+      || (!force && this.achievementsLoadedSignal())
+      || this.achievementsLoadingSignal()
+    ) {
+      return;
+    }
+
+    this.achievementsLoadingSignal.set(true);
+    this.achievementErrorSignal.set(null);
+
+    this.achievementApi
+      .list()
+      .pipe(finalize(() => this.achievementsLoadingSignal.set(false)))
+      .subscribe({
+        next: (achievements) => {
+          this.persistedAchievements.set(
+            achievements.map((achievement) =>
+              this.mapPersistedAchievement(achievement)
+            )
+          );
+          this.achievementsLoadedSignal.set(true);
+        },
+        error: (error: unknown) => {
+          this.achievementErrorSignal.set(
+            this.describeAchievementError(
+              error,
+              'Achievements could not be loaded.'
+            )
           );
         }
       });
@@ -384,6 +434,7 @@ export class LevelHabitStateService {
 
     return this.questApi.complete(id).pipe(
       tap((completion) => this.auth.updateHeroProfile(completion.heroProfile)),
+      tap(() => this.loadAchievements(true)),
       map((completion) => {
         const completedQuest = this.mapPersistedQuest(completion.quest);
 
@@ -585,6 +636,25 @@ export class LevelHabitStateService {
     };
   }
 
+  private mapPersistedAchievement(response: AchievementResponse): Achievement {
+    const achievement: Achievement = {
+      id: response.key,
+      title: response.title,
+      summary: response.description,
+      progress: response.progress,
+      target: response.target,
+      progressText: response.progressText,
+      unlocked: response.isUnlocked
+    };
+
+    return {
+      ...achievement,
+      ...(response.unlockedAtUtc === null
+        ? {}
+        : { unlockedAtUtc: response.unlockedAtUtc })
+    };
+  }
+
   private accentForCategory(category: QuestResponse['category']): Quest['accent'] {
     switch (category) {
       case 'Fitness':
@@ -642,6 +712,29 @@ export class LevelHabitStateService {
       return firstValidationError;
     }
 
+    const detail = problem?.['detail'];
+
+    if (typeof detail === 'string' && detail.trim().length > 0) {
+      return detail;
+    }
+
+    return fallback;
+  }
+
+  private describeAchievementError(error: unknown, fallback: string): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return fallback;
+    }
+
+    if (error.status === 0) {
+      return 'The backend is unavailable. Start the API and try again.';
+    }
+
+    if (error.status === 401) {
+      return 'Your session expired. Sign in again to view achievements.';
+    }
+
+    const problem = this.isRecord(error.error) ? error.error : null;
     const detail = problem?.['detail'];
 
     if (typeof detail === 'string' && detail.trim().length > 0) {

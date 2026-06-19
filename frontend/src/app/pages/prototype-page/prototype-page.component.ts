@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -33,7 +33,7 @@ type QuestFilter = 'active' | 'all' | 'archived';
 
 @Component({
   selector: 'app-prototype-page',
-  imports: [DecimalPipe, ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink],
   templateUrl: './prototype-page.component.html',
   styleUrls: ['./prototype-page.component.scss']
 })
@@ -166,6 +166,7 @@ export class PrototypePageComponent implements OnInit {
 
   ngOnInit(): void {
     this.game.loadQuests();
+    this.game.loadAchievements();
   }
 
   protected achievementPercent(progress: number, target: number): number {

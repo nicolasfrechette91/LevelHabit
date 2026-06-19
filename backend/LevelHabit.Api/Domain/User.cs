@@ -25,4 +25,6 @@ public sealed class User
     public ICollection<Quest> Quests { get; set; } = [];
 
     public ICollection<QuestCompletion> QuestCompletions { get; set; } = [];
+
+    public ICollection<UserAchievement> UserAchievements { get; set; } = [];
 }

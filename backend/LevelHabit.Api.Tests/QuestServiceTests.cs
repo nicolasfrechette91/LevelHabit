@@ -3,6 +3,7 @@ using LevelHabit.Api.Contracts.Quests;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
+using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Quests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -532,7 +533,8 @@ public sealed class QuestServiceTests
 
             LevelHabitDbContext dbContext = new(options);
             TestTimeProvider time = new(new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero));
-            QuestService service = new(dbContext, time);
+            AchievementService achievementService = new(dbContext, time);
+            QuestService service = new(dbContext, time, achievementService);
 
             return new QuestServiceHarness(dbContext, service, time);
         }

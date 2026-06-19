@@ -5,6 +5,7 @@ using LevelHabit.Api.Contracts.Quests;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
+using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Heroes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -13,7 +14,8 @@ namespace LevelHabit.Api.Services.Quests;
 
 public sealed class QuestService(
     LevelHabitDbContext dbContext,
-    TimeProvider timeProvider) : IQuestService
+    TimeProvider timeProvider,
+    IAchievementService achievementService) : IQuestService
 {
     private static readonly HashSet<string> AllowedCategories = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -205,10 +207,6 @@ public sealed class QuestService(
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
-            if (transaction is not null)
-            {
-                await transaction.CommitAsync(cancellationToken);
-            }
         }
         catch (DbUpdateException)
         {
@@ -242,6 +240,16 @@ public sealed class QuestService(
             }
 
             throw;
+        }
+
+        await achievementService.UnlockEligibleAsync(
+            userId,
+            now,
+            cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
         }
 
         QuestResponse completedQuestResponse = await MapQuestAsync(

@@ -2,6 +2,7 @@ using System.Text;
 using LevelHabit.Api.Auth;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Middleware;
+using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Auth;
 using LevelHabit.Api.Services.Quests;
 using LevelHabit.Api.Services.Security;
@@ -79,6 +80,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IQuestService, QuestService>();
 
 builder.Services.AddCors(options =>

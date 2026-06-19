@@ -15,6 +15,10 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
     public DbSet<QuestCompletion> QuestCompletions => Set<QuestCompletion>();
 
+    public DbSet<Achievement> Achievements => Set<Achievement>();
+
+    public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -23,5 +27,7 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
         modelBuilder.ApplyConfiguration(new HeroProfileConfiguration());
         modelBuilder.ApplyConfiguration(new QuestConfiguration());
         modelBuilder.ApplyConfiguration(new QuestCompletionConfiguration());
+        modelBuilder.ApplyConfiguration(new AchievementConfiguration());
+        modelBuilder.ApplyConfiguration(new UserAchievementConfiguration());
     }
 }

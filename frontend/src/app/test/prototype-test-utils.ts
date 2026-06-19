@@ -1,3 +1,4 @@
+import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -43,6 +44,7 @@ export async function renderPrototypeRoute(path: string): Promise<{
 }> {
   TestBed.configureTestingModule({
     providers: [
+      provideHttpClient(),
       provideRouter(routes),
       {
         provide: AuthService,

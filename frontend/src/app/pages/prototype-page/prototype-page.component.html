@@ -481,29 +481,59 @@
     }
 
     @case ('achievements') {
-      <section class="row g-3" aria-label="Achievements">
-        @for (achievement of game.achievements(); track achievement.id) {
-          <div class="col-lg-6">
-            <article class="card lh-card achievement-card h-100" [class.unlocked]="achievement.unlocked">
-              <div class="card-body p-3 d-flex gap-3">
-                <div class="achievement-mark flex-shrink-0" aria-hidden="true"></div>
-                <div class="flex-grow-1">
-                  <span class="badge rounded-pill achievement-state">{{ achievement.unlocked ? 'Unlocked' : 'Locked' }}</span>
-                  <h2 class="h5 fw-bold mt-2 mb-2">{{ achievement.title }}</h2>
-                  <p class="lh-muted mb-0">{{ achievement.summary }}</p>
-                  <div class="d-flex align-items-center gap-3 mt-3">
-                    <span class="achievement-count small fw-bold">{{ achievement.progress | number }}/{{ achievement.target | number }}</span>
-                    <progress
-                      class="progress lh-progress slim flex-grow-1"
-                      [value]="achievementPercent(achievement.progress, achievement.target)"
-                      max="100"
-                      [attr.aria-label]="achievement.title + ' progress'"
-                    ></progress>
+      <section aria-label="Achievements">
+        @if (game.achievementError(); as achievementError) {
+          <div class="alert alert-warning border-0 shadow-sm" role="alert">
+            {{ achievementError }}
+          </div>
+        }
+
+        @if (game.achievementsLoading()) {
+          <article class="card lh-card">
+            <div class="card-body p-3 p-md-4 lh-muted">Loading achievements...</div>
+          </article>
+        } @else if (game.achievements().length === 0) {
+          <article class="card lh-card">
+            <div class="card-body p-3 p-md-4">
+              <h2 class="h5 fw-bold mb-1">No achievements loaded</h2>
+              <p class="lh-muted mb-0">Refresh this view once the backend is available.</p>
+            </div>
+          </article>
+        } @else {
+          <div class="row g-3">
+            @for (achievement of game.achievements(); track achievement.id) {
+              <div class="col-lg-6">
+                <article class="card lh-card achievement-card h-100" [class.unlocked]="achievement.unlocked">
+                  <div class="card-body p-3 d-flex gap-3">
+                    <div class="achievement-mark flex-shrink-0" aria-hidden="true"></div>
+                    <div class="flex-grow-1 min-content">
+                      <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge rounded-pill achievement-state">{{ achievement.unlocked ? 'Unlocked' : 'Locked' }}</span>
+                        @if (achievement.unlockedAtUtc) {
+                          <span class="badge rounded-pill text-bg-light">
+                            {{ achievement.unlockedAtUtc | date: 'mediumDate' }}
+                          </span>
+                        }
+                      </div>
+                      <h2 class="h5 fw-bold mt-2 mb-2">{{ achievement.title }}</h2>
+                      <p class="lh-muted mb-0">{{ achievement.summary }}</p>
+                      <div class="d-flex align-items-center gap-3 mt-3">
+                        <span class="achievement-count small fw-bold">{{ achievement.progress | number }}/{{ achievement.target | number }}</span>
+                        <progress
+                          class="progress lh-progress slim flex-grow-1"
+                          [value]="achievementPercent(achievement.progress, achievement.target)"
+                          max="100"
+                          [attr.aria-label]="achievement.title + ' progress'"
+                        ></progress>
+                      </div>
+                      @if (achievement.progressText) {
+                        <small class="progress-text d-block fw-bold mt-3">{{ achievement.progressText }}</small>
+                      }
+                    </div>
                   </div>
-                  <small class="reward-text d-block fw-bold mt-3">{{ achievement.reward }}</small>
-                </div>
+                </article>
               </div>
-            </article>
+            }
           </div>
         }
       </section>

@@ -64,10 +64,11 @@ export type Achievement = Readonly<{
   id: string;
   title: string;
   summary: string;
-  reward: string;
   progress: number;
   target: number;
+  progressText?: string;
   unlocked: boolean;
+  unlockedAtUtc?: string;
 }>;
 
 export type WeekDay = Readonly<{

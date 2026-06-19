@@ -7,6 +7,10 @@ import { Observable, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { routes } from '../../app.routes';
+import {
+  AchievementApiService,
+  type AchievementResponse
+} from '../../achievements/achievement-api.service';
 import { AuthService } from '../../auth/auth.service';
 import type { MeResponse } from '../../auth/auth.models';
 import {
@@ -100,6 +104,31 @@ const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
 
 const CREATED_API_QUEST_ID = '12e799df-aeca-4bd1-a548-f69f3fabd7d';
 
+const API_ACHIEVEMENTS: AchievementResponse[] = [
+  {
+    key: 'first-step',
+    title: 'First Step',
+    description: 'Complete your first quest.',
+    rule: 'total-completions',
+    isUnlocked: true,
+    unlockedAtUtc: '2026-06-18T12:00:00Z',
+    progress: 1,
+    target: 1,
+    progressText: '1/1 quest completions'
+  },
+  {
+    key: 'getting-started',
+    title: 'Getting Started',
+    description: 'Complete 5 quests total.',
+    rule: 'total-completions',
+    isUnlocked: false,
+    unlockedAtUtc: null,
+    progress: 1,
+    target: 5,
+    progressText: '1/5 quest completions'
+  }
+];
+
 describe('Prototype routes', () => {
   beforeEach(() => {
     resetPrototypeStorage();
@@ -187,6 +216,49 @@ describe('Achievements view', () => {
     expect(state.achievements().some((achievement) => !achievement.unlocked)).toBe(true);
     expect(badges).toContain('Unlocked');
     expect(badges).toContain('Locked');
+  });
+});
+
+describe('Achievements API view', () => {
+  beforeEach(() => {
+    resetPrototypeStorage();
+  });
+
+  it('loads achievements from the API', async () => {
+    const { achievementApi, nativeElement } = await renderApiAchievementRoute();
+
+    expect(achievementApi.list).toHaveBeenCalled();
+    expect(textContent(nativeElement)).toContain('First Step');
+    expect(textContent(nativeElement)).toContain('Getting Started');
+  });
+
+  it('displays unlocked and locked API achievements', async () => {
+    const { nativeElement } = await renderApiAchievementRoute();
+    const pageText = textContent(nativeElement);
+
+    expect(pageText).toContain('Unlocked');
+    expect(pageText).toContain('Locked');
+    expect(pageText).toContain('1/1 quest completions');
+    expect(pageText).toContain('1/5 quest completions');
+  });
+
+  it('shows a friendly error when achievements cannot be loaded', async () => {
+    const achievementApi = new AchievementApiServiceStub();
+    achievementApi.list.mockReturnValueOnce(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 500,
+            statusText: 'Server Error'
+          })
+      )
+    );
+
+    const { nativeElement } = await renderApiAchievementRoute(achievementApi);
+
+    expect(textContent(nativeElement)).toContain(
+      'Achievements could not be loaded.'
+    );
   });
 });
 
@@ -284,12 +356,13 @@ describe('Quests API view', () => {
   });
 
   it('completes quests through the API', async () => {
-    const { api, nativeElement, harness } = await renderApiQuestRoute();
+    const { achievementApi, api, nativeElement, harness } = await renderApiQuestRoute();
 
     getButtonByText(nativeElement, /^Complete today$/).click();
     harness.detectChanges();
 
     expect(api.complete).toHaveBeenCalledWith(API_QUEST.id);
+    expect(achievementApi.list).toHaveBeenCalledTimes(2);
     expect(textContent(nativeElement)).toContain('Done today');
     expect(textContent(nativeElement)).toContain('4-day streak');
     expect(textContent(nativeElement)).toContain('+20 XP awarded');
@@ -434,9 +507,61 @@ class QuestApiServiceStub
   readonly archive = vi.fn((_id: string): Observable<void> => of(void 0));
 }
 
-async function renderApiQuestRoute(
-  api: QuestApiServiceStub = new QuestApiServiceStub()
+class AchievementApiServiceStub implements Pick<AchievementApiService, 'list'> {
+  constructor(
+    private readonly responses: AchievementResponse[] = API_ACHIEVEMENTS
+  ) {}
+
+  readonly list = vi.fn((): Observable<AchievementResponse[]> =>
+    of(this.responses)
+  );
+}
+
+async function renderApiAchievementRoute(
+  achievementApi: AchievementApiServiceStub = new AchievementApiServiceStub()
 ): Promise<{
+  achievementApi: AchievementApiServiceStub;
+  harness: RouterTestingHarness;
+  nativeElement: HTMLElement;
+}> {
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter(routes),
+      {
+        provide: AuthService,
+        useValue: createApiAuthService()
+      },
+      {
+        provide: QuestApiService,
+        useValue: new QuestApiServiceStub()
+      },
+      {
+        provide: AchievementApiService,
+        useValue: achievementApi
+      }
+    ]
+  });
+
+  const harness = await RouterTestingHarness.create();
+  await harness.navigateByUrl('/achievements', PrototypePageComponent);
+  const nativeElement = harness.routeNativeElement;
+
+  if (!nativeElement) {
+    throw new Error('Achievements route did not render a native element.');
+  }
+
+  return {
+    achievementApi,
+    harness,
+    nativeElement
+  };
+}
+
+async function renderApiQuestRoute(
+  api: QuestApiServiceStub = new QuestApiServiceStub(),
+  achievementApi: AchievementApiServiceStub = new AchievementApiServiceStub()
+): Promise<{
+  achievementApi: AchievementApiServiceStub;
   api: QuestApiServiceStub;
   harness: RouterTestingHarness;
   nativeElement: HTMLElement;
@@ -451,6 +576,10 @@ async function renderApiQuestRoute(
       {
         provide: QuestApiService,
         useValue: api
+      },
+      {
+        provide: AchievementApiService,
+        useValue: achievementApi
       }
     ]
   });
@@ -464,6 +593,7 @@ async function renderApiQuestRoute(
   }
 
   return {
+    achievementApi,
     api,
     harness,
     nativeElement
