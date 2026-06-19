@@ -1,10 +1,12 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
 
+import { environment } from '../../../environments/environment';
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
 import { AuthPageComponent } from './auth-page.component';
@@ -49,6 +51,41 @@ class AuthServiceStub {
 describe('AuthPageComponent', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+  });
+
+  it('calls the backend health endpoint when initialized', async () => {
+    const { http } = await setup('login', { flushWarmUp: false });
+
+    const request = http.expectOne(`${environment.apiUrl}/health`);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.responseType).toBe('text');
+
+    request.flush('Healthy');
+    http.verify();
+  });
+
+  it('keeps login usable when backend warm-up fails', async () => {
+    const { auth, fixture, http, nativeElement, navigateByUrl } = await setup('login', {
+      flushWarmUp: false
+    });
+
+    const request = http.expectOne(`${environment.apiUrl}/health`);
+    request.flush('Unavailable', {
+      status: 503,
+      statusText: 'Service Unavailable'
+    });
+
+    setInputValue(fixture, '#login-email', 'player@example.com');
+    setInputValue(fixture, '#login-password', 'CorrectHorse123!');
+    submitForm(fixture);
+
+    expect(auth.login).toHaveBeenCalledWith({
+      email: 'player@example.com',
+      password: 'CorrectHorse123!'
+    });
+    expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    expect(nativeElement.querySelector('[role="alert"]')).toBeNull();
+    http.verify();
   });
 
   it('prevents login submit when the email format is invalid', async () => {
@@ -146,9 +183,14 @@ describe('AuthPageComponent', () => {
   });
 });
 
-async function setup(mode: AuthMode): Promise<{
+type SetupOptions = Readonly<{
+  flushWarmUp?: boolean;
+}>;
+
+async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
   auth: AuthServiceStub;
   fixture: ComponentFixture<AuthPageComponent>;
+  http: HttpTestingController;
   nativeElement: HTMLElement;
   navigateByUrl: MockInstance<Router['navigateByUrl']>;
 }> {
@@ -165,19 +207,28 @@ async function setup(mode: AuthMode): Promise<{
     imports: [AuthPageComponent],
     providers: [
       provideRouter([]),
+      provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: ActivatedRoute, useValue: route },
       { provide: AuthService, useValue: auth }
     ]
   }).compileComponents();
 
+  const http = TestBed.inject(HttpTestingController);
   const router = TestBed.inject(Router);
   const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(AuthPageComponent);
   fixture.detectChanges();
 
+  if (options.flushWarmUp ?? true) {
+    const request = http.expectOne(`${environment.apiUrl}/health`);
+    request.flush('Healthy');
+  }
+
   return {
     auth,
     fixture,
+    http,
     nativeElement: fixture.nativeElement as HTMLElement,
     navigateByUrl
   };

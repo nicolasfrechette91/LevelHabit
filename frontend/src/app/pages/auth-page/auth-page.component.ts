@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   NonNullableFormBuilder,
@@ -7,11 +7,12 @@ import {
   Validators
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Observable, finalize } from 'rxjs';
 
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
+import { BackendHealthService } from '../../backend-health.service';
 
 type AuthMode = 'login' | 'register';
 
@@ -21,8 +22,10 @@ type AuthMode = 'login' | 'register';
   templateUrl: './auth-page.component.html',
   styleUrls: ['./auth-page.component.scss']
 })
-export class AuthPageComponent {
+export class AuthPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly backendHealth = inject(BackendHealthService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -49,6 +52,13 @@ export class AuthPageComponent {
     displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
     heroName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]]
   });
+
+  ngOnInit(): void {
+    this.backendHealth
+      .warmUp()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe();
+  }
 
   protected submitLogin(): void {
     this.loginSubmitted.set(true);
