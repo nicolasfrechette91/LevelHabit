@@ -67,7 +67,19 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
-        run: ./node_modules/.bin/ng build --configuration production --base-href /LevelHabit/
+        env:
+          LEVELHABIT_SENTRY_DSN: ${{ secrets.LEVELHABIT_SENTRY_DSN }}
+          LEVELHABIT_SENTRY_ENVIRONMENT: ${{ vars.LEVELHABIT_SENTRY_ENVIRONMENT }}
+        run: |
+          sentry_defines=()
+
+          if [ -n "$LEVELHABIT_SENTRY_DSN" ]; then
+            sentry_environment="${LEVELHABIT_SENTRY_ENVIRONMENT:-production}"
+            sentry_defines+=(--define "LEVELHABIT_SENTRY_DSN='${LEVELHABIT_SENTRY_DSN}'")
+            sentry_defines+=(--define "LEVELHABIT_SENTRY_ENVIRONMENT='${sentry_environment}'")
+          fi
+
+          ./node_modules/.bin/ng build --configuration production --base-href /LevelHabit/ "${sentry_defines[@]}"
 
       - name: Find build output
         if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'

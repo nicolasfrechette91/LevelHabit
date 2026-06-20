@@ -50,10 +50,14 @@
           },
           "configurations": {
             "production": {
+              "define": {
+                "LEVELHABIT_SENTRY_DSN": "\"\"",
+                "LEVELHABIT_SENTRY_ENVIRONMENT": "\"production\""
+              },
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "525kB",
                   "maximumError": "1MB"
                 },
                 {

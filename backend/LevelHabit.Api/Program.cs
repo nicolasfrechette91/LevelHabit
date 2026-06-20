@@ -2,6 +2,7 @@ using System.Text;
 using LevelHabit.Api.Auth;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Middleware;
+using LevelHabit.Api.Observability;
 using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Analytics;
 using LevelHabit.Api.Services.Auth;
@@ -15,6 +16,8 @@ using Microsoft.IdentityModel.Tokens;
 const string AngularLocalDevelopmentPolicy = "AngularLocalDevelopment";
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.UseSentry(SentryErrorTracking.Configure);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();

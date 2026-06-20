@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using LevelHabit.Api.Observability;
 
 namespace LevelHabit.Api.Middleware;
 
 public sealed class ExceptionHandlingMiddleware(
     RequestDelegate next,
+    IHostEnvironment environment,
     ILogger<ExceptionHandlingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
@@ -18,6 +20,12 @@ public sealed class ExceptionHandlingMiddleware(
         }
         catch (Exception exception)
         {
+            SentryErrorTracking.CaptureUnhandledException(
+                context,
+                environment,
+                exception,
+                StatusCodes.Status500InternalServerError);
+
             logger.LogError(exception, "Unhandled API exception.");
 
             ProblemDetails problemDetails = new()

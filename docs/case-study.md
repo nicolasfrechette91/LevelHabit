@@ -187,5 +187,5 @@ string before or during production releases.
 - Improve mobile layout polish and touch ergonomics.
 - Expand analytics with richer charts and trend comparisons.
 - Add broader end-to-end tests against realistic user flows.
-- Add performance monitoring and production error tracking.
+- Add performance monitoring.
 - Capture and commit polished screenshots for README and portfolio use.

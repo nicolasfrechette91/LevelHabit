@@ -222,6 +222,7 @@ Local service URLs:
   `http://localhost:5118/api`.
 - `frontend/src/environments/environment.ts` points production builds to
   `https://level-habit-api.onrender.com/api`.
+- Sentry error tracking is optional. Empty DSN values leave tracking disabled.
 - Backend CORS must allow the exact production frontend origin:
   `https://nicolasfrechette91.github.io`.
 - Refresh-token behavior is documented in
@@ -250,11 +251,65 @@ Jwt__ExpirationMinutes=15
 Jwt__RefreshTokenExpirationDays=30
 Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
 Cors__AllowedOrigins__1=http://localhost:4200
+Sentry__Dsn=<optional backend Sentry DSN>
+Sentry__Environment=production
 ```
 
 Do not commit real connection strings, JWT secrets, passwords, deploy hooks, or
 tokens. Store production values in Render, Supabase, GitHub secrets, or local
 developer secret stores.
+
+## Production Error Tracking
+
+LevelHabit uses Sentry for optional production error tracking in both the
+ASP.NET Core API and Angular frontend. The app still starts and runs when no
+DSN is configured.
+
+Backend setup on Render:
+
+```text
+Sentry__Dsn=<backend Sentry DSN>
+Sentry__Environment=production
+```
+
+Frontend setup for GitHub Pages:
+
+- Add `LEVELHABIT_SENTRY_DSN` as a GitHub Actions secret for the frontend
+  Sentry project.
+- Optionally add `LEVELHABIT_SENTRY_ENVIRONMENT=production` as a GitHub Actions
+  variable.
+- Pull request validation and local builds do not require these values. When
+  `LEVELHABIT_SENTRY_DSN` is missing, the workflow builds with tracking
+  disabled.
+
+What is captured:
+
+- Backend unhandled exceptions handled by the API exception middleware, with
+  environment, service name, request path, HTTP method, status code, exception
+  type, message, and stack trace.
+- Frontend uncaught Angular/browser errors, with environment, service name, and
+  sanitized route/page context.
+
+What is intentionally excluded or scrubbed:
+
+- Request bodies, cookies, browser storage values, Sentry user context, console
+  breadcrumbs, query strings, and request headers on frontend events.
+- Backend request bodies, cookies, query strings, server name, user context,
+  request headers, failed-request auto-capture, and Sentry log-event capture.
+- Do not place passwords, access tokens, refresh tokens, JWT secrets, Supabase
+  secrets, database URLs, or connection strings in Sentry context, logs, commit
+  history, Render logs, or GitHub Actions output.
+
+Verification:
+
+1. Run the backend locally without `Sentry__Dsn` and confirm it starts.
+2. Run the frontend locally without `LEVELHABIT_SENTRY_DSN` and confirm it
+   starts.
+3. In a development or staging branch with a test DSN, temporarily trigger a
+   safe exception from an existing protected code path or local-only test change.
+4. Confirm the event appears in Sentry with sanitized path/route context.
+5. Remove the temporary trigger before merging or deploying. Do not leave a
+   public endpoint or UI control whose purpose is to throw errors.
 
 ## Database Migrations
 
@@ -365,7 +420,7 @@ After Render deploys the backend and Supabase has the current migrations:
 - Richer analytics charts and trend comparisons.
 - Continued mobile layout and touch ergonomics polish.
 - Broader end-to-end test coverage.
-- Production error tracking and performance monitoring.
+- Performance monitoring.
 
 ## Documentation
 
