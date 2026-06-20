@@ -133,6 +133,126 @@ progress.lh-progress {
   }
 }
 
+.analytics-trend-panel,
+.analytics-level-panel {
+  overflow: hidden;
+}
+
+.trend-chart {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.trend-day {
+  display: grid;
+  grid-template-rows: 1.25rem 8.25rem 1.25rem;
+  min-width: 0;
+  row-gap: 0.35rem;
+  text-align: center;
+}
+
+.trend-value {
+  color: var(--lh-ink);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trend-track {
+  align-items: flex-end;
+  background: rgba($lh-ink, 0.08);
+  border-radius: $lh-radius-sm;
+  display: flex;
+  height: 8.25rem;
+  overflow: hidden;
+}
+
+.trend-fill {
+  border-radius: $lh-radius-sm $lh-radius-sm 0 0;
+  display: block;
+  width: 100%;
+}
+
+.completion-fill {
+  background: linear-gradient(180deg, var(--lh-cyan), var(--lh-emerald));
+}
+
+.xp-fill {
+  background: linear-gradient(180deg, #{$lh-warning}, var(--lh-coral));
+}
+
+.trend-label {
+  color: var(--lh-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.level-stats-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  > div {
+    background: rgba($lh-emerald, 0.06);
+    border: 1px solid rgba($lh-emerald, 0.12);
+    border-radius: $lh-radius-sm;
+    min-width: 0;
+    padding: 0.75rem;
+  }
+
+  span,
+  strong {
+    display: block;
+  }
+
+  strong {
+    color: var(--lh-ink);
+    font-size: 1.35rem;
+    line-height: 1.1;
+    margin-top: 0.25rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+.breakdown-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.breakdown-row {
+  min-width: 0;
+}
+
+.breakdown-track {
+  background: rgba($lh-ink, 0.08);
+  border-radius: $lh-radius-pill;
+  height: 0.7rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+.breakdown-fill {
+  border-radius: $lh-radius-pill;
+  display: block;
+  height: 100%;
+}
+
+.category-fill {
+  background: linear-gradient(90deg, var(--lh-emerald), var(--lh-cyan));
+}
+
+.difficulty-fill {
+  background: linear-gradient(90deg, var(--lh-indigo), var(--lh-coral));
+}
+
 @media (max-width: 575.98px) {
   .prototype-page {
     padding-top: 1rem !important;
@@ -189,5 +309,35 @@ progress.lh-progress {
 
   .achievement-count {
     flex-basis: auto;
+  }
+
+  .trend-chart {
+    gap: 0.35rem;
+  }
+
+  .trend-day {
+    grid-template-rows: 1.1rem 6.5rem 1rem;
+    row-gap: 0.3rem;
+  }
+
+  .trend-track {
+    height: 6.5rem;
+  }
+
+  .trend-value,
+  .trend-label {
+    font-size: 0.68rem;
+  }
+
+  .level-stats-grid {
+    gap: 0.5rem;
+
+    > div {
+      padding: 0.65rem;
+    }
+
+    strong {
+      font-size: 1.15rem;
+    }
   }
 }

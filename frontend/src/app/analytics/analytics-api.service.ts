@@ -9,6 +9,11 @@ export type AnalyticsBucketResponse = Readonly<{
   count: number;
 }>;
 
+export type AnalyticsDailyMetricResponse = Readonly<{
+  dateUtc: string;
+  value: number;
+}>;
+
 export type AnalyticsRecentCompletionResponse = Readonly<{
   id: string;
   questId: string;
@@ -36,6 +41,8 @@ export type AnalyticsSummaryResponse = Readonly<{
   bestStreakMax: number;
   achievementsUnlocked: number;
   achievementsTotal: number;
+  completionsByDay?: readonly AnalyticsDailyMetricResponse[];
+  xpByDay?: readonly AnalyticsDailyMetricResponse[];
   completionCountByCategory: readonly AnalyticsBucketResponse[];
   completionCountByDifficulty: readonly AnalyticsBucketResponse[];
   recentCompletions: readonly AnalyticsRecentCompletionResponse[];

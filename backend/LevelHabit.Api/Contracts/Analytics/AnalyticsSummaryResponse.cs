@@ -16,6 +16,8 @@ public sealed record AnalyticsSummaryResponse(
     int BestStreakMax,
     int AchievementsUnlocked,
     int AchievementsTotal,
+    IReadOnlyList<AnalyticsDailyMetricResponse> CompletionsByDay,
+    IReadOnlyList<AnalyticsDailyMetricResponse> XpByDay,
     IReadOnlyList<AnalyticsBucketResponse> CompletionCountByCategory,
     IReadOnlyList<AnalyticsBucketResponse> CompletionCountByDifficulty,
     IReadOnlyList<AnalyticsRecentCompletionResponse> RecentCompletions);

@@ -634,58 +634,119 @@
                 </div>
               </div>
 
-              <section class="row g-3 mb-3" aria-label="Progress summary">
-                <div class="col-lg-7">
-                  <article class="card lh-card h-100">
+              <section class="row g-3 mb-3" aria-label="Trend summary">
+                <div class="col-xl-8">
+                  <article class="card lh-card analytics-trend-panel h-100" data-testid="analytics-trend-panel">
+                    <div class="card-body p-3 p-md-4">
+                      <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                        <div>
+                          <p class="eyebrow">Trend</p>
+                          <h2 class="h4 fw-bold mb-0">Last 7 days</h2>
+                        </div>
+                        <span class="badge rounded-pill badge-lh-soft fs-6">{{ analyticsCompletionTrendTotal() | number }} done</span>
+                      </div>
+
+                      @if (!analyticsTrendHasActivity()) {
+                        <p class="lh-muted mb-3" data-testid="analytics-empty-trend">Daily trends will appear after your first persisted completion.</p>
+                      }
+
+                      <div class="row g-4">
+                        <div class="col-md-6">
+                          <div class="d-flex align-items-baseline justify-content-between gap-3 mb-3">
+                            <h3 class="h6 fw-bold mb-0">Daily completions</h3>
+                            <span class="small lh-muted">{{ analyticsCompletionTrendTotal() | number }} total</span>
+                          </div>
+                          <div class="trend-chart" data-testid="analytics-completion-trend">
+                            @for (day of summary.completionsByDay ?? []; track day.dateUtc) {
+                              <div class="trend-day" data-testid="analytics-completion-trend-day">
+                                <span class="trend-value">{{ day.value | number }}</span>
+                                <div
+                                  class="trend-track"
+                                  [attr.aria-label]="day.dateUtc + ': ' + day.value + ' completions'"
+                                >
+                                  <span
+                                    class="trend-fill completion-fill"
+                                    data-testid="analytics-completion-trend-bar"
+                                    [style.height.%]="analyticsTrendHeight(day.value, analyticsCompletionTrendMax())"
+                                  ></span>
+                                </div>
+                                <span class="trend-label">{{ day.dateUtc | date: 'EEE' : 'UTC' }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+
+                        <div class="col-md-6">
+                          <div class="d-flex align-items-baseline justify-content-between gap-3 mb-3">
+                            <h3 class="h6 fw-bold mb-0">XP earned</h3>
+                            <span class="small lh-muted">{{ analyticsXpTrendTotal() | number }} XP</span>
+                          </div>
+                          <div class="trend-chart" data-testid="analytics-xp-trend">
+                            @for (day of summary.xpByDay ?? []; track day.dateUtc) {
+                              <div class="trend-day" data-testid="analytics-xp-trend-day">
+                                <span class="trend-value">{{ day.value | number }}</span>
+                                <div
+                                  class="trend-track"
+                                  [attr.aria-label]="day.dateUtc + ': ' + day.value + ' XP'"
+                                >
+                                  <span
+                                    class="trend-fill xp-fill"
+                                    data-testid="analytics-xp-trend-bar"
+                                    [style.height.%]="analyticsTrendHeight(day.value, analyticsXpTrendMax())"
+                                  ></span>
+                                </div>
+                                <span class="trend-label">{{ day.dateUtc | date: 'EEE' : 'UTC' }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+
+                <div class="col-xl-4">
+                  <article class="card lh-card analytics-level-panel h-100" data-testid="analytics-level-progress-card">
                     <div class="card-body p-3 p-md-4">
                       <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                         <div>
                           <p class="eyebrow">Level</p>
-                          <h2 class="h4 fw-bold mb-0">Progress to next level</h2>
+                          <h2 class="h4 fw-bold mb-0">Hero progress</h2>
                         </div>
-                        <span class="badge rounded-pill badge-lh-soft fs-6">{{ summary.currentLevelProgressPercent }}%</span>
+                        <span class="badge rounded-pill badge-lh-soft fs-6">Level {{ summary.currentLevel }}</span>
                       </div>
                       <progress
                         class="progress lh-progress"
+                        data-testid="analytics-level-progress"
                         [value]="summary.currentLevelProgressPercent"
                         max="100"
                         aria-label="Current level progress"
                       ></progress>
                       <div class="d-flex flex-wrap justify-content-between gap-2 small lh-muted mt-2">
                         <span>{{ summary.totalXp | number }} total XP</span>
-                        <span>{{ summary.xpToNextLevel | number }} XP to next level</span>
+                        <span>{{ summary.xpToNextLevel | number }} XP to next</span>
+                      </div>
+
+                      <div class="level-stats-grid mt-3">
+                        <div data-testid="analytics-current-streak-max">
+                          <span class="lh-muted">Current max</span>
+                          <strong>{{ summary.currentStreakMax | number }}d</strong>
+                        </div>
+                        <div data-testid="analytics-best-streak-max">
+                          <span class="lh-muted">Best max</span>
+                          <strong>{{ summary.bestStreakMax | number }}d</strong>
+                        </div>
+                        <div>
+                          <span class="lh-muted">This month</span>
+                          <strong>{{ summary.completionsThisMonth | number }}</strong>
+                        </div>
+                        <div>
+                          <span class="lh-muted">XP trend</span>
+                          <strong>{{ analyticsXpTrendTotal() | number }}</strong>
+                        </div>
                       </div>
                     </div>
                   </article>
-                </div>
-
-                <div class="col-lg-5">
-                  <div class="row g-3 h-100">
-                    <div class="col-sm-6">
-                      <article class="card lh-card stat-card h-100" data-testid="analytics-current-streak-max">
-                        <div class="card-body p-3">
-                          <span class="lh-muted">Current streak max</span>
-                          <strong>{{ summary.currentStreakMax | number }} days</strong>
-                        </div>
-                      </article>
-                    </div>
-                    <div class="col-sm-6">
-                      <article class="card lh-card stat-card h-100" data-testid="analytics-best-streak-max">
-                        <div class="card-body p-3">
-                          <span class="lh-muted">Best streak max</span>
-                          <strong>{{ summary.bestStreakMax | number }} days</strong>
-                        </div>
-                      </article>
-                    </div>
-                    <div class="col-12">
-                      <article class="card lh-card stat-card h-100">
-                        <div class="card-body p-3">
-                          <span class="lh-muted">This month</span>
-                          <strong>{{ summary.completionsThisMonth | number }} completions</strong>
-                        </div>
-                      </article>
-                    </div>
-                  </div>
                 </div>
               </section>
 
@@ -700,19 +761,19 @@
                       @if (summary.completionCountByCategory.length === 0) {
                         <p class="lh-muted mb-0">No completion categories yet.</p>
                       } @else {
-                        <div class="d-grid gap-3">
+                        <div class="breakdown-list">
                           @for (category of summary.completionCountByCategory; track category.name) {
-                            <div>
+                            <div class="breakdown-row" data-testid="analytics-category-breakdown-row">
                               <div class="d-flex justify-content-between gap-3 mb-2">
                                 <strong>{{ category.name }}</strong>
                                 <span class="small lh-muted">{{ category.count | number }}</span>
                               </div>
-                              <progress
-                                class="progress lh-progress slim"
-                                [value]="category.count"
-                                [max]="analyticsCategoryMax()"
-                                [attr.aria-label]="category.name + ' completions'"
-                              ></progress>
+                              <div class="breakdown-track" [attr.aria-label]="category.name + ' completions'">
+                                <span
+                                  class="breakdown-fill category-fill"
+                                  [style.width.%]="analyticsBarWidth(category.count, analyticsCategoryMax())"
+                                ></span>
+                              </div>
                             </div>
                           }
                         </div>
@@ -731,19 +792,19 @@
                       @if (summary.completionCountByDifficulty.length === 0) {
                         <p class="lh-muted mb-0">No completion difficulties yet.</p>
                       } @else {
-                        <div class="d-grid gap-3">
+                        <div class="breakdown-list">
                           @for (difficulty of summary.completionCountByDifficulty; track difficulty.name) {
-                            <div>
+                            <div class="breakdown-row" data-testid="analytics-difficulty-breakdown-row">
                               <div class="d-flex justify-content-between gap-3 mb-2">
                                 <strong>{{ difficulty.name }}</strong>
                                 <span class="small lh-muted">{{ difficulty.count | number }}</span>
                               </div>
-                              <progress
-                                class="progress lh-progress slim"
-                                [value]="difficulty.count"
-                                [max]="analyticsDifficultyMax()"
-                                [attr.aria-label]="difficulty.name + ' completions'"
-                              ></progress>
+                              <div class="breakdown-track" [attr.aria-label]="difficulty.name + ' completions'">
+                                <span
+                                  class="breakdown-fill difficulty-fill"
+                                  [style.width.%]="analyticsBarWidth(difficulty.count, analyticsDifficultyMax())"
+                                ></span>
+                              </div>
                             </div>
                           }
                         </div>

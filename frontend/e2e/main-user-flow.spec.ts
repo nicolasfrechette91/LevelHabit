@@ -63,7 +63,7 @@ test.describe('main authenticated user journey', () => {
     await expect(page.getByTestId('analytics-completions')).toContainText('1');
     await expect(page.getByTestId('analytics-hero-growth')).toContainText('35 XP');
     await expect(page.getByTestId('analytics-achievements')).toContainText('2/9');
-    await expect(page.getByTestId('analytics-current-streak-max')).toContainText('1 day');
+    await expect(page.getByTestId('analytics-current-streak-max')).toContainText('1d');
     await expect(page.getByTestId('analytics-recent-completion')).toContainText(questTitle);
     await expect(page.getByTestId('analytics-recent-completion')).toContainText('+35 XP');
 

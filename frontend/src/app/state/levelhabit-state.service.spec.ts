@@ -101,6 +101,8 @@ const USER_A_ANALYTICS = createAnalyticsSummary({
   currentLevel: HERO_A.level,
   currentStreakMax: HERO_A.currentStreak,
   achievementsUnlocked: 1,
+  completionsByDay: createDailyMetrics({ '2026-06-18': 1 }),
+  xpByDay: createDailyMetrics({ '2026-06-18': USER_A_QUEST.xpReward }),
   recentCompletions: [
     {
       id: '55555555-5555-4555-8555-555555555555',
@@ -311,11 +313,30 @@ function createAnalyticsSummary(
     bestStreakMax: 0,
     achievementsUnlocked: 0,
     achievementsTotal: 1,
+    completionsByDay: createDailyMetrics(),
+    xpByDay: createDailyMetrics(),
     completionCountByCategory: [],
     completionCountByDifficulty: [],
     recentCompletions: [],
     ...overrides
   };
+}
+
+function createDailyMetrics(
+  valuesByDate: Readonly<Record<string, number>> = {}
+): NonNullable<AnalyticsSummaryResponse['completionsByDay']> {
+  return [
+    '2026-06-13',
+    '2026-06-14',
+    '2026-06-15',
+    '2026-06-16',
+    '2026-06-17',
+    '2026-06-18',
+    '2026-06-19'
+  ].map((dateUtc) => ({
+    dateUtc,
+    value: valuesByDate[dateUtc] ?? 0
+  }));
 }
 
 function setupAuthenticatedState(): {

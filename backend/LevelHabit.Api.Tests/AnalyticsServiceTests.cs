@@ -92,6 +92,21 @@ public sealed class AnalyticsServiceTests
         Assert.Equal(3, summary.BestStreakMax);
         Assert.Equal(2, summary.AchievementsUnlocked);
         Assert.Equal(AchievementCatalog.All.Count, summary.AchievementsTotal);
+        Assert.Equal(7, summary.CompletionsByDay.Count);
+        Assert.Equal(7, summary.XpByDay.Count);
+        AssertDailyMetric(summary.CompletionsByDay, new DateOnly(2026, 6, 15), 1);
+        AssertDailyMetric(summary.CompletionsByDay, new DateOnly(2026, 6, 16), 0);
+        AssertDailyMetric(summary.CompletionsByDay, new DateOnly(2026, 6, 17), 1);
+        AssertDailyMetric(summary.CompletionsByDay, new DateOnly(2026, 6, 18), 1);
+        AssertDailyMetric(summary.CompletionsByDay, new DateOnly(2026, 6, 19), 1);
+        AssertDailyMetric(summary.XpByDay, new DateOnly(2026, 6, 15), 35);
+        AssertDailyMetric(summary.XpByDay, new DateOnly(2026, 6, 16), 0);
+        AssertDailyMetric(summary.XpByDay, new DateOnly(2026, 6, 17), 10);
+        AssertDailyMetric(summary.XpByDay, new DateOnly(2026, 6, 18), 10);
+        AssertDailyMetric(summary.XpByDay, new DateOnly(2026, 6, 19), 10);
+        Assert.DoesNotContain(
+            summary.CompletionsByDay,
+            bucket => bucket.DateUtc == new DateOnly(2026, 6, 1));
         AssertBucket(summary.CompletionCountByCategory, "Health", 3);
         AssertBucket(summary.CompletionCountByCategory, "Coding", 2);
         AssertBucket(summary.CompletionCountByCategory, "Chores", 1);
@@ -153,6 +168,10 @@ public sealed class AnalyticsServiceTests
         Assert.Equal(100, summary.TotalXp);
         Assert.Equal(2, summary.CurrentLevel);
         Assert.Equal(1, summary.AchievementsUnlocked);
+        AssertDailyMetric(summary.CompletionsByDay, new DateOnly(2026, 6, 19), 1);
+        AssertDailyMetric(summary.CompletionsByDay, new DateOnly(2026, 6, 18), 0);
+        AssertDailyMetric(summary.XpByDay, new DateOnly(2026, 6, 19), 10);
+        AssertDailyMetric(summary.XpByDay, new DateOnly(2026, 6, 18), 0);
         Assert.Single(summary.CompletionCountByCategory);
         AssertBucket(summary.CompletionCountByCategory, "Health", 1);
         Assert.DoesNotContain(
@@ -187,6 +206,10 @@ public sealed class AnalyticsServiceTests
         Assert.Equal(0, summary.BestStreakMax);
         Assert.Equal(0, summary.AchievementsUnlocked);
         Assert.Equal(AchievementCatalog.All.Count, summary.AchievementsTotal);
+        Assert.Equal(7, summary.CompletionsByDay.Count);
+        Assert.Equal(7, summary.XpByDay.Count);
+        Assert.All(summary.CompletionsByDay, bucket => Assert.Equal(0, bucket.Value));
+        Assert.All(summary.XpByDay, bucket => Assert.Equal(0, bucket.Value));
         Assert.Empty(summary.CompletionCountByCategory);
         Assert.Empty(summary.CompletionCountByDifficulty);
         Assert.Empty(summary.RecentCompletions);
@@ -215,6 +238,17 @@ public sealed class AnalyticsServiceTests
             candidate.Name == name);
 
         Assert.Equal(expectedCount, bucket.Count);
+    }
+
+    private static void AssertDailyMetric(
+        IReadOnlyList<AnalyticsDailyMetricResponse> buckets,
+        DateOnly dateUtc,
+        int expectedValue)
+    {
+        AnalyticsDailyMetricResponse bucket = buckets.Single(candidate =>
+            candidate.DateUtc == dateUtc);
+
+        Assert.Equal(expectedValue, bucket.Value);
     }
 
     private sealed class AnalyticsServiceHarness : IDisposable

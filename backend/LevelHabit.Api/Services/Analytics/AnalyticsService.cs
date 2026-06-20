@@ -16,6 +16,7 @@ public sealed class AnalyticsService(
     TimeProvider timeProvider) : IAnalyticsService
 {
     private const int RecentCompletionLimit = 5;
+    private const int TrendWindowDays = 7;
 
     public async Task<AnalyticsSummaryResponse> GetSummaryAsync(
         ClaimsPrincipal principal,
@@ -25,6 +26,7 @@ public sealed class AnalyticsService(
         DateOnly todayUtc = ToUtcDate(timeProvider.GetUtcNow());
         DateOnly weekStartUtc = GetMondayStartOfWeek(todayUtc);
         DateOnly monthStartUtc = new(todayUtc.Year, todayUtc.Month, 1);
+        DateOnly trendStartUtc = todayUtc.AddDays(-(TrendWindowDays - 1));
 
         HeroProfile heroProfile = await FindHeroProfileAsync(userId, cancellationToken);
         HeroProgress heroProgress = HeroProgressCalculator.Calculate(heroProfile.TotalXp);
@@ -75,6 +77,17 @@ public sealed class AnalyticsService(
                 .Max(),
             AchievementsUnlocked: achievementsUnlocked,
             AchievementsTotal: achievementsTotal,
+            CompletionsByDay: BuildDailyMetrics(
+                completions,
+                trendStartUtc,
+                todayUtc,
+                dailyCompletions => dailyCompletions.Count),
+            XpByDay: BuildDailyMetrics(
+                completions,
+                trendStartUtc,
+                todayUtc,
+                dailyCompletions => dailyCompletions.Sum(completion =>
+                    completion.XpAwarded)),
             CompletionCountByCategory: BuildBuckets(
                 completions.Select(completion => completion.Category)),
             CompletionCountByDifficulty: BuildBuckets(
@@ -156,6 +169,38 @@ public sealed class AnalyticsService(
                     completion.CompletedAtUtc)),
                 todayUtc))
             .ToList();
+    }
+
+    private static IReadOnlyList<AnalyticsDailyMetricResponse> BuildDailyMetrics(
+        IReadOnlyList<CompletionSummary> completions,
+        DateOnly startDateUtc,
+        DateOnly endDateUtc,
+        Func<IReadOnlyList<CompletionSummary>, int> valueSelector)
+    {
+        Dictionary<DateOnly, List<CompletionSummary>> completionsByDate = completions
+            .Where(completion =>
+                completion.CompletionDateUtc >= startDateUtc
+                && completion.CompletionDateUtc <= endDateUtc)
+            .GroupBy(completion => completion.CompletionDateUtc)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        List<AnalyticsDailyMetricResponse> metrics = new(capacity: TrendWindowDays);
+
+        for (
+            DateOnly date = startDateUtc;
+            date <= endDateUtc;
+            date = date.AddDays(1))
+        {
+            int value = completionsByDate.TryGetValue(
+                date,
+                out List<CompletionSummary>? dailyCompletions)
+                ? valueSelector(dailyCompletions)
+                : 0;
+
+            metrics.Add(new AnalyticsDailyMetricResponse(date, value));
+        }
+
+        return metrics;
     }
 
     private static IReadOnlyList<AnalyticsBucketResponse> BuildBuckets(

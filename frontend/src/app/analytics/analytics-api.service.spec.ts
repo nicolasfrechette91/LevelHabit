@@ -26,6 +26,24 @@ const ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
   bestStreakMax: 3,
   achievementsUnlocked: 2,
   achievementsTotal: 9,
+  completionsByDay: [
+    { dateUtc: '2026-06-13', value: 0 },
+    { dateUtc: '2026-06-14', value: 0 },
+    { dateUtc: '2026-06-15', value: 1 },
+    { dateUtc: '2026-06-16', value: 0 },
+    { dateUtc: '2026-06-17', value: 1 },
+    { dateUtc: '2026-06-18', value: 1 },
+    { dateUtc: '2026-06-19', value: 1 }
+  ],
+  xpByDay: [
+    { dateUtc: '2026-06-13', value: 0 },
+    { dateUtc: '2026-06-14', value: 0 },
+    { dateUtc: '2026-06-15', value: 35 },
+    { dateUtc: '2026-06-16', value: 0 },
+    { dateUtc: '2026-06-17', value: 10 },
+    { dateUtc: '2026-06-18', value: 10 },
+    { dateUtc: '2026-06-19', value: 10 }
+  ],
   completionCountByCategory: [
     { name: 'Health', count: 3 },
     { name: 'Coding', count: 2 }

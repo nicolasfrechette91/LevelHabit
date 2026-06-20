@@ -149,6 +149,24 @@ const API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
   bestStreakMax: 5,
   achievementsUnlocked: 2,
   achievementsTotal: 9,
+  completionsByDay: [
+    { dateUtc: '2026-06-13', value: 0 },
+    { dateUtc: '2026-06-14', value: 0 },
+    { dateUtc: '2026-06-15', value: 1 },
+    { dateUtc: '2026-06-16', value: 0 },
+    { dateUtc: '2026-06-17', value: 1 },
+    { dateUtc: '2026-06-18', value: 1 },
+    { dateUtc: '2026-06-19', value: 1 }
+  ],
+  xpByDay: [
+    { dateUtc: '2026-06-13', value: 0 },
+    { dateUtc: '2026-06-14', value: 0 },
+    { dateUtc: '2026-06-15', value: 35 },
+    { dateUtc: '2026-06-16', value: 0 },
+    { dateUtc: '2026-06-17', value: 10 },
+    { dateUtc: '2026-06-18', value: 10 },
+    { dateUtc: '2026-06-19', value: 10 }
+  ],
   completionCountByCategory: [
     { name: 'Health', count: 3 },
     { name: 'Coding', count: 2 },
@@ -189,6 +207,24 @@ const EMPTY_API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
   bestStreakMax: 0,
   achievementsUnlocked: 0,
   achievementsTotal: 9,
+  completionsByDay: [
+    { dateUtc: '2026-06-13', value: 0 },
+    { dateUtc: '2026-06-14', value: 0 },
+    { dateUtc: '2026-06-15', value: 0 },
+    { dateUtc: '2026-06-16', value: 0 },
+    { dateUtc: '2026-06-17', value: 0 },
+    { dateUtc: '2026-06-18', value: 0 },
+    { dateUtc: '2026-06-19', value: 0 }
+  ],
+  xpByDay: [
+    { dateUtc: '2026-06-13', value: 0 },
+    { dateUtc: '2026-06-14', value: 0 },
+    { dateUtc: '2026-06-15', value: 0 },
+    { dateUtc: '2026-06-16', value: 0 },
+    { dateUtc: '2026-06-17', value: 0 },
+    { dateUtc: '2026-06-18', value: 0 },
+    { dateUtc: '2026-06-19', value: 0 }
+  ],
   completionCountByCategory: [],
   completionCountByDifficulty: [],
   recentCompletions: []
@@ -380,8 +416,58 @@ describe('Analytics API view', () => {
     expect(pageText).toContain('0 quests');
     expect(pageText).toContain('Level 1');
     expect(pageText).toContain('0/9');
+    expect(pageText).toContain('Daily trends will appear');
     expect(pageText).toContain('No completion categories yet.');
     expect(pageText).toContain('Recent completions will appear');
+    expect(
+      nativeElement.querySelectorAll('[data-testid="analytics-completion-trend-bar"]').length
+    ).toBe(7);
+  });
+
+  it('renders daily completion and XP trends from the API', async () => {
+    const { nativeElement } = await renderApiAnalyticsRoute();
+    const pageText = textContent(nativeElement);
+
+    expect(pageText).toContain('Last 7 days');
+    expect(pageText).toContain('Daily completions');
+    expect(pageText).toContain('XP earned');
+    expect(pageText).toContain('4 total');
+    expect(pageText).toContain('65 XP');
+    expect(
+      nativeElement.querySelectorAll('[data-testid="analytics-completion-trend-day"]').length
+    ).toBe(7);
+    expect(
+      nativeElement.querySelectorAll('[data-testid="analytics-xp-trend-day"]').length
+    ).toBe(7);
+  });
+
+  it('renders category and difficulty breakdowns from the API', async () => {
+    const { nativeElement } = await renderApiAnalyticsRoute();
+    const pageText = textContent(nativeElement);
+
+    expect(pageText).toContain('Category completions');
+    expect(pageText).toContain('Challenge mix');
+    expect(pageText).toContain('Health');
+    expect(pageText).toContain('Coding');
+    expect(pageText).toContain('Hard');
+    expect(
+      nativeElement.querySelectorAll('[data-testid="analytics-category-breakdown-row"]').length
+    ).toBe(3);
+    expect(
+      nativeElement.querySelectorAll('[data-testid="analytics-difficulty-breakdown-row"]').length
+    ).toBe(3);
+  });
+
+  it('renders level progress from the API', async () => {
+    const { nativeElement } = await renderApiAnalyticsRoute();
+    const progress = nativeElement.querySelector(
+      '[data-testid="analytics-level-progress"]'
+    );
+
+    expect(textContent(nativeElement)).toContain('Hero progress');
+    expect(textContent(nativeElement)).toContain('Level 3');
+    expect(progress).toBeInstanceOf(HTMLProgressElement);
+    expect((progress as HTMLProgressElement).value).toBe(7);
   });
 
   it('renders real analytics summary values', async () => {
@@ -395,7 +481,7 @@ describe('Analytics API view', () => {
     expect(pageText).toContain('Level 3');
     expect(pageText).toContain('280 XP to next');
     expect(pageText).toContain('2/9');
-    expect(pageText).toContain('5 days');
+    expect(pageText).toContain('5d');
     expect(pageText).toContain('Health');
     expect(pageText).toContain('Easy');
     expect(pageText).toContain('Morning training');

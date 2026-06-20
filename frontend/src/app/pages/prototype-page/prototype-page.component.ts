@@ -11,7 +11,10 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
-import type { AnalyticsBucketResponse } from '../../analytics/analytics-api.service';
+import type {
+  AnalyticsBucketResponse,
+  AnalyticsDailyMetricResponse
+} from '../../analytics/analytics-api.service';
 import { AuthService } from '../../auth/auth.service';
 import type { QuestUpsertRequest } from '../../quests/quest-api.service';
 import {
@@ -177,6 +180,35 @@ export class PrototypePageComponent implements OnInit {
     )
   );
 
+  protected readonly analyticsCompletionTrendMax = computed(() =>
+    this.maxDailyMetricValue(
+      this.game.analyticsSummary()?.completionsByDay ?? []
+    )
+  );
+
+  protected readonly analyticsXpTrendMax = computed(() =>
+    this.maxDailyMetricValue(this.game.analyticsSummary()?.xpByDay ?? [])
+  );
+
+  protected readonly analyticsTrendHasActivity = computed(() => {
+    const summary = this.game.analyticsSummary();
+
+    return summary
+      ? this.hasDailyMetricValue(summary.completionsByDay ?? [])
+        || this.hasDailyMetricValue(summary.xpByDay ?? [])
+      : false;
+  });
+
+  protected readonly analyticsCompletionTrendTotal = computed(() =>
+    this.sumDailyMetricValues(
+      this.game.analyticsSummary()?.completionsByDay ?? []
+    )
+  );
+
+  protected readonly analyticsXpTrendTotal = computed(() =>
+    this.sumDailyMetricValues(this.game.analyticsSummary()?.xpByDay ?? [])
+  );
+
   ngOnInit(): void {
     this.game.loadQuests();
     this.game.loadAchievements();
@@ -194,8 +226,42 @@ export class PrototypePageComponent implements OnInit {
     return Math.min(100, Math.round((progress / target) * 100));
   }
 
+  protected analyticsTrendHeight(value: number, max: number): number {
+    if (value <= 0 || max <= 0) {
+      return 0;
+    }
+
+    return Math.max(12, Math.round((value / max) * 100));
+  }
+
+  protected analyticsBarWidth(value: number, max: number): number {
+    if (value <= 0 || max <= 0) {
+      return 0;
+    }
+
+    return Math.max(8, Math.round((value / max) * 100));
+  }
+
   private maxBucketCount(buckets: readonly AnalyticsBucketResponse[]): number {
     return Math.max(...buckets.map((bucket) => bucket.count), 1);
+  }
+
+  private maxDailyMetricValue(
+    buckets: readonly AnalyticsDailyMetricResponse[]
+  ): number {
+    return Math.max(...buckets.map((bucket) => bucket.value), 1);
+  }
+
+  private hasDailyMetricValue(
+    buckets: readonly AnalyticsDailyMetricResponse[]
+  ): boolean {
+    return buckets.some((bucket) => bucket.value > 0);
+  }
+
+  private sumDailyMetricValues(
+    buckets: readonly AnalyticsDailyMetricResponse[]
+  ): number {
+    return buckets.reduce((total, bucket) => total + bucket.value, 0);
   }
 
   protected toggleQuest(quest: Quest): void {
