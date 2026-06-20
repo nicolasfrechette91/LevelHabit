@@ -113,6 +113,8 @@ Security choices for the MVP include:
 - Password hashing instead of storing plaintext passwords.
 - JWT bearer tokens with issuer, audience, lifetime, and signing key
   validation.
+- Rotating refresh tokens stored only as SHA-256 hashes, with server-side
+  revocation and reuse protection.
 - A minimum-length JWT secret validator to catch unsafe configuration.
 - CORS configured with explicit local and production frontend origins.
 - Server-side authorization on protected controllers.
@@ -121,7 +123,8 @@ Security choices for the MVP include:
   GitHub secrets rather than committed source files.
 
 Known security-related future work includes password reset, email verification,
-refresh tokens, and broader end-to-end authentication tests.
+httpOnly cookie exploration for same-site deployments, and broader end-to-end
+authentication tests.
 
 ## Testing Strategy
 
@@ -179,7 +182,7 @@ string before or during production releases.
 ## What I Would Improve Next
 
 - Add password reset and email verification.
-- Add refresh tokens for a more complete authentication lifecycle.
+- Explore httpOnly cookie storage for a same-site deployment architecture.
 - Add notifications or reminders for habit follow-through.
 - Improve mobile layout polish and touch ergonomics.
 - Expand analytics with richer charts and trend comparisons.

@@ -1,95 +1,118 @@
 # LevelHabit
 
-LevelHabit is a production-deployed gamified habit tracker where users manage
-daily habits as quests, complete them for XP, build streaks, unlock
-achievements, and level up a personal hero profile.
+LevelHabit is a production-deployed gamified habit tracker. Users create daily
+quests, complete them for XP, build streaks, unlock achievements, and level up
+a personal hero profile.
 
-- Live demo: [GitHub Pages app](https://nicolasfrechette91.github.io/LevelHabit/#/dashboard)
-- API health: [Render health endpoint](https://level-habit-api.onrender.com/api/health)
-- API base URL: `https://level-habit-api.onrender.com/api`
+- Live demo: [LevelHabit on GitHub Pages](https://nicolasfrechette91.github.io/LevelHabit/)
+- API health check: [Render API health endpoint](https://level-habit-api.onrender.com/api/health)
 - Case study: [docs/case-study.md](docs/case-study.md)
+- Screenshot capture guide: [docs/screenshots.md](docs/screenshots.md)
 
-## Project Summary
+## At A Glance
 
-LevelHabit turns daily habit tracking into a lightweight progression loop:
-create quests, complete them, and see XP, levels, streaks, achievements, and
-analytics update over time. The project solves the common habit-tracker problem
-of progress feeling static by giving users immediate feedback and a persistent
-sense of momentum. Technically, it demonstrates a full-stack Angular and
-ASP.NET Core MVP with JWT authentication, user-scoped persistence, EF Core
-migrations, automated tests, and CI/CD-backed production deployment.
+LevelHabit is built as a real full-stack MVP rather than a static prototype. It
+combines an Angular frontend, an ASP.NET Core API, PostgreSQL persistence,
+JWT-based authentication, EF Core migrations, automated tests, and CI/CD-backed
+production deployment.
+
+The core product loop is intentionally simple: create quests, complete them
+daily, earn XP, maintain streaks, unlock achievements, and inspect progress in
+the analytics view.
 
 ## Feature Summary
 
-- Account registration, login, logout, short-lived JWT access tokens, rotating
-  refresh tokens, protected API access, and authenticated frontend routes.
+- Registration, login, logout, short-lived JWT access tokens, refresh-token
+  rotation, protected API endpoints, and authenticated frontend routes.
 - User-scoped quests with create, update, archive, and complete-today flows.
 - XP rewards, hero level progression, streak calculations, and achievement
   unlocks based on completion history.
 - Analytics summary data for recent completions, XP, streaks, and activity.
-- Production frontend warmup call to the backend health endpoint to reduce the
-  impact of Render cold starts.
-- Automated backend and frontend validation through GitHub Actions.
+- Production backend health warmup from the frontend to reduce Render cold-start
+  friction.
+- Backend and frontend validation through GitHub Actions.
 
 ## Technical Highlights
 
 - Production full-stack deployment across GitHub Pages, Render, and Supabase.
-- User-scoped data isolation for quests, completions, achievements, and
-  analytics.
-- JWT authentication with protected API endpoints, refresh-token rotation,
-  frontend route guards, and token-bearing HTTP requests.
+- User-scoped data isolation for quests, completions, achievements, hero
+  profiles, and analytics.
+- JWT authentication with access tokens, rotating refresh tokens, server-side
+  token revocation, route guards, and token-bearing HTTP requests.
 - EF Core migrations for PostgreSQL schema changes in local and production
   environments.
-- Gamification loop covering XP rewards, hero levels, streaks, achievements,
-  and analytics.
-- Automated backend and frontend tests run through GitHub Actions.
+- Gamified progression loop covering XP rewards, hero levels, streaks,
+  achievements, and analytics.
+- Automated backend and frontend tests.
 - CI/CD workflow for validation, GitHub Pages deployment, and Render deploy
   hook triggering.
+- Responsive Angular frontend with mobile polish work already applied.
 
 ## Tech Stack
 
-- Angular 21 frontend with routing, route guards, HTTP services, and SCSS.
-- ASP.NET Core Web API targeting .NET 10.
+- Angular 21, TypeScript, Angular Router, HTTP services, route guards, SCSS, and
+  Bootstrap utilities.
+- ASP.NET Core Web API on .NET 10.
 - Entity Framework Core with the Npgsql PostgreSQL provider.
 - PostgreSQL locally through Docker Compose.
 - Supabase PostgreSQL in production.
 - GitHub Pages for the production frontend.
 - Render for the production backend API.
-- GitHub Actions for CI, frontend deployment, and Render deploy hook
-  triggering.
+- GitHub Actions for CI, frontend deployment, and Render deploy hook triggering.
 
 ## Architecture Overview
 
 ```mermaid
 flowchart LR
   Browser["User browser"] --> Frontend["Angular frontend\nGitHub Pages"]
-  Frontend -->|"HTTPS API calls\nwith JWT bearer token"| Api["ASP.NET Core API\nRender"]
+  Frontend -->|"HTTPS API calls"| Api["ASP.NET Core API\nRender"]
+  Frontend -->|"JWT bearer token"| Jwt["JWT authentication\naccess + refresh tokens"]
+  Jwt --> Api
   Api -->|"EF Core + Npgsql"| Database[("PostgreSQL\nSupabase")]
-  Api --> Auth["JWT authentication\naccess + refresh tokens"]
 
   Developer["Developer"] -->|"push / pull request"| Actions["GitHub Actions CI/CD"]
-  Actions -->|"test + build + deploy"| Frontend
-  Actions -->|"restore + build + test"| Api
+  Actions -->|"restore, build, test"| Api
+  Actions -->|"test, build, deploy"| Frontend
   Actions -->|"Render deploy hook"| Api
 
   Developer -->|"dotnet ef database update"| Migrations["EF Core migrations"]
   Migrations --> Database
 ```
 
-The Angular app is deployed as a static GitHub Pages site using the
+The Angular app is deployed as static assets on GitHub Pages with the
 `/LevelHabit/` base href and hash routing. It calls the ASP.NET Core API hosted
-on Render. The API validates JWT bearer tokens, applies CORS rules for the
-production and local frontend origins, and uses EF Core migrations to manage
-the PostgreSQL schema. Supabase provides the production database, while Docker
-Compose provides a local PostgreSQL instance.
+on Render. The API validates JWT bearer tokens, rotates refresh tokens, enforces
+CORS for known frontend origins, and uses EF Core migrations to manage the
+PostgreSQL schema. Supabase provides the production database, while Docker
+Compose provides local PostgreSQL.
 
-## Project Case Study
+## Case Study
 
-The full project write-up is available in
-[docs/case-study.md](docs/case-study.md). It covers the product problem,
-architecture, backend and frontend design, database model, authentication and
-security considerations, testing strategy, deployment approach, key challenges,
-and next improvements.
+The full write-up is available in [docs/case-study.md](docs/case-study.md). It
+covers the product problem, architecture, backend and frontend design, database
+model, authentication and security decisions, testing strategy, deployment
+approach, key challenges, and next improvements.
+
+## Screenshots
+
+Screenshots are not committed yet. Capture real screenshots from the production
+deployment with a demo account and non-sensitive sample data, then save them
+under `docs/screenshots/`.
+
+Expected screenshot paths:
+
+| View | Path |
+| --- | --- |
+| Login or register | `docs/screenshots/login.png` |
+| Dashboard with hero progress | `docs/screenshots/dashboard.png` |
+| Quests with a completed quest | `docs/screenshots/quests.png` |
+| Achievements with at least one unlock | `docs/screenshots/achievements.png` |
+| Analytics with real activity data | `docs/screenshots/analytics.png` |
+| Mobile dashboard | `docs/screenshots/mobile-dashboard.png` |
+
+After those PNG files exist, replace this placeholder table with Markdown image
+tags or a compact gallery. See [docs/screenshots.md](docs/screenshots.md) for
+capture sizes, sample data setup, naming, and privacy reminders.
 
 ## Repository Structure
 
@@ -105,6 +128,10 @@ and next improvements.
 |   |   `-- Program.cs
 |   `-- LevelHabit.Api.Tests/
 |-- docs/
+|   |-- case-study.md
+|   |-- e2e-testing.md
+|   |-- refresh-token-auth.md
+|   `-- screenshots.md
 |-- frontend/
 |   |-- public/
 |   `-- src/
@@ -116,37 +143,19 @@ and next improvements.
 `-- global.json
 ```
 
-## Screenshots
-
-Screenshots are not committed yet. Capture screenshots from the production
-deployment using a demo account with non-sensitive sample data, save them to
-these paths, and then replace this placeholder list with Markdown image tags:
-
-```text
-docs/screenshots/login.png
-docs/screenshots/dashboard.png
-docs/screenshots/quests.png
-docs/screenshots/achievements.png
-docs/screenshots/analytics.png
-```
-
-Recommended capture flow:
-
-1. Open the deployed frontend.
-2. Use a demo account with non-sensitive sample data.
-3. Capture login, dashboard, quest management, achievements, and analytics
-   views.
-4. Save the PNG files under `docs/screenshots/`.
-5. Update this section to use Markdown image tags after the files exist.
-
 ## Prerequisites
 
 - .NET 10 SDK.
 - Node.js 20.19 or newer with npm.
 - Docker Desktop or another Docker Compose compatible runtime.
 - Git.
+- EF Core CLI for migration commands:
 
-## Local Development
+```powershell
+dotnet tool install --global dotnet-ef
+```
+
+## Local Development Setup
 
 Create the local Docker environment file:
 
@@ -167,90 +176,70 @@ Configure backend secrets for local development:
 cd backend\LevelHabit.Api
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=levelhabit;Username=levelhabit;Password=levelhabit_dev_password"
 dotnet user-secrets set "Jwt:Secret" "replace-with-at-least-32-random-characters"
+dotnet user-secrets set "Jwt:Issuer" "LevelHabit.Api"
+dotnet user-secrets set "Jwt:Audience" "LevelHabit.Frontend"
 dotnet user-secrets set "Jwt:ExpirationMinutes" "15"
 dotnet user-secrets set "Jwt:RefreshTokenExpirationDays" "30"
 ```
 
-Apply local EF Core migrations:
+Apply local EF Core migrations and run the backend:
 
 ```powershell
 dotnet ef database update
-```
-
-Run the backend API:
-
-```powershell
 dotnet run --launch-profile http
 ```
 
-Check the local health endpoint:
+Check the local API:
 
 ```powershell
 Invoke-RestMethod http://localhost:5118/api/health
 ```
 
-In a second terminal, install dependencies and run the frontend:
+In a second terminal, install frontend dependencies and run Angular:
 
 ```powershell
 cd frontend
-npm install
+npm ci
 npm start
 ```
 
-Local services:
+Local service URLs:
 
 - Frontend: `http://localhost:4200`
 - Backend: `http://localhost:5118`
 - PostgreSQL: `localhost:5432`
 
-## Configuration
+## Environment Variable Notes
 
-- Root `.env` values are used by Docker Compose for PostgreSQL only.
+- Root `.env` values are used only by Docker Compose for local PostgreSQL.
 - Local backend secrets belong in .NET user-secrets or temporary environment
-  variables, not in source.
+  variables, not in source control.
 - `backend/LevelHabit.Api/appsettings.json` contains safe defaults and empty
   secret placeholders.
-- `backend/LevelHabit.Api/appsettings.Example.json` shows the expected backend
+- `backend/LevelHabit.Api/appsettings.Example.json` shows the backend
   configuration shape.
 - `frontend/src/environments/environment.development.ts` points Angular to
   `http://localhost:5118/api`.
 - `frontend/src/environments/environment.ts` points production builds to
   `https://level-habit-api.onrender.com/api`.
-- Backend CORS must allow the exact frontend origin:
+- Backend CORS must allow the exact production frontend origin:
   `https://nicolasfrechette91.github.io`.
-- Auth lifecycle details are documented in
+- Refresh-token behavior is documented in
   [docs/refresh-token-auth.md](docs/refresh-token-auth.md).
 
-For a single PowerShell session, temporary environment variables can be used
-instead of user-secrets:
+Temporary PowerShell environment variables can be used for a single backend
+session:
 
 ```powershell
 $env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=levelhabit;Username=levelhabit;Password=levelhabit_dev_password"
 $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
+$env:Jwt__Issuer = "LevelHabit.Api"
+$env:Jwt__Audience = "LevelHabit.Frontend"
 $env:Jwt__ExpirationMinutes = "15"
 $env:Jwt__RefreshTokenExpirationDays = "30"
 ```
 
-## Authentication Lifecycle
-
-Login and registration return a short-lived JWT access token plus a refresh
-token. Access tokens are sent as `Authorization: Bearer <token>` headers.
-Refresh tokens are cryptographically random, stored only as SHA-256 hashes in
-PostgreSQL, expire independently from access tokens, and rotate every time
-`POST /api/auth/refresh` succeeds. Reusing an old rotated, expired, revoked, or
-unknown refresh token returns `401`.
-
-The Angular app stores both tokens in `localStorage` because the production
-frontend runs on GitHub Pages while the API runs on Render, making httpOnly
-cross-site cookies less practical for this MVP deployment. This keeps browser
-refreshes smooth but carries the normal localStorage/XSS tradeoff. Tokens are
-not logged or placed in query strings, and logout or failed refresh clears auth
-state and user-scoped data.
-
-## Render Environment Variables
-
-Set these on the Render backend service. Use real values from Supabase and a
-long random JWT secret. Do not commit secrets.
+Render backend environment variables:
 
 ```text
 ConnectionStrings__DefaultConnection=<Supabase PostgreSQL connection string>
@@ -263,17 +252,11 @@ Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
 Cors__AllowedOrigins__1=http://localhost:4200
 ```
 
-If the Render service URL changes, update
-`frontend/src/environments/environment.ts` before rebuilding and redeploying the
-GitHub Pages frontend.
+Do not commit real connection strings, JWT secrets, passwords, deploy hooks, or
+tokens. Store production values in Render, Supabase, GitHub secrets, or local
+developer secret stores.
 
 ## Database Migrations
-
-Install the EF Core CLI if needed:
-
-```powershell
-dotnet tool install --global dotnet-ef
-```
 
 Apply migrations locally against Docker PostgreSQL:
 
@@ -282,7 +265,7 @@ cd backend\LevelHabit.Api
 dotnet ef database update
 ```
 
-Apply migrations to Supabase before or during a Render release:
+Apply migrations to Supabase before or during a production release:
 
 ```powershell
 cd backend\LevelHabit.Api
@@ -304,13 +287,13 @@ Backend tests:
 dotnet test backend\LevelHabit.Api.Tests\LevelHabit.Api.Tests.csproj
 ```
 
-Frontend tests and production build:
+Frontend unit tests and production builds:
 
 ```powershell
 cd frontend
-.\node_modules\.bin\ng.cmd test --watch=false
-.\node_modules\.bin\ng.cmd build --configuration production
-.\node_modules\.bin\ng.cmd build --configuration production --base-href /LevelHabit/
+npm test
+npm run build -- --configuration production
+npm run build -- --configuration production --base-href /LevelHabit/
 ```
 
 Local Playwright E2E tests:
@@ -325,20 +308,13 @@ See [docs/e2e-testing.md](docs/e2e-testing.md) for the required local Docker,
 backend API, migrations, and Playwright setup. The E2E suite is local/manual and
 is not part of the required GitHub Actions workflow.
 
-GitHub Pages production build:
-
-```powershell
-cd frontend
-.\node_modules\.bin\ng.cmd build --configuration production --base-href /LevelHabit/
-```
-
-Documentation whitespace validation:
+Markdown whitespace validation:
 
 ```powershell
 git diff --check
 ```
 
-## CI/CD and Deployment Notes
+## CI/CD And Deployment Notes
 
 GitHub Actions runs on pull requests, pushes, and manual `workflow_dispatch`
 runs.
@@ -351,13 +327,15 @@ runs.
   and manual runs.
 - Render deploy job: triggers the Render backend deploy hook on `main` and
   manual runs when `RENDER_DEPLOY_HOOK_URL` is configured as a GitHub secret.
+- EF Core migrations are applied with `dotnet ef database update`; the workflow
+  does not automatically run production database migrations.
 
 ## Production Smoke Checklist
 
 After Render deploys the backend and Supabase has the current migrations:
 
-1. Open `https://nicolasfrechette91.github.io/LevelHabit/#/dashboard`.
-2. Register a new account.
+1. Open `https://nicolasfrechette91.github.io/LevelHabit/`.
+2. Register a new demo account.
 3. Log in.
 4. Create a quest.
 5. Complete the quest.
@@ -369,20 +347,6 @@ After Render deploys the backend and Supabase has the current migrations:
 11. Verify the same user data persists.
 12. Create or log into a second account and verify user data is isolated.
 
-## Production Troubleshooting
-
-- CORS failure: ensure `Cors__AllowedOrigins__0` on Render is exactly
-  `https://nicolasfrechette91.github.io` with no path or trailing slash.
-- Missing Supabase migration: run `dotnet ef database update` against the
-  Supabase connection string and confirm all migrations are applied.
-- Wrong API URL: confirm `frontend/src/environments/environment.ts` points to
-  the Render API URL and the browser network tab calls that host.
-- Expired or missing access token: confirm `POST /api/auth/refresh` succeeds
-  and API retries include a fresh `Authorization: Bearer <token>` header. If
-  refresh fails, log in again.
-- Render cold start: the first API request after inactivity can be slow; retry
-  after the service wakes up.
-
 ## Known Limitations
 
 - Password reset and email verification are not implemented.
@@ -391,47 +355,22 @@ After Render deploys the backend and Supabase has the current migrations:
   to httpOnly cookies later.
 - Notifications and reminders are not implemented.
 - Charts are intentionally lightweight for the MVP analytics dashboard.
-- Render cold starts can affect the first request after inactivity.
-- Screenshots are not yet committed to the repository.
+- Render cold starts can affect the first backend request after inactivity.
+- Real portfolio screenshots still need to be captured and committed.
 
 ## Future Roadmap
 
-Completed MVP:
-
-- Authentication and hero profile.
-- Quest and habit management.
-- Daily completions with XP rewards.
-- Leveling and streak calculations.
-- Achievements.
-- Analytics dashboard.
-- User data isolation.
-- Frontend validation.
-- Backend and frontend automated tests.
-
-Production polish:
-
-- GitHub Pages frontend deployment.
-- Render backend deployment.
-- Supabase PostgreSQL production database.
-- EF Core migration workflow.
-- CI/CD for build, test, and deploy.
-- Production smoke checklist.
-- Backend health endpoint warmup from the auth page.
-- Refresh-token rotation with server-side revocation.
-
-Future improvements:
-
-- Password reset.
-- Email verification.
+- Password reset and email verification.
 - Notifications and reminders.
-- Richer analytics charts.
-- Mobile layout polish.
-- Performance improvements.
+- Richer analytics charts and trend comparisons.
+- Continued mobile layout and touch ergonomics polish.
 - Broader end-to-end test coverage.
+- Production error tracking and performance monitoring.
 
 ## Documentation
 
 - [Portfolio case study](docs/case-study.md)
+- [Screenshot capture guide](docs/screenshots.md)
 - [End-to-end testing guide](docs/e2e-testing.md)
 - [Refresh token authentication](docs/refresh-token-auth.md)
 - [Angular frontend review notes](docs/frontend-angular-review.md)
