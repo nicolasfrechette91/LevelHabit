@@ -14,7 +14,9 @@ describe('AppComponent', () => {
       AUTH_STORAGE_KEY,
       JSON.stringify({
         accessToken: 'test-access-token',
-        expiresAtUtc: '2099-01-01T00:00:00Z'
+        expiresAtUtc: '2099-01-01T00:00:00Z',
+        refreshToken: 'test-refresh-token',
+        refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z'
       })
     );
   });

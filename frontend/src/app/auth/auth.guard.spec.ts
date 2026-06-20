@@ -59,7 +59,9 @@ describe('authGuard', () => {
       AUTH_STORAGE_KEY,
       JSON.stringify({
         accessToken: 'stored-token',
-        expiresAtUtc: '2099-01-01T00:00:00Z'
+        expiresAtUtc: '2099-01-01T00:00:00Z',
+        refreshToken: 'stored-refresh-token',
+        refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z'
       })
     );
 

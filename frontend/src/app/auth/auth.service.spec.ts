@@ -11,6 +11,8 @@ import { AUTH_STORAGE_KEY, AuthService } from './auth.service';
 const AUTH_RESPONSE: AuthResponse = {
   accessToken: 'jwt-token',
   expiresAtUtc: '2099-01-01T00:00:00Z',
+  refreshToken: 'refresh-token',
+  refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z',
   user: {
     id: 'f972df99-805d-48a3-93e6-e5c469ba8be6',
     email: 'player@example.com',
@@ -44,7 +46,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('logs in and stores the JWT for the current browser session', async () => {
+  it('logs in and stores access and refresh tokens for the current browser session', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
 
@@ -66,6 +68,7 @@ describe('AuthService', () => {
     expect(service.user()?.email).toBe(AUTH_RESPONSE.user.email);
     expect(service.heroProfile()?.heroName).toBe(AUTH_RESPONSE.heroProfile.heroName);
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toContain(AUTH_RESPONSE.accessToken);
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toContain(AUTH_RESPONSE.refreshToken);
     http.verify();
   });
 
@@ -102,7 +105,9 @@ describe('AuthService', () => {
       AUTH_STORAGE_KEY,
       JSON.stringify({
         accessToken: 'stored-token',
-        expiresAtUtc: '2099-01-01T00:00:00Z'
+        expiresAtUtc: '2099-01-01T00:00:00Z',
+        refreshToken: 'stored-refresh-token',
+        refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z'
       })
     );
 
@@ -131,7 +136,9 @@ describe('AuthService', () => {
       AUTH_STORAGE_KEY,
       JSON.stringify({
         accessToken: 'stored-token',
-        expiresAtUtc: '2099-01-01T00:00:00Z'
+        expiresAtUtc: '2099-01-01T00:00:00Z',
+        refreshToken: 'stored-refresh-token',
+        refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z'
       })
     );
 
@@ -141,6 +148,7 @@ describe('AuthService', () => {
     });
 
     const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
 
     expect(service.isAuthenticated()).toBe(true);
 
@@ -148,5 +156,15 @@ describe('AuthService', () => {
 
     expect(service.isAuthenticated()).toBe(false);
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(service.accessToken()).toBeNull();
+    expect(service.refreshToken()).toBeNull();
+
+    const request = http.expectOne(`${environment.apiUrl}/auth/logout`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      refreshToken: 'stored-refresh-token'
+    });
+    request.flush(null);
+    http.verify();
   });
 });

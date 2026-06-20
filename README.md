@@ -21,8 +21,8 @@ migrations, automated tests, and CI/CD-backed production deployment.
 
 ## Feature Summary
 
-- Account registration, login, JWT-protected API access, and authenticated
-  frontend routes.
+- Account registration, login, logout, short-lived JWT access tokens, rotating
+  refresh tokens, protected API access, and authenticated frontend routes.
 - User-scoped quests with create, update, archive, and complete-today flows.
 - XP rewards, hero level progression, streak calculations, and achievement
   unlocks based on completion history.
@@ -36,8 +36,8 @@ migrations, automated tests, and CI/CD-backed production deployment.
 - Production full-stack deployment across GitHub Pages, Render, and Supabase.
 - User-scoped data isolation for quests, completions, achievements, and
   analytics.
-- JWT authentication with protected API endpoints, frontend route guards, and
-  token-bearing HTTP requests.
+- JWT authentication with protected API endpoints, refresh-token rotation,
+  frontend route guards, and token-bearing HTTP requests.
 - EF Core migrations for PostgreSQL schema changes in local and production
   environments.
 - Gamification loop covering XP rewards, hero levels, streaks, achievements,
@@ -65,7 +65,7 @@ flowchart LR
   Browser["User browser"] --> Frontend["Angular frontend\nGitHub Pages"]
   Frontend -->|"HTTPS API calls\nwith JWT bearer token"| Api["ASP.NET Core API\nRender"]
   Api -->|"EF Core + Npgsql"| Database[("PostgreSQL\nSupabase")]
-  Api --> Auth["JWT authentication\nissue + validate tokens"]
+  Api --> Auth["JWT authentication\naccess + refresh tokens"]
 
   Developer["Developer"] -->|"push / pull request"| Actions["GitHub Actions CI/CD"]
   Actions -->|"test + build + deploy"| Frontend
@@ -167,6 +167,8 @@ Configure backend secrets for local development:
 cd backend\LevelHabit.Api
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=levelhabit;Username=levelhabit;Password=levelhabit_dev_password"
 dotnet user-secrets set "Jwt:Secret" "replace-with-at-least-32-random-characters"
+dotnet user-secrets set "Jwt:ExpirationMinutes" "15"
+dotnet user-secrets set "Jwt:RefreshTokenExpirationDays" "30"
 ```
 
 Apply local EF Core migrations:
@@ -216,6 +218,8 @@ Local services:
   `https://level-habit-api.onrender.com/api`.
 - Backend CORS must allow the exact frontend origin:
   `https://nicolasfrechette91.github.io`.
+- Auth lifecycle details are documented in
+  [docs/refresh-token-auth.md](docs/refresh-token-auth.md).
 
 For a single PowerShell session, temporary environment variables can be used
 instead of user-secrets:
@@ -223,7 +227,25 @@ instead of user-secrets:
 ```powershell
 $env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=levelhabit;Username=levelhabit;Password=levelhabit_dev_password"
 $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
+$env:Jwt__ExpirationMinutes = "15"
+$env:Jwt__RefreshTokenExpirationDays = "30"
 ```
+
+## Authentication Lifecycle
+
+Login and registration return a short-lived JWT access token plus a refresh
+token. Access tokens are sent as `Authorization: Bearer <token>` headers.
+Refresh tokens are cryptographically random, stored only as SHA-256 hashes in
+PostgreSQL, expire independently from access tokens, and rotate every time
+`POST /api/auth/refresh` succeeds. Reusing an old rotated, expired, revoked, or
+unknown refresh token returns `401`.
+
+The Angular app stores both tokens in `localStorage` because the production
+frontend runs on GitHub Pages while the API runs on Render, making httpOnly
+cross-site cookies less practical for this MVP deployment. This keeps browser
+refreshes smooth but carries the normal localStorage/XSS tradeoff. Tokens are
+not logged or placed in query strings, and logout or failed refresh clears auth
+state and user-scoped data.
 
 ## Render Environment Variables
 
@@ -235,7 +257,8 @@ ConnectionStrings__DefaultConnection=<Supabase PostgreSQL connection string>
 Jwt__Secret=<at least 32 random characters>
 Jwt__Issuer=LevelHabit.Api
 Jwt__Audience=LevelHabit.Frontend
-Jwt__ExpirationMinutes=60
+Jwt__ExpirationMinutes=15
+Jwt__RefreshTokenExpirationDays=30
 Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
 Cors__AllowedOrigins__1=http://localhost:4200
 ```
@@ -269,9 +292,9 @@ dotnet ef database update
 ```
 
 Production reminder: Supabase needs every EF migration in
-`backend/LevelHabit.Api/Migrations`, including authentication, hero profiles,
-quests, quest completions, completion XP, achievements, and analytics-related
-tables.
+`backend/LevelHabit.Api/Migrations`, including authentication, refresh tokens,
+hero profiles, quests, quest completions, completion XP, achievements, and
+analytics-related tables.
 
 ## Testing Commands
 
@@ -285,9 +308,9 @@ Frontend tests and production build:
 
 ```powershell
 cd frontend
-npm install
-npm test
-npm run build -- --configuration production
+.\node_modules\.bin\ng.cmd test --watch=false
+.\node_modules\.bin\ng.cmd build --configuration production
+.\node_modules\.bin\ng.cmd build --configuration production --base-href /LevelHabit/
 ```
 
 Local Playwright E2E tests:
@@ -306,7 +329,7 @@ GitHub Pages production build:
 
 ```powershell
 cd frontend
-npm run build -- --configuration production --base-href /LevelHabit/
+.\node_modules\.bin\ng.cmd build --configuration production --base-href /LevelHabit/
 ```
 
 Documentation whitespace validation:
@@ -354,15 +377,18 @@ After Render deploys the backend and Supabase has the current migrations:
   Supabase connection string and confirm all migrations are applied.
 - Wrong API URL: confirm `frontend/src/environments/environment.ts` points to
   the Render API URL and the browser network tab calls that host.
-- Expired or missing JWT: log out and log in again, then confirm API requests
-  include an `Authorization: Bearer <token>` header.
+- Expired or missing access token: confirm `POST /api/auth/refresh` succeeds
+  and API retries include a fresh `Authorization: Bearer <token>` header. If
+  refresh fails, log in again.
 - Render cold start: the first API request after inactivity can be slow; retry
   after the service wakes up.
 
 ## Known Limitations
 
 - Password reset and email verification are not implemented.
-- Access tokens are short-lived JWTs; refresh tokens are a future improvement.
+- Browser token persistence uses `localStorage` for the current GitHub
+  Pages/Render architecture; a same-site deployment could move refresh tokens
+  to httpOnly cookies later.
 - Notifications and reminders are not implemented.
 - Charts are intentionally lightweight for the MVP analytics dashboard.
 - Render cold starts can affect the first request after inactivity.
@@ -391,12 +417,12 @@ Production polish:
 - CI/CD for build, test, and deploy.
 - Production smoke checklist.
 - Backend health endpoint warmup from the auth page.
+- Refresh-token rotation with server-side revocation.
 
 Future improvements:
 
 - Password reset.
 - Email verification.
-- Refresh tokens.
 - Notifications and reminders.
 - Richer analytics charts.
 - Mobile layout polish.
@@ -407,5 +433,6 @@ Future improvements:
 
 - [Portfolio case study](docs/case-study.md)
 - [End-to-end testing guide](docs/e2e-testing.md)
+- [Refresh token authentication](docs/refresh-token-auth.md)
 - [Angular frontend review notes](docs/frontend-angular-review.md)
 - [C# backend instructions](docs/csharp-best-practices.instructions.md)

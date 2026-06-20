@@ -20,6 +20,8 @@ export type HeroProfile = Readonly<{
 export type AuthResponse = Readonly<{
   accessToken: string;
   expiresAtUtc: string;
+  refreshToken: string;
+  refreshTokenExpiresAtUtc: string;
   user: AuthUser;
   heroProfile: HeroProfile;
 }>;
@@ -33,6 +35,12 @@ export type LoginRequest = Readonly<{
   email: string;
   password: string;
 }>;
+
+export type RefreshRequest = Readonly<{
+  refreshToken: string;
+}>;
+
+export type LogoutRequest = RefreshRequest;
 
 export type RegisterRequest = LoginRequest &
   Readonly<{

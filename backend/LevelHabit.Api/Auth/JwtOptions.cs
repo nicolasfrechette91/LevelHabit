@@ -13,7 +13,10 @@ public sealed class JwtOptions
     public string Audience { get; init; } = "LevelHabit.Frontend";
 
     [Range(5, 1440)]
-    public int ExpirationMinutes { get; init; } = 60;
+    public int ExpirationMinutes { get; init; } = 15;
+
+    [Range(1, 365)]
+    public int RefreshTokenExpirationDays { get; init; } = 30;
 
     public string? Secret { get; init; }
 }

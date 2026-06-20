@@ -14,6 +14,8 @@ import { AuthPageComponent } from './auth-page.component';
 const AUTH_RESPONSE: AuthResponse = {
   accessToken: 'jwt-token',
   expiresAtUtc: '2099-01-01T00:00:00Z',
+  refreshToken: 'refresh-token',
+  refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z',
   user: {
     id: 'f972df99-805d-48a3-93e6-e5c469ba8be6',
     email: 'player@example.com',

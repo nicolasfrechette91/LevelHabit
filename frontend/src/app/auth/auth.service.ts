@@ -1,14 +1,26 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, of, tap, throwError } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  finalize,
+  of,
+  shareReplay,
+  switchMap,
+  tap,
+  throwError
+} from 'rxjs';
 
 import { environment } from '../../environments/environment';
+import { SKIP_AUTH_REFRESH } from './auth-http.context';
 import type {
   AuthResponse,
   AuthUser,
   HeroProfile,
   LoginRequest,
+  LogoutRequest,
   MeResponse,
+  RefreshRequest,
   RegisterRequest
 } from './auth.models';
 
@@ -17,6 +29,8 @@ export const AUTH_STORAGE_KEY = 'levelhabit.auth.v1';
 type StoredAuth = Readonly<{
   accessToken: string;
   expiresAtUtc: string;
+  refreshToken: string;
+  refreshTokenExpiresAtUtc: string;
 }>;
 
 @Injectable({
@@ -31,12 +45,22 @@ export class AuthService {
   private readonly expiresAtUtcSignal = signal<string | null>(
     this.storedAuth?.expiresAtUtc ?? null
   );
+  private readonly refreshTokenSignal = signal<string | null>(
+    this.storedAuth?.refreshToken ?? null
+  );
+  private readonly refreshTokenExpiresAtUtcSignal = signal<string | null>(
+    this.storedAuth?.refreshTokenExpiresAtUtc ?? null
+  );
   private readonly userSignal = signal<AuthUser | null>(null);
   private readonly heroProfileSignal = signal<HeroProfile | null>(null);
+  private refreshRequest$: Observable<AuthResponse> | null = null;
+  private sessionVersion = 0;
 
   readonly user = this.userSignal.asReadonly();
   readonly heroProfile = this.heroProfileSignal.asReadonly();
-  readonly isAuthenticated = computed(() => this.hasToken());
+  readonly isAuthenticated = computed(() =>
+    this.hasToken() || this.hasRefreshToken()
+  );
   readonly authRequired = environment.authRequired;
   readonly canUsePrototypeRoutes = computed(() =>
     !this.authRequired || this.isAuthenticated()
@@ -46,15 +70,22 @@ export class AuthService {
     return this.accessTokenSignal();
   }
 
+  refreshToken(): string | null {
+    return this.refreshTokenSignal();
+  }
+
   hasToken(): boolean {
-    const token = this.accessTokenSignal();
-    const expiresAtUtc = this.expiresAtUtcSignal();
+    return this.tokenIsUsable(
+      this.accessTokenSignal(),
+      this.expiresAtUtcSignal()
+    );
+  }
 
-    if (!token || !expiresAtUtc) {
-      return false;
-    }
-
-    return Date.parse(expiresAtUtc) > Date.now();
+  hasRefreshToken(): boolean {
+    return this.tokenIsUsable(
+      this.refreshTokenSignal(),
+      this.refreshTokenExpiresAtUtcSignal()
+    );
   }
 
   register(request: RegisterRequest): Observable<AuthResponse> {
@@ -69,6 +100,50 @@ export class AuthService {
       .pipe(tap((response) => this.persistSession(response)));
   }
 
+  refreshSession(): Observable<AuthResponse> {
+    const refreshToken = this.refreshTokenSignal();
+
+    if (!refreshToken || !this.hasRefreshToken()) {
+      this.clearSession();
+      return throwError(() => new Error('A valid refresh token is required.'));
+    }
+
+    if (this.refreshRequest$) {
+      return this.refreshRequest$;
+    }
+
+    const sessionVersion = this.sessionVersion;
+    const request: RefreshRequest = { refreshToken };
+
+    this.refreshRequest$ = this.http
+      .post<AuthResponse>(`${environment.apiUrl}/auth/refresh`, request, {
+        context: this.skipRefreshContext()
+      })
+      .pipe(
+        tap((response) => {
+          if (
+            this.sessionVersion === sessionVersion
+            && this.refreshTokenSignal() === refreshToken
+          ) {
+            this.persistSession(response);
+          }
+        }),
+        catchError((error: unknown) => {
+          if (this.refreshTokenSignal() === refreshToken) {
+            this.clearSession();
+          }
+
+          return throwError(() => error);
+        }),
+        finalize(() => {
+          this.refreshRequest$ = null;
+        }),
+        shareReplay({ bufferSize: 1, refCount: false })
+      );
+
+    return this.refreshRequest$;
+  }
+
   loadCurrentUser(): Observable<MeResponse> {
     return this.http
       .get<MeResponse>(`${environment.apiUrl}/auth/me`)
@@ -77,7 +152,13 @@ export class AuthService {
 
   ensureCurrentUser(): Observable<MeResponse> {
     if (!this.hasToken()) {
-      return throwError(() => new Error('A valid access token is required.'));
+      if (!this.hasRefreshToken()) {
+        return throwError(() => new Error('A valid session is required.'));
+      }
+
+      return this.refreshSession().pipe(
+        switchMap(() => this.loadCurrentUser())
+      );
     }
 
     const user = this.userSignal();
@@ -95,8 +176,31 @@ export class AuthService {
   }
 
   logout(): void {
+    const refreshToken = this.refreshTokenSignal();
+
+    this.clearSession();
+
+    if (!refreshToken) {
+      return;
+    }
+
+    const request: LogoutRequest = { refreshToken };
+
+    this.http
+      .post<void>(`${environment.apiUrl}/auth/logout`, request, {
+        context: this.skipRefreshContext()
+      })
+      .pipe(catchError(() => of(undefined)))
+      .subscribe();
+  }
+
+  clearSession(): void {
+    this.sessionVersion += 1;
+    this.refreshRequest$ = null;
     this.accessTokenSignal.set(null);
     this.expiresAtUtcSignal.set(null);
+    this.refreshTokenSignal.set(null);
+    this.refreshTokenExpiresAtUtcSignal.set(null);
     this.userSignal.set(null);
     this.heroProfileSignal.set(null);
 
@@ -106,19 +210,22 @@ export class AuthService {
   }
 
   private persistSession(response: AuthResponse): void {
+    this.sessionVersion += 1;
     this.accessTokenSignal.set(response.accessToken);
     this.expiresAtUtcSignal.set(response.expiresAtUtc);
+    this.refreshTokenSignal.set(response.refreshToken);
+    this.refreshTokenExpiresAtUtcSignal.set(response.refreshTokenExpiresAtUtc);
     this.setCurrentUser(response);
 
     if (typeof localStorage === 'undefined') {
       return;
     }
 
-    // Prototype auth storage: localStorage keeps refreshes simple until a
-    // production backend/frontend deployment can choose a stronger strategy.
     const storedAuth: StoredAuth = {
       accessToken: response.accessToken,
-      expiresAtUtc: response.expiresAtUtc
+      expiresAtUtc: response.expiresAtUtc,
+      refreshToken: response.refreshToken,
+      refreshTokenExpiresAtUtc: response.refreshTokenExpiresAtUtc
     };
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(storedAuth));
@@ -141,33 +248,57 @@ export class AuthService {
         return null;
       }
 
-      const parsed = JSON.parse(stored) as Partial<StoredAuth>;
+      const parsed: unknown = JSON.parse(stored);
+
+      if (!this.isStoredAuth(parsed)) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
+
+      const accessExpiresAtMilliseconds = Date.parse(parsed.expiresAtUtc);
+      const refreshExpiresAtMilliseconds = Date.parse(
+        parsed.refreshTokenExpiresAtUtc
+      );
 
       if (
-        typeof parsed.accessToken !== 'string' ||
-        typeof parsed.expiresAtUtc !== 'string'
+        Number.isNaN(accessExpiresAtMilliseconds)
+        || Number.isNaN(refreshExpiresAtMilliseconds)
+        || refreshExpiresAtMilliseconds <= Date.now()
       ) {
         localStorage.removeItem(AUTH_STORAGE_KEY);
         return null;
       }
 
-      const expiresAtMilliseconds = Date.parse(parsed.expiresAtUtc);
-
-      if (
-        Number.isNaN(expiresAtMilliseconds) ||
-        expiresAtMilliseconds <= Date.now()
-      ) {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        return null;
-      }
-
-      return {
-        accessToken: parsed.accessToken,
-        expiresAtUtc: parsed.expiresAtUtc
-      };
+      return parsed;
     } catch {
       localStorage.removeItem(AUTH_STORAGE_KEY);
       return null;
     }
+  }
+
+  private tokenIsUsable(token: string | null, expiresAtUtc: string | null): boolean {
+    if (!token || !expiresAtUtc) {
+      return false;
+    }
+
+    return Date.parse(expiresAtUtc) > Date.now();
+  }
+
+  private isStoredAuth(value: unknown): value is StoredAuth {
+    return (
+      this.isRecord(value)
+      && typeof value['accessToken'] === 'string'
+      && typeof value['expiresAtUtc'] === 'string'
+      && typeof value['refreshToken'] === 'string'
+      && typeof value['refreshTokenExpiresAtUtc'] === 'string'
+    );
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  private skipRefreshContext(): HttpContext {
+    return new HttpContext().set(SKIP_AUTH_REFRESH, true);
   }
 }

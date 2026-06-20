@@ -19,6 +19,8 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
 
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -29,5 +31,6 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
         modelBuilder.ApplyConfiguration(new QuestCompletionConfiguration());
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());
         modelBuilder.ApplyConfiguration(new UserAchievementConfiguration());
+        modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
     }
 }

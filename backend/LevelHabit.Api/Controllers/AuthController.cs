@@ -29,6 +29,26 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthResponse>> Refresh(
+        RefreshRequest request,
+        CancellationToken cancellationToken)
+    {
+        AuthResponse response = await authService.RefreshAsync(request, cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(
+        LogoutRequest request,
+        CancellationToken cancellationToken)
+    {
+        await authService.LogoutAsync(request, cancellationToken);
+
+        return NoContent();
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<MeResponse>> Me(CancellationToken cancellationToken)
