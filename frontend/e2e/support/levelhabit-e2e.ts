@@ -57,6 +57,8 @@ export function createTestUser(runId: string, label: string): TestUser {
 
 export async function registerUser(page: Page, user: TestUser): Promise<void> {
   await page.goto('/#/register');
+  await expectAnonymousHeader(page);
+
   await page.getByTestId('register-email-input').fill(user.email);
   await page.getByTestId('register-password-input').fill(user.password);
   await page.getByTestId('register-display-name-input').fill(user.displayName);
@@ -65,20 +67,25 @@ export async function registerUser(page: Page, user: TestUser): Promise<void> {
 
   await expect(page.getByTestId('page-dashboard')).toBeVisible();
   await expect(page.getByText(user.heroName)).toBeVisible();
+  await expectAuthenticatedHeader(page);
 }
 
 export async function loginUser(page: Page, user: TestUser): Promise<void> {
   await page.goto('/#/login');
+  await expectAnonymousHeader(page);
+
   await page.getByTestId('login-email-input').fill(user.email);
   await page.getByTestId('login-password-input').fill(user.password);
   await page.getByTestId('login-submit-button').click();
 
   await expect(page.getByTestId('page-dashboard')).toBeVisible();
   await expect(page.getByText(user.heroName)).toBeVisible();
+  await expectAuthenticatedHeader(page);
 }
 
 export async function logout(page: Page): Promise<void> {
   await page.getByTestId('logout-button').click();
+  await expectAnonymousHeader(page);
   await expect(page.getByTestId('login-submit-button')).toBeVisible();
 }
 
@@ -129,4 +136,21 @@ export async function expectNoQuestCard(page: Page, title: string): Promise<void
 
 async function waitForQuestsLoaded(page: Page): Promise<void> {
   await expect(page.locator('text=Loading quests...')).toHaveCount(0);
+}
+
+async function expectAnonymousHeader(page: Page): Promise<void> {
+  await expect(page.getByRole('link', { name: 'LevelHabit' })).toBeVisible();
+  await expect(page.locator('nav[aria-label="Primary"]')).toHaveCount(0);
+  await expect(page.getByTestId('logout-button')).toHaveCount(0);
+  await expect(page.getByTestId('nav-dashboard')).toHaveCount(0);
+}
+
+async function expectAuthenticatedHeader(page: Page): Promise<void> {
+  await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();
+  await expect(page.getByTestId('nav-dashboard')).toBeVisible();
+  await expect(page.getByTestId('nav-quests')).toBeVisible();
+  await expect(page.getByTestId('nav-hero')).toBeVisible();
+  await expect(page.getByTestId('nav-achievements')).toBeVisible();
+  await expect(page.getByTestId('nav-analytics')).toBeVisible();
+  await expect(page.getByTestId('logout-button')).toBeVisible();
 }
