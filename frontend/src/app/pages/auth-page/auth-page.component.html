@@ -1,17 +1,25 @@
 <section class="auth-page container-xl py-4 pb-5">
   <div class="auth-layout">
     <div class="auth-intro">
-      <p class="eyebrow">LevelHabit</p>
-      <h1 class="display-3 fw-bold mb-3">
-        {{ mode() === 'register' ? 'Create your hero' : 'Welcome back' }}
-      </h1>
-      <p class="lead mb-0">
-        {{ mode() === 'register' ? 'Choose your player identity and begin with a fresh hero profile.' : 'Sign in to load your hero profile and continue the daily run.' }}
-      </p>
+      <div class="auth-intro-copy">
+        <p class="eyebrow">LevelHabit</p>
+        <h1 class="display-3 fw-bold mb-3">
+          {{ mode() === 'register' ? 'Create your hero.' : 'Welcome back, hero.' }}
+        </h1>
+        <p class="lead mb-0">
+          {{ mode() === 'register' ? 'Choose your player identity, start your first quests, and build momentum from day one.' : 'Continue your adventure, complete today\'s quests, and keep building momentum.' }}
+        </p>
+
+        <ul class="auth-features" aria-label="LevelHabit features">
+          <li>Daily Quests</li>
+          <li>Build Streaks</li>
+          <li>Earn Achievements</li>
+        </ul>
+      </div>
     </div>
 
     <article class="card lh-card auth-panel">
-      <div class="card-body p-3 p-md-4">
+      <div class="card-body auth-panel-body">
         @if (mode() === 'register') {
           <form class="d-grid gap-3" [formGroup]="registerForm" (ngSubmit)="submitRegister()">
             <div>
