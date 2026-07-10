@@ -100,6 +100,103 @@ describe('AuthService', () => {
     http.verify();
   });
 
+  it('requests a password reset email', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const responsePromise = firstValueFrom(
+      service.forgotPassword('player@example.com')
+    );
+
+    const request = http.expectOne(`${environment.apiUrl}/auth/forgot-password`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      email: 'player@example.com'
+    });
+    request.flush({
+      message: 'If an account exists for that email, a password reset link has been sent.'
+    });
+
+    await expect(responsePromise).resolves.toEqual({
+      message: 'If an account exists for that email, a password reset link has been sent.'
+    });
+    http.verify();
+  });
+
+  it('resets a password with email and token', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const responsePromise = firstValueFrom(
+      service.resetPassword('player@example.com', 'reset-token', 'NewPassword123!')
+    );
+
+    const request = http.expectOne(`${environment.apiUrl}/auth/reset-password`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      email: 'player@example.com',
+      token: 'reset-token',
+      newPassword: 'NewPassword123!'
+    });
+    request.flush({
+      message: 'Your password has been reset.'
+    });
+
+    await expect(responsePromise).resolves.toEqual({
+      message: 'Your password has been reset.'
+    });
+    http.verify();
+  });
+
+  it('verifies an email with email and token', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const responsePromise = firstValueFrom(
+      service.verifyEmail('player@example.com', 'verification-token')
+    );
+
+    const request = http.expectOne(`${environment.apiUrl}/auth/verify-email`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      email: 'player@example.com',
+      token: 'verification-token'
+    });
+    request.flush({
+      message: 'Your email has been verified.'
+    });
+
+    await expect(responsePromise).resolves.toEqual({
+      message: 'Your email has been verified.'
+    });
+    http.verify();
+  });
+
+  it('resends an email verification link', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const responsePromise = firstValueFrom(
+      service.resendEmailVerification('player@example.com')
+    );
+
+    const request = http.expectOne(
+      `${environment.apiUrl}/auth/resend-email-verification`
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      email: 'player@example.com'
+    });
+    request.flush({
+      message: 'If an account exists and needs email verification, a verification email has been sent.'
+    });
+
+    await expect(responsePromise).resolves.toEqual({
+      message: 'If an account exists and needs email verification, a verification email has been sent.'
+    });
+    http.verify();
+  });
+
   it('loads the current user from an existing token', async () => {
     localStorage.setItem(
       AUTH_STORAGE_KEY,

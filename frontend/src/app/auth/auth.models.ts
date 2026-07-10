@@ -31,6 +31,10 @@ export type MeResponse = Readonly<{
   heroProfile: HeroProfile;
 }>;
 
+export type AuthMessageResponse = Readonly<{
+  message: string;
+}>;
+
 export type LoginRequest = Readonly<{
   email: string;
   password: string;
@@ -47,3 +51,20 @@ export type RegisterRequest = LoginRequest &
     displayName: string;
     heroName: string;
   }>;
+
+export type ForgotPasswordRequest = Readonly<{
+  email: string;
+}>;
+
+export type ResetPasswordRequest = Readonly<{
+  email: string;
+  token: string;
+  newPassword: string;
+}>;
+
+export type VerifyEmailRequest = Readonly<{
+  email: string;
+  token: string;
+}>;
+
+export type ResendEmailVerificationRequest = ForgotPasswordRequest;

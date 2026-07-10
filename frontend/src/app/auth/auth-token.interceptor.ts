@@ -92,7 +92,14 @@ function withBearerToken(
 }
 
 function isAuthLifecycleEndpoint(request: HttpRequest<unknown>): boolean {
-  return ['login', 'register', 'refresh', 'logout'].some((endpoint) =>
-    request.url.split('?')[0]?.endsWith(`/auth/${endpoint}`)
-  );
+  return [
+    'login',
+    'register',
+    'refresh',
+    'logout',
+    'forgot-password',
+    'reset-password',
+    'verify-email',
+    'resend-email-verification'
+  ].some((endpoint) => request.url.split('?')[0]?.endsWith(`/auth/${endpoint}`));
 }

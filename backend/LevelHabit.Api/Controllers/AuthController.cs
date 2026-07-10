@@ -49,6 +49,55 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<ActionResult<AuthMessageResponse>> ForgotPassword(
+        ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        AuthMessageResponse response = await authService.ForgotPasswordAsync(
+            request,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<ActionResult<AuthMessageResponse>> ResetPassword(
+        ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        AuthMessageResponse response = await authService.ResetPasswordAsync(
+            request,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpPost("verify-email")]
+    public async Task<ActionResult<AuthMessageResponse>> VerifyEmail(
+        VerifyEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        AuthMessageResponse response = await authService.VerifyEmailAsync(
+            request,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpPost("resend-email-verification")]
+    public async Task<ActionResult<AuthMessageResponse>> ResendEmailVerification(
+        ResendEmailVerificationRequest request,
+        CancellationToken cancellationToken)
+    {
+        AuthMessageResponse response =
+            await authService.ResendEmailVerificationAsync(
+                request,
+                cancellationToken);
+
+        return Ok(response);
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<MeResponse>> Me(CancellationToken cancellationToken)

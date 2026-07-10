@@ -1,0 +1,23 @@
+@use "variables" as *;
+
+.auth-flow-page {
+  align-items: center;
+  display: grid;
+  min-height: calc(100vh - 4.25rem);
+}
+
+.auth-flow-layout {
+  margin-inline: auto;
+  max-width: 30rem;
+  width: 100%;
+}
+
+.auth-flow-panel {
+  border-color: rgba($lh-emerald, 0.24);
+  box-shadow: 0 1.25rem 3rem rgba($lh-ink, 0.12);
+}
+
+.auth-flow-link {
+  color: var(--lh-emerald);
+  min-height: 2.75rem;
+}

@@ -21,6 +21,8 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    public DbSet<AuthToken> AuthTokens => Set<AuthToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -32,5 +34,6 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());
         modelBuilder.ApplyConfiguration(new UserAchievementConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new AuthTokenConfiguration());
     }
 }

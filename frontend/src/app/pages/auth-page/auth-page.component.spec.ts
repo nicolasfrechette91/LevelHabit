@@ -48,6 +48,7 @@ class AuthServiceStub {
   readonly register = vi.fn((request: RegisterRequest): Observable<AuthResponse> =>
     of(AUTH_RESPONSE)
   );
+  readonly showEmailVerificationNotice = vi.fn((email: string): void => undefined);
 }
 
 describe('AuthPageComponent', () => {
@@ -157,6 +158,9 @@ describe('AuthPageComponent', () => {
       displayName: 'Player One',
       heroName: 'Morning Warden'
     });
+    expect(auth.showEmailVerificationNotice).toHaveBeenCalledWith(
+      'player@example.com'
+    );
     expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
   });
 

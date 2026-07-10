@@ -56,6 +56,20 @@
     </div>
   </header>
 
+  @if (auth.emailVerificationNotice(); as notice) {
+    <div class="container-xl pt-3">
+      <div class="alert alert-success app-notice mb-0" role="alert">
+        <span>{{ notice }}</span>
+        <button
+          type="button"
+          class="btn-close"
+          aria-label="Dismiss"
+          (click)="auth.dismissEmailVerificationNotice()"
+        ></button>
+      </div>
+    </div>
+  }
+
   <main class="app-main">
     <router-outlet />
   </main>

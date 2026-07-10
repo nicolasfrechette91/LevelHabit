@@ -6,6 +6,7 @@ using LevelHabit.Api.Observability;
 using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Analytics;
 using LevelHabit.Api.Services.Auth;
+using LevelHabit.Api.Services.Email;
 using LevelHabit.Api.Services.Quests;
 using LevelHabit.Api.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -54,6 +55,39 @@ builder.Services.AddDbContext<LevelHabitDbContext>(options =>
 
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<EmailOptions>(
+    builder.Configuration.GetSection(EmailOptions.SectionName));
+builder.Services.Configure<BrevoOptions>(
+    builder.Configuration.GetSection(BrevoOptions.SectionName));
+builder.Services.Configure<FrontendOptions>(
+    builder.Configuration.GetSection(FrontendOptions.SectionName));
+
+string emailProvider = GetRequiredConfigurationValue(
+    builder.Configuration,
+    "Email:Provider");
+
+ValidateRequiredConfigurationValue(builder.Configuration, "Frontend:BaseUrl");
+
+if (string.Equals(emailProvider, "Development", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<IEmailSender, DevelopmentEmailSender>();
+}
+else if (string.Equals(emailProvider, "Brevo", StringComparison.OrdinalIgnoreCase))
+{
+    ValidateRequiredConfigurationValue(builder.Configuration, "Brevo:ApiKey");
+    ValidateRequiredConfigurationValue(builder.Configuration, "Brevo:FromEmail");
+    ValidateRequiredConfigurationValue(builder.Configuration, "Brevo:FromName");
+
+    builder.Services.AddHttpClient<IEmailSender, BrevoEmailSender>(httpClient =>
+    {
+        httpClient.BaseAddress = BrevoEmailSender.ApiBaseUri;
+    });
+}
+else
+{
+    throw new InvalidOperationException(
+        "Email provider must be configured as either 'Development' or 'Brevo'.");
+}
 
 JwtOptions jwtOptions = builder.Configuration
     .GetSection(JwtOptions.SectionName)
@@ -111,5 +145,22 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static string GetRequiredConfigurationValue(IConfiguration configuration, string key)
+{
+    string? value = configuration[key];
+
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        throw new InvalidOperationException($"Configuration value '{key}' is required.");
+    }
+
+    return value;
+}
+
+static void ValidateRequiredConfigurationValue(IConfiguration configuration, string key)
+{
+    _ = GetRequiredConfigurationValue(configuration, key);
+}
 
 public partial class Program;

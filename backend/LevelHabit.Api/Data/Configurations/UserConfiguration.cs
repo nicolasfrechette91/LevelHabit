@@ -35,6 +35,13 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(User.PasswordHashMaxLength)
             .IsRequired();
 
+        builder.Property(user => user.EmailConfirmed)
+            .HasColumnName("email_confirmed")
+            .IsRequired();
+
+        builder.Property(user => user.EmailConfirmedAtUtc)
+            .HasColumnName("email_confirmed_at_utc");
+
         builder.Property(user => user.CreatedAtUtc)
             .HasColumnName("created_at_utc")
             .IsRequired();

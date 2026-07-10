@@ -49,6 +49,14 @@
   min-height: calc(100vh - 4.25rem);
 }
 
+.app-notice {
+  align-items: center;
+  border: 1px solid rgba($lh-emerald, 0.18);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
 @media (max-width: 767.98px) {
   .site-header {
     position: static;

@@ -23,7 +23,8 @@ the analytics view.
 ## Feature Summary
 
 - Registration, login, logout, short-lived JWT access tokens, refresh-token
-  rotation, protected API endpoints, and authenticated frontend routes.
+  rotation, password reset, email verification, protected API endpoints, and
+  authenticated frontend routes.
 - User-scoped quests with create, update, archive, and complete-today flows.
 - XP rewards, hero level progression, streak calculations, and achievement
   unlocks based on completion history.
@@ -38,7 +39,8 @@ the analytics view.
 - User-scoped data isolation for quests, completions, achievements, hero
   profiles, and analytics.
 - JWT authentication with access tokens, rotating refresh tokens, server-side
-  token revocation, route guards, and token-bearing HTTP requests.
+  token revocation, one-time auth tokens, route guards, and token-bearing HTTP
+  requests.
 - EF Core migrations for PostgreSQL schema changes in local and production
   environments.
 - Gamified progression loop covering XP rewards, hero levels, streaks,
@@ -180,6 +182,11 @@ dotnet user-secrets set "Jwt:Issuer" "LevelHabit.Api"
 dotnet user-secrets set "Jwt:Audience" "LevelHabit.Frontend"
 dotnet user-secrets set "Jwt:ExpirationMinutes" "15"
 dotnet user-secrets set "Jwt:RefreshTokenExpirationDays" "30"
+dotnet user-secrets set "Email:Provider" "Brevo"
+dotnet user-secrets set "Brevo:ApiKey" "xkeysib-your-key"
+dotnet user-secrets set "Brevo:FromEmail" "your-verified-sender-email"
+dotnet user-secrets set "Brevo:FromName" "LevelHabit"
+dotnet user-secrets set "Frontend:BaseUrl" "http://localhost:4200"
 ```
 
 Apply local EF Core migrations and run the backend:
@@ -227,6 +234,8 @@ Local service URLs:
   `https://nicolasfrechette91.github.io`.
 - Refresh-token behavior is documented in
   [docs/refresh-token-auth.md](docs/refresh-token-auth.md).
+- Password reset and email verification use Brevo transactional email when
+  `Email:Provider` is `Brevo`; use `Development` to log links locally instead.
 
 Temporary PowerShell environment variables can be used for a single backend
 session:
@@ -238,6 +247,11 @@ $env:Jwt__Issuer = "LevelHabit.Api"
 $env:Jwt__Audience = "LevelHabit.Frontend"
 $env:Jwt__ExpirationMinutes = "15"
 $env:Jwt__RefreshTokenExpirationDays = "30"
+$env:Email__Provider = "Brevo"
+$env:Brevo__ApiKey = "xkeysib-your-key"
+$env:Brevo__FromEmail = "your-verified-sender-email"
+$env:Brevo__FromName = "LevelHabit"
+$env:Frontend__BaseUrl = "http://localhost:4200"
 ```
 
 Render backend environment variables:
@@ -249,6 +263,11 @@ Jwt__Issuer=LevelHabit.Api
 Jwt__Audience=LevelHabit.Frontend
 Jwt__ExpirationMinutes=15
 Jwt__RefreshTokenExpirationDays=30
+Email__Provider=Brevo
+Brevo__ApiKey=<Brevo transactional email API key>
+Brevo__FromEmail=<verified sender email>
+Brevo__FromName=LevelHabit
+Frontend__BaseUrl=https://nicolasfrechette91.github.io/LevelHabit
 Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
 Cors__AllowedOrigins__1=http://localhost:4200
 Sentry__Dsn=<optional backend Sentry DSN>
@@ -404,7 +423,6 @@ After Render deploys the backend and Supabase has the current migrations:
 
 ## Known Limitations
 
-- Password reset and email verification are not implemented.
 - Browser token persistence uses `localStorage` for the current GitHub
   Pages/Render architecture; a same-site deployment could move refresh tokens
   to httpOnly cookies later.
@@ -415,7 +433,6 @@ After Render deploys the backend and Supabase has the current migrations:
 
 ## Future Roadmap
 
-- Password reset and email verification.
 - Notifications and reminders.
 - Richer analytics charts and trend comparisons.
 - Continued mobile layout and touch ergonomics polish.

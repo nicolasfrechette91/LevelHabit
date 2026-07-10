@@ -8,6 +8,21 @@ const loadAuthPage = () =>
     (component) => component.AuthPageComponent
   );
 
+const loadForgotPasswordPage = () =>
+  import('./pages/forgot-password-page/forgot-password-page.component').then(
+    (component) => component.ForgotPasswordPageComponent
+  );
+
+const loadResetPasswordPage = () =>
+  import('./pages/reset-password-page/reset-password-page.component').then(
+    (component) => component.ResetPasswordPageComponent
+  );
+
+const loadVerifyEmailPage = () =>
+  import('./pages/verify-email-page/verify-email-page.component').then(
+    (component) => component.VerifyEmailPageComponent
+  );
+
 const loadPrototypePage = () =>
   import('./pages/prototype-page/prototype-page.component').then(
     (component) => component.PrototypePageComponent
@@ -34,6 +49,21 @@ export const routes: Routes = [
     data: {
       mode: 'register'
     }
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: loadForgotPasswordPage,
+    title: 'Forgot password | LevelHabit'
+  },
+  {
+    path: 'reset-password',
+    loadComponent: loadResetPasswordPage,
+    title: 'Reset password | LevelHabit'
+  },
+  {
+    path: 'verify-email',
+    loadComponent: loadVerifyEmailPage,
+    title: 'Verify email | LevelHabit'
   },
   {
     path: 'profile',

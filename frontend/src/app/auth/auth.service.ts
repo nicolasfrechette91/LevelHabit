@@ -14,14 +14,19 @@ import {
 import { environment } from '../../environments/environment';
 import { SKIP_AUTH_REFRESH } from './auth-http.context';
 import type {
+  AuthMessageResponse,
   AuthResponse,
   AuthUser,
+  ForgotPasswordRequest,
   HeroProfile,
   LoginRequest,
   LogoutRequest,
   MeResponse,
   RefreshRequest,
-  RegisterRequest
+  RegisterRequest,
+  ResendEmailVerificationRequest,
+  ResetPasswordRequest,
+  VerifyEmailRequest
 } from './auth.models';
 
 export const AUTH_STORAGE_KEY = 'levelhabit.auth.v1';
@@ -53,11 +58,14 @@ export class AuthService {
   );
   private readonly userSignal = signal<AuthUser | null>(null);
   private readonly heroProfileSignal = signal<HeroProfile | null>(null);
+  private readonly emailVerificationNoticeSignal = signal<string | null>(null);
   private refreshRequest$: Observable<AuthResponse> | null = null;
   private sessionVersion = 0;
 
   readonly user = this.userSignal.asReadonly();
   readonly heroProfile = this.heroProfileSignal.asReadonly();
+  readonly emailVerificationNotice =
+    this.emailVerificationNoticeSignal.asReadonly();
   readonly isAuthenticated = computed(() =>
     this.hasToken() || this.hasRefreshToken()
   );
@@ -98,6 +106,50 @@ export class AuthService {
     return this.http
       .post<AuthResponse>(`${environment.apiUrl}/auth/login`, request)
       .pipe(tap((response) => this.persistSession(response)));
+  }
+
+  forgotPassword(email: string): Observable<AuthMessageResponse> {
+    const request: ForgotPasswordRequest = { email };
+
+    return this.http.post<AuthMessageResponse>(
+      `${environment.apiUrl}/auth/forgot-password`,
+      request,
+      { context: this.skipRefreshContext() }
+    );
+  }
+
+  resetPassword(
+    email: string,
+    token: string,
+    newPassword: string
+  ): Observable<AuthMessageResponse> {
+    const request: ResetPasswordRequest = { email, token, newPassword };
+
+    return this.http.post<AuthMessageResponse>(
+      `${environment.apiUrl}/auth/reset-password`,
+      request,
+      { context: this.skipRefreshContext() }
+    );
+  }
+
+  verifyEmail(email: string, token: string): Observable<AuthMessageResponse> {
+    const request: VerifyEmailRequest = { email, token };
+
+    return this.http.post<AuthMessageResponse>(
+      `${environment.apiUrl}/auth/verify-email`,
+      request,
+      { context: this.skipRefreshContext() }
+    );
+  }
+
+  resendEmailVerification(email: string): Observable<AuthMessageResponse> {
+    const request: ResendEmailVerificationRequest = { email };
+
+    return this.http.post<AuthMessageResponse>(
+      `${environment.apiUrl}/auth/resend-email-verification`,
+      request,
+      { context: this.skipRefreshContext() }
+    );
   }
 
   refreshSession(): Observable<AuthResponse> {
@@ -175,6 +227,18 @@ export class AuthService {
     this.heroProfileSignal.set(heroProfile);
   }
 
+  showEmailVerificationNotice(email: string): void {
+    const target = email.trim() || 'your inbox';
+
+    this.emailVerificationNoticeSignal.set(
+      `Account created. Check ${target} to verify your email address.`
+    );
+  }
+
+  dismissEmailVerificationNotice(): void {
+    this.emailVerificationNoticeSignal.set(null);
+  }
+
   logout(): void {
     const refreshToken = this.refreshTokenSignal();
 
@@ -203,6 +267,7 @@ export class AuthService {
     this.refreshTokenExpiresAtUtcSignal.set(null);
     this.userSignal.set(null);
     this.heroProfileSignal.set(null);
+    this.emailVerificationNoticeSignal.set(null);
 
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(AUTH_STORAGE_KEY);

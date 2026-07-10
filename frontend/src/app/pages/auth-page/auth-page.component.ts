@@ -81,7 +81,11 @@ export class AuthPageComponent implements OnInit {
       return;
     }
 
-    this.submitAuth(this.auth.register(this.registerForm.getRawValue() satisfies RegisterRequest));
+    const request = this.registerForm.getRawValue() satisfies RegisterRequest;
+
+    this.submitAuth(this.auth.register(request), () => {
+      this.auth.showEmailVerificationNotice(request.email);
+    });
   }
 
   protected shouldShowLoginError(control: AbstractControl<string>): boolean {
@@ -92,12 +96,16 @@ export class AuthPageComponent implements OnInit {
     return this.shouldShowControlError(control, this.registerSubmitted());
   }
 
-  private submitAuth(request: Observable<AuthResponse>): void {
+  private submitAuth(
+    request: Observable<AuthResponse>,
+    onSuccess?: () => void
+  ): void {
     this.pending.set(true);
     this.errorMessage.set(null);
 
     request.pipe(finalize(() => this.pending.set(false))).subscribe({
       next: () => {
+        onSuccess?.();
         void this.router.navigateByUrl(this.getReturnUrl());
       },
       error: (error: unknown) => {

@@ -16,6 +16,10 @@ public sealed class User
 
     public string PasswordHash { get; set; } = string.Empty;
 
+    public bool EmailConfirmed { get; set; }
+
+    public DateTimeOffset? EmailConfirmedAtUtc { get; set; }
+
     public DateTimeOffset CreatedAtUtc { get; set; }
 
     public DateTimeOffset UpdatedAtUtc { get; set; }
@@ -29,4 +33,6 @@ public sealed class User
     public ICollection<UserAchievement> UserAchievements { get; set; } = [];
 
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
+
+    public ICollection<AuthToken> AuthTokens { get; set; } = [];
 }

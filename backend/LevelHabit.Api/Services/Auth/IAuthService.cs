@@ -13,5 +13,21 @@ public interface IAuthService
 
     Task LogoutAsync(LogoutRequest request, CancellationToken cancellationToken);
 
+    Task<AuthMessageResponse> ForgotPasswordAsync(
+        ForgotPasswordRequest request,
+        CancellationToken cancellationToken);
+
+    Task<AuthMessageResponse> ResetPasswordAsync(
+        ResetPasswordRequest request,
+        CancellationToken cancellationToken);
+
+    Task<AuthMessageResponse> VerifyEmailAsync(
+        VerifyEmailRequest request,
+        CancellationToken cancellationToken);
+
+    Task<AuthMessageResponse> ResendEmailVerificationAsync(
+        ResendEmailVerificationRequest request,
+        CancellationToken cancellationToken);
+
     Task<MeResponse> GetCurrentUserAsync(ClaimsPrincipal principal, CancellationToken cancellationToken);
 }
