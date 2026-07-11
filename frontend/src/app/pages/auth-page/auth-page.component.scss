@@ -13,18 +13,17 @@
   --auth-sage: #eaf3df;
   background: #f8f1df;
   color: var(--auth-ink);
+  height: calc(100vh - 4.25rem);
   isolation: isolate;
-  min-height: calc(100vh - 4.25rem);
   overflow: hidden;
   position: relative;
 }
 
 .auth-background {
-  background-position: center 58%;
+  background-position: center 61%;
   background-repeat: no-repeat;
   background-size: cover;
   inset: 0;
-  pointer-events: none;
   position: fixed;
   z-index: 0;
 
@@ -38,30 +37,27 @@
 
 .auth-shell {
   align-items: center;
-  column-gap: clamp(2rem, 5vw, 5.4rem);
+  align-content: center;
+  column-gap: 4rem;
   display: grid;
   grid-template-areas:
     "top panel"
     "features panel"
     "motivation panel";
-  grid-template-columns: minmax(0, 1.38fr) minmax(22rem, 0.96fr);
-  min-height: inherit;
-  padding-block: clamp(3rem, 6vh, 5.25rem);
+  grid-template-columns: minmax(0, 1.42fr) minmax(22rem, 0.9fr);
+  height: 100%;
+  padding-block: 2rem;
   position: relative;
-  row-gap: 1.55rem;
+  row-gap: 2rem;
   z-index: 1;
 }
 
 .showcase-top {
   align-items: center;
   display: grid;
-  gap: clamp(1.25rem, 2.5vw, 2.25rem);
+  gap: 2.2rem;
   grid-area: top;
-  grid-template-columns: minmax(30rem, 1.45fr) minmax(14rem, 0.65fr);
-}
-
-:where(.auth-copy, .progress-story, .auth-panel, .feature-card, .motivation-card) {
-  animation: auth-rise 360ms ease-out both;
+  grid-template-columns: minmax(22rem, 1.38fr) minmax(12rem, 0.55fr);
 }
 
 .auth-title {
@@ -81,34 +77,34 @@
   font-size: 0.82rem;
   font-weight: 900;
   letter-spacing: 0.12em;
-  margin-bottom: 1.45rem;
+  margin-bottom: 1.1rem;
 }
 
 .title-accent {
   background: var(--auth-green);
   display: block;
   height: 0.16rem;
-  margin-block: 1rem 1.4rem;
+  margin-block: 0.9rem 1.15rem;
   width: 3.2rem;
 }
 
 .auth-summary {
   color: #2f5062;
   font-size: clamp(1rem, 1.35vw, 1.16rem);
-  line-height: 1.65;
+  line-height: 1.58;
   margin: 0;
   max-width: 34rem;
 }
 
 .progress-story {
-  min-height: 25rem;
+  min-height: 20rem;
   position: relative;
 }
 
 .orbit {
   border: 2px dashed rgba(#9eba83, 0.55);
   border-radius: 50%;
-  inset: 2rem 1.5rem 2.4rem 1rem;
+  inset: 1.45rem 1rem 1.9rem 0.8rem;
   position: absolute;
   transform: rotate(12deg);
 }
@@ -116,8 +112,8 @@
 .mountain-illustration {
   display: block;
   margin: 0 auto;
-  max-width: 24rem;
-  width: 94%;
+  max-width: 20rem;
+  width: 92%;
 }
 
 :where(.milestone, .feature-icon, .panel-icon, .motivation-icon) {
@@ -130,13 +126,13 @@
 .milestone {
   background: rgba(#f8f0c8, 0.78);
   color: var(--auth-green);
-  height: 3.9rem;
+  height: 3.25rem;
   position: absolute;
-  width: 3.9rem;
+  width: 3.25rem;
 
   svg {
-    height: 1.8rem;
-    width: 1.8rem;
+    height: 1.5rem;
+    width: 1.5rem;
   }
 }
 
@@ -167,30 +163,30 @@
 .level-ring {
   align-items: center;
   background: rgba(#eff6df, 0.86);
-  border: 0.45rem solid rgba($lh-emerald, 0.76);
+  border: 0.36rem solid rgba($lh-emerald, 0.76);
   border-radius: 50%;
   color: var(--auth-green);
   display: flex;
   flex-direction: column;
-  height: 5.2rem;
+  height: 4.4rem;
   justify-content: center;
   position: absolute;
   right: 11%;
   top: 43%;
-  width: 5.2rem;
+  width: 4.4rem;
 
   span {
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     font-weight: 900;
   }
 
   strong {
-    font-size: 1.85rem;
+    font-size: 1.55rem;
   }
 }
 
 .xp-readout {
-  bottom: 3.2rem;
+  bottom: 2.35rem;
   color: var(--auth-green);
   left: 50%;
   min-width: 12rem;
@@ -204,7 +200,7 @@
   }
 
   strong {
-    font-size: 1.9rem;
+    font-size: 1.55rem;
     line-height: 1.1;
   }
 
@@ -218,10 +214,10 @@
 .xp-track {
   background: rgba($lh-ink, 0.1);
   border-radius: $lh-radius-pill;
-  height: 0.7rem;
-  margin: 0.75rem auto 0;
+  height: 0.58rem;
+  margin: 0.6rem auto 0;
   overflow: hidden;
-  width: 9.8rem;
+  width: 8.5rem;
 
   span {
     background: linear-gradient(90deg, #4d9b70, var(--auth-green));
@@ -233,12 +229,15 @@
 
 .feature-list {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.7rem;
   grid-area: features;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-self: start;
   list-style: none;
   margin: 0;
   padding: 0;
+  transform: translateY(-3rem);
+  width: min(100%, 38.5rem);
 }
 
 .feature-card {
@@ -246,20 +245,20 @@
   border: 1px solid rgba(#1f4d3d, 0.12);
   border-radius: 0.72rem;
   box-shadow: 0 1rem 2.3rem rgba($lh-ink, 0.08);
-  min-height: 12rem;
-  padding: 1.25rem 0.95rem;
+  min-height: 8.35rem;
+  padding: 0.9rem 0.75rem;
   text-align: center;
 
   h2 {
-    font-size: 1rem;
+    font-size: 0.94rem;
     font-weight: 900;
-    margin: 0.9rem 0 0.55rem;
+    margin: 0.62rem 0 0.35rem;
   }
 
   p {
     color: var(--auth-muted);
-    font-size: 0.88rem;
-    line-height: 1.55;
+    font-size: 0.84rem;
+    line-height: 1.42;
     margin: 0;
   }
 }
@@ -267,9 +266,9 @@
 .feature-icon {
   background: var(--auth-sage);
   color: var(--auth-green);
-  height: 4rem;
+  height: 3.2rem;
   margin-inline: auto;
-  width: 4rem;
+  width: 3.2rem;
 
   &.gold {
     background: #fff0c9;
@@ -277,8 +276,8 @@
   }
 
   svg {
-    height: 2.1rem;
-    width: 2.1rem;
+    height: 1.7rem;
+    width: 1.7rem;
   }
 }
 
@@ -289,25 +288,32 @@
   border-radius: 0.82rem;
   box-shadow: 0 1rem 2.4rem rgba($lh-ink, 0.08);
   display: flex;
-  gap: 1.1rem;
+  gap: 0.85rem;
   grid-area: motivation;
-  max-width: 27rem;
-  padding: 1rem 1.15rem;
+  justify-self: start;
+  max-width: 20rem;
+  padding: 0.72rem 0.9rem;
+  transform: translateY(-2.7rem);
 
   strong {
     display: block;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0.15rem 0 0;
   }
 }
 
 .motivation-icon {
   background: #fff0c9;
   color: #d99a13;
-  flex: 0 0 3.6rem;
-  height: 3.6rem;
+  flex: 0 0 2.8rem;
+  height: 2.8rem;
 
   svg {
-    height: 1.45rem;
-    width: 1.45rem;
+    height: 1.16rem;
+    width: 1.16rem;
   }
 }
 
@@ -409,7 +415,6 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
 
   svg {
     height: 1.25rem;
@@ -426,14 +431,8 @@
   padding-left: 3.15rem;
 
   &:focus {
-    background-color: $lh-white;
     border-color: var(--auth-green);
     box-shadow: 0 0 0 0.22rem rgba($lh-emerald, 0.17);
-  }
-
-  &:-webkit-autofill {
-    -webkit-text-fill-color: var(--auth-ink);
-    box-shadow: 0 0 0 1000px #fffdf7 inset;
   }
 }
 
@@ -450,22 +449,12 @@
   justify-content: space-between;
   min-height: 3.55rem;
   padding-inline: 1.25rem;
-  transition: box-shadow 160ms ease, transform 160ms ease;
 
   svg {
     height: 1.3rem;
     width: 1.3rem;
   }
 
-  &:hover:not(:disabled) {
-    box-shadow: 0 1.05rem 1.9rem rgba(#d29324, 0.32), inset 0 1px 0 rgba($lh-white, 0.55);
-    transform: translateY(-2px);
-  }
-
-  &:focus-visible {
-    outline: 0.18rem solid rgba($lh-emerald, 0.4);
-    outline-offset: 0.2rem;
-  }
 }
 
 .auth-or {
@@ -482,11 +471,11 @@
   text-decoration: underline;
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.22em;
+}
 
-  &:focus-visible {
-    outline: 2px solid rgba($lh-emerald, 0.45);
-    outline-offset: 3px;
-  }
+:where(.auth-submit, .auth-panel a):focus-visible {
+  outline: 2px solid rgba($lh-emerald, 0.45);
+  outline-offset: 3px;
 }
 
 .auth-switch {
@@ -494,26 +483,67 @@
   text-align: center;
 }
 
-@keyframes auth-rise {
-  from {
-    opacity: 0;
-    transform: translateY(0.55rem);
-  }
-}
-
-@media (max-width: 1399.98px) {
+@media (max-width: 1199.98px) {
   .showcase-top {
     grid-template-columns: 1fr;
   }
 
   .progress-story {
     margin-left: auto;
-    min-height: 20rem;
-    width: min(100%, 24rem);
+    min-height: 18rem;
+    width: min(100%, 21rem);
+  }
+}
+
+@media (min-width: 1200px) and (max-height: 800px) {
+  .feature-list {
+    gap: 0.5rem;
+    grid-template-columns: 1fr;
+    transform: translateY(-0.35rem);
+    width: 15rem;
+  }
+
+  .feature-card {
+    align-items: center;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    min-height: 0;
+    padding: 0.58rem 0.7rem;
+    text-align: left;
+
+    h2 {
+      margin: 0 0 0.1rem;
+    }
+
+    p {
+      font-size: 0.78rem;
+      line-height: 1.25;
+    }
+  }
+
+  .feature-icon {
+    height: 2.35rem;
+    margin: 0 0.7rem 0 0;
+    width: 2.35rem;
+
+    svg {
+      height: 1.25rem;
+      width: 1.25rem;
+    }
+  }
+
+  .motivation-card {
+    display: none;
   }
 }
 
 @media (max-width: 991.98px) {
+  .auth-page {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
   .auth-background {
     background-position: 42% 55%;
   }
@@ -525,6 +555,7 @@
       "features"
       "motivation";
     grid-template-columns: 1fr;
+    height: auto;
     max-width: 45rem;
     padding-block: 2.25rem 3rem;
   }
@@ -541,17 +572,20 @@
   .title-accent {
     margin-inline: auto;
   }
+
+  .feature-list,
+  .motivation-card {
+    justify-self: stretch;
+    transform: none;
+    width: 100%;
+  }
+
+  .motivation-card {
+    max-width: 27rem;
+  }
 }
 
 @media (max-width: 768px) {
-  .auth-page {
-    min-height: auto;
-  }
-
-  .auth-background {
-    background-position: 39% 52%;
-  }
-
   .progress-story {
     display: none;
   }
@@ -570,25 +604,11 @@
 }
 
 @media (max-width: 575.98px) {
-  .auth-background {
-    background-position: 37% 50%;
-  }
-
   .auth-shell {
     padding-inline: 1rem;
   }
 
   .auth-panel-body {
     padding: 1.35rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :where(.auth-copy, .progress-story, .auth-panel, .feature-card, .motivation-card) {
-    animation: none;
-  }
-
-  .auth-submit {
-    transition: none;
   }
 }
