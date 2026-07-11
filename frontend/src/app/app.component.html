@@ -34,6 +34,27 @@
             Logout
           </button>
         </nav>
+      } @else {
+        <nav class="navbar-nav auth-nav flex-row align-items-center gap-2 ms-md-auto" aria-label="Account">
+          <a
+            class="nav-link auth-nav-link rounded-3 px-3 py-2"
+            routerLink="/login"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Log in
+          </a>
+          <a
+            class="btn btn-lh-primary auth-create-link fw-bold"
+            routerLink="/register"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Create account
+          </a>
+        </nav>
       }
     </div>
   </header>

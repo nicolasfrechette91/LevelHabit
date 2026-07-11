@@ -6,8 +6,8 @@
 
 .site-header {
   backdrop-filter: blur(18px);
-  background: rgba($lh-surface, 0.86);
-  border-bottom: 1px solid rgba($lh-border, 0.9);
+  background: rgba(#fffdf7, 0.94);
+  border-bottom: 1px solid rgba($lh-emerald-strong, 0.13);
   z-index: 10;
 }
 
@@ -45,6 +45,33 @@
   }
 }
 
+.auth-nav {
+  .auth-nav-link {
+    color: var(--lh-ink);
+    font-weight: 800;
+
+    &:hover,
+    &.active {
+      background: rgba($lh-emerald, 0.08);
+      color: var(--lh-emerald);
+    }
+  }
+}
+
+.auth-create-link {
+  align-items: center;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.55rem 1.2rem rgba($lh-emerald-strong, 0.18);
+  display: inline-flex;
+  min-height: 2.75rem;
+  padding-inline: 1.1rem;
+
+  &.active {
+    --bs-btn-bg: var(--lh-emerald-strong);
+    --bs-btn-border-color: var(--lh-emerald-strong);
+  }
+}
+
 .app-main {
   min-height: calc(100vh - 4.25rem);
 }
@@ -75,6 +102,17 @@
       padding-inline: 0.5rem !important;
       text-align: center;
       width: 100%;
+    }
+  }
+
+  .auth-nav {
+    justify-content: space-between;
+    width: 100%;
+
+    .auth-nav-link,
+    .auth-create-link {
+      justify-content: center;
+      text-align: center;
     }
   }
 }

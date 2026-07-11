@@ -18,12 +18,14 @@ describe('AppComponent', () => {
     localStorage.clear();
   });
 
-  it('renders only the brand when no user is authenticated', async () => {
+  it('renders anonymous account links when no user is authenticated', async () => {
     const { element, http } = await setupApp();
 
     expect(element.querySelector('.app-shell')).not.toBeNull();
     expect(element.querySelector('.navbar-brand')?.textContent).toContain('LevelHabit');
-    expect(element.querySelector('nav')).toBeNull();
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
+    expect(element.querySelector('.site-nav')).toBeNull();
     expect(element.querySelector('[data-testid="logout-button"]')).toBeNull();
     expect(element.querySelector('[data-testid="nav-dashboard"]')).toBeNull();
     http.verify();
@@ -51,7 +53,8 @@ describe('AppComponent', () => {
     logoutButton?.click();
     fixture.detectChanges();
 
-    expect(element.querySelector('nav')).toBeNull();
+    expect(element.querySelector('.site-nav')).toBeNull();
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
     expect(element.querySelector('[data-testid="logout-button"]')).toBeNull();
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
 

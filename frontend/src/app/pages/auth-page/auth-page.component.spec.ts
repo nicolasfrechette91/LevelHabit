@@ -125,7 +125,7 @@ describe('AuthPageComponent', () => {
       'Display name is required.'
     );
     expect(nativeElement.querySelector('#hero-name-error')?.textContent).toContain(
-      'Hero name is required.'
+      'Progress profile name is required.'
     );
   });
 
