@@ -13,9 +13,10 @@
   --auth-sage: #eaf3df;
   background: #f8f1df;
   color: var(--auth-ink);
-  height: calc(100vh - 4.25rem);
   isolation: isolate;
-  overflow: hidden;
+  min-height: calc(100vh - 4.25rem);
+  min-height: calc(100dvh - 4.25rem);
+  overflow-x: clip;
   position: relative;
 }
 
@@ -24,6 +25,7 @@
   background-repeat: no-repeat;
   background-size: cover;
   inset: 0;
+  pointer-events: none;
   position: fixed;
   z-index: 0;
 
@@ -45,7 +47,8 @@
     "features panel"
     "motivation panel";
   grid-template-columns: minmax(0, 1.42fr) minmax(22rem, 0.9fr);
-  height: 100%;
+  min-height: calc(100vh - 4.25rem);
+  min-height: calc(100dvh - 4.25rem);
   padding-block: 2rem;
   position: relative;
   row-gap: 2rem;
@@ -96,227 +99,6 @@
   max-width: 34rem;
 }
 
-.progress-story {
-  min-height: 20rem;
-  position: relative;
-}
-
-.orbit {
-  border: 2px dashed rgba(#9eba83, 0.55);
-  border-radius: 50%;
-  inset: 1.45rem 1rem 1.9rem 0.8rem;
-  position: absolute;
-  transform: rotate(12deg);
-}
-
-.mountain-illustration {
-  display: block;
-  margin: 0 auto;
-  max-width: 20rem;
-  width: 92%;
-}
-
-:where(.milestone, .feature-icon, .panel-icon, .motivation-icon) {
-  align-items: center;
-  border-radius: 50%;
-  display: inline-flex;
-  justify-content: center;
-}
-
-.milestone {
-  background: rgba(#f8f0c8, 0.78);
-  color: var(--auth-green);
-  height: 3.25rem;
-  position: absolute;
-  width: 3.25rem;
-
-  svg {
-    height: 1.5rem;
-    width: 1.5rem;
-  }
-}
-
-.milestone-target {
-  background: rgba(#dce9cd, 0.9);
-  left: 6%;
-  top: 1%;
-}
-
-.milestone-flame {
-  color: #e5a614;
-  right: 10%;
-  top: 10%;
-}
-
-.milestone-check {
-  background: rgba(#e6ebc7, 0.9);
-  bottom: 22%;
-  left: 4%;
-}
-
-.milestone-star {
-  bottom: 15%;
-  color: #d99a13;
-  right: 5%;
-}
-
-.level-ring {
-  align-items: center;
-  background: rgba(#eff6df, 0.86);
-  border: 0.36rem solid rgba($lh-emerald, 0.76);
-  border-radius: 50%;
-  color: var(--auth-green);
-  display: flex;
-  flex-direction: column;
-  height: 4.4rem;
-  justify-content: center;
-  position: absolute;
-  right: 11%;
-  top: 43%;
-  width: 4.4rem;
-
-  span {
-    font-size: 0.72rem;
-    font-weight: 900;
-  }
-
-  strong {
-    font-size: 1.55rem;
-  }
-}
-
-.xp-readout {
-  bottom: 2.35rem;
-  color: var(--auth-green);
-  left: 50%;
-  min-width: 12rem;
-  position: absolute;
-  text-align: center;
-  transform: translateX(-50%);
-
-  strong,
-  span {
-    display: block;
-  }
-
-  strong {
-    font-size: 1.55rem;
-    line-height: 1.1;
-  }
-
-  span {
-    color: var(--auth-muted);
-    font-weight: 700;
-    margin-top: 0.25rem;
-  }
-}
-
-.xp-track {
-  background: rgba($lh-ink, 0.1);
-  border-radius: $lh-radius-pill;
-  height: 0.58rem;
-  margin: 0.6rem auto 0;
-  overflow: hidden;
-  width: 8.5rem;
-
-  span {
-    background: linear-gradient(90deg, #4d9b70, var(--auth-green));
-    border-radius: inherit;
-    height: 100%;
-    width: 64%;
-  }
-}
-
-.feature-list {
-  display: grid;
-  gap: 0.7rem;
-  grid-area: features;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  justify-self: start;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  transform: translateY(-3rem);
-  width: min(100%, 38.5rem);
-}
-
-.feature-card {
-  background: rgba($lh-white, 0.72);
-  border: 1px solid rgba(#1f4d3d, 0.12);
-  border-radius: 0.72rem;
-  box-shadow: 0 1rem 2.3rem rgba($lh-ink, 0.08);
-  min-height: 8.35rem;
-  padding: 0.9rem 0.75rem;
-  text-align: center;
-
-  h2 {
-    font-size: 0.94rem;
-    font-weight: 900;
-    margin: 0.62rem 0 0.35rem;
-  }
-
-  p {
-    color: var(--auth-muted);
-    font-size: 0.84rem;
-    line-height: 1.42;
-    margin: 0;
-  }
-}
-
-.feature-icon {
-  background: var(--auth-sage);
-  color: var(--auth-green);
-  height: 3.2rem;
-  margin-inline: auto;
-  width: 3.2rem;
-
-  &.gold {
-    background: #fff0c9;
-    color: #d9940f;
-  }
-
-  svg {
-    height: 1.7rem;
-    width: 1.7rem;
-  }
-}
-
-.motivation-card {
-  align-items: center;
-  background: rgba(#fff8e8, 0.86);
-  border: 1px solid rgba(#1f4d3d, 0.12);
-  border-radius: 0.82rem;
-  box-shadow: 0 1rem 2.4rem rgba($lh-ink, 0.08);
-  display: flex;
-  gap: 0.85rem;
-  grid-area: motivation;
-  justify-self: start;
-  max-width: 20rem;
-  padding: 0.72rem 0.9rem;
-  transform: translateY(-2.7rem);
-
-  strong {
-    display: block;
-    line-height: 1.2;
-  }
-
-  p {
-    margin: 0.15rem 0 0;
-  }
-}
-
-.motivation-icon {
-  background: #fff0c9;
-  color: #d99a13;
-  flex: 0 0 2.8rem;
-  height: 2.8rem;
-
-  svg {
-    height: 1.16rem;
-    width: 1.16rem;
-  }
-}
-
 .auth-panel {
   align-self: center;
   background: rgba($lh-white, 0.94);
@@ -334,10 +116,13 @@
 }
 
 .panel-icon {
+  align-items: center;
   background: linear-gradient(180deg, #e5f0db, #d8e7cf);
+  border-radius: 50%;
   color: var(--auth-green);
   display: flex;
   height: 6rem;
+  justify-content: center;
   margin: 0 auto 1.15rem;
   width: 6rem;
 
@@ -481,134 +266,4 @@
 .auth-switch {
   margin: 0;
   text-align: center;
-}
-
-@media (max-width: 1199.98px) {
-  .showcase-top {
-    grid-template-columns: 1fr;
-  }
-
-  .progress-story {
-    margin-left: auto;
-    min-height: 18rem;
-    width: min(100%, 21rem);
-  }
-}
-
-@media (min-width: 1200px) and (max-height: 800px) {
-  .feature-list {
-    gap: 0.5rem;
-    grid-template-columns: 1fr;
-    transform: translateY(-0.35rem);
-    width: 15rem;
-  }
-
-  .feature-card {
-    align-items: center;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    min-height: 0;
-    padding: 0.58rem 0.7rem;
-    text-align: left;
-
-    h2 {
-      margin: 0 0 0.1rem;
-    }
-
-    p {
-      font-size: 0.78rem;
-      line-height: 1.25;
-    }
-  }
-
-  .feature-icon {
-    height: 2.35rem;
-    margin: 0 0.7rem 0 0;
-    width: 2.35rem;
-
-    svg {
-      height: 1.25rem;
-      width: 1.25rem;
-    }
-  }
-
-  .motivation-card {
-    display: none;
-  }
-}
-
-@media (max-width: 991.98px) {
-  .auth-page {
-    height: auto;
-    min-height: auto;
-    overflow: visible;
-  }
-
-  .auth-background {
-    background-position: 42% 55%;
-  }
-
-  .auth-shell {
-    grid-template-areas:
-      "top"
-      "panel"
-      "features"
-      "motivation";
-    grid-template-columns: 1fr;
-    height: auto;
-    max-width: 45rem;
-    padding-block: 2.25rem 3rem;
-  }
-
-  .auth-panel,
-  .motivation-card {
-    margin-inline: auto;
-  }
-
-  .auth-copy {
-    text-align: center;
-  }
-
-  .title-accent {
-    margin-inline: auto;
-  }
-
-  .feature-list,
-  .motivation-card {
-    justify-self: stretch;
-    transform: none;
-    width: 100%;
-  }
-
-  .motivation-card {
-    max-width: 27rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .progress-story {
-    display: none;
-  }
-
-  .feature-list {
-    grid-template-columns: 1fr;
-  }
-
-  .feature-card {
-    min-height: 0;
-  }
-
-  .auth-title {
-    font-size: clamp(2.2rem, 11vw, 3rem);
-  }
-}
-
-@media (max-width: 575.98px) {
-  .auth-shell {
-    padding-inline: 1rem;
-  }
-
-  .auth-panel-body {
-    padding: 1.35rem;
-  }
 }

@@ -130,7 +130,7 @@ export class AuthPageComponent implements OnInit {
     }
 
     if (error.status === 0) {
-      return 'LevelHabit API is not reachable right now. Please try again in a moment.';
+      return 'Level Habit API is not reachable right now. Please try again in a moment.';
     }
 
     const problem = error.error as

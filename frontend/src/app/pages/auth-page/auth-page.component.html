@@ -46,13 +46,18 @@
   </symbol>
 </svg>
 
-<section class="auth-page" aria-labelledby="auth-page-title">
+<section
+  class="auth-page"
+  [class.auth-page-login]="mode() === 'login'"
+  [class.auth-page-register]="mode() === 'register'"
+  aria-labelledby="auth-page-title"
+>
   <div class="auth-background" style="background-image: url('auth-background.png')" aria-hidden="true"></div>
 
   <div class="auth-shell container-xl">
     <section class="showcase-top" aria-labelledby="auth-page-title">
       <div class="auth-copy">
-        <p class="eyebrow">LEVELHABIT</p>
+        <p class="eyebrow">LEVEL HABIT</p>
         <h1 id="auth-page-title" class="auth-title">
           Level up your life,<br>
           <span>one habit</span> at a time.
@@ -103,7 +108,7 @@
       </div>
     </section>
 
-    <ul class="feature-list" aria-label="LevelHabit benefits">
+    <ul class="feature-list" aria-label="Level Habit benefits">
       <li class="feature-card">
         <span class="feature-icon"><svg aria-hidden="true"><use href="#auth-icon-leaf"/></svg></span>
         <h2>Build Habits</h2>
@@ -121,7 +126,12 @@
       </li>
     </ul>
 
-    <article class="auth-panel" aria-labelledby="auth-card-title">
+    <article
+      class="auth-panel"
+      [class.auth-panel-login]="mode() === 'login'"
+      [class.auth-panel-register]="mode() === 'register'"
+      aria-labelledby="auth-card-title"
+    >
       <div class="auth-panel-body">
         <div class="panel-icon" aria-hidden="true">
           <svg><use href="#auth-icon-sprout"/></svg>
@@ -143,7 +153,7 @@
         </div>
 
         @if (mode() === 'register') {
-          <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submitRegister()">
+          <form class="auth-form auth-form-register" [formGroup]="registerForm" (ngSubmit)="submitRegister()">
             <div class="form-field">
               <label class="form-label fw-bold" for="register-email">Email</label>
               <div class="input-shell">
@@ -291,7 +301,7 @@
             </p>
           </form>
         } @else {
-          <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
+          <form class="auth-form auth-form-login" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
             <div class="form-field">
               <label class="form-label fw-bold" for="login-email">Email</label>
               <div class="input-shell">
