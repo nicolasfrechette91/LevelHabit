@@ -22,7 +22,7 @@ describe('AppComponent', () => {
     const { element, http } = await setupApp();
 
     expect(element.querySelector('.app-shell')).not.toBeNull();
-    expect(element.querySelector('.navbar-brand')?.textContent).toContain('LevelHabit');
+    expect(element.querySelector('.navbar-brand')?.textContent).toContain('Level Habit');
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
     expect(element.querySelector('.site-nav')).toBeNull();
@@ -35,7 +35,7 @@ describe('AppComponent', () => {
     const { element, http } = await setupApp({ authenticated: true });
 
     expect(element.querySelector('.app-shell')).not.toBeNull();
-    expect(element.querySelector('.navbar-brand')?.textContent).toContain('LevelHabit');
+    expect(element.querySelector('.navbar-brand')?.textContent).toContain('Level Habit');
     expect(element.querySelector('nav')).not.toBeNull();
     expect(element.querySelectorAll('nav a')).toHaveLength(5);
     expect(element.querySelector('[data-testid="logout-button"]')).not.toBeNull();
