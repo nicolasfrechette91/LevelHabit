@@ -21,3 +21,67 @@
   color: var(--lh-emerald);
   min-height: 2.75rem;
 }
+
+.verification-copy {
+  color: #2f5062;
+  line-height: 1.55;
+  margin-bottom: 1.4rem;
+}
+
+.verification-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.form-label {
+  color: var(--lh-ink);
+  font-size: 0.93rem;
+  margin-bottom: 0.55rem;
+}
+
+.verification-code-input {
+  border-color: rgba($lh-ink, 0.18);
+  border-radius: 0.62rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  min-height: 3.55rem;
+  text-align: center;
+
+  &:focus {
+    border-color: var(--lh-emerald);
+    box-shadow: 0 0 0 0.22rem rgba($lh-emerald, 0.17);
+  }
+}
+
+.form-field .invalid-feedback {
+  display: block;
+  font-weight: 700;
+}
+
+.resend-panel {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.btn-outline-lh-primary {
+  --bs-btn-border-color: var(--lh-emerald);
+  --bs-btn-color: var(--lh-emerald);
+  --bs-btn-hover-bg: var(--lh-emerald);
+  --bs-btn-hover-border-color: var(--lh-emerald);
+  --bs-btn-hover-color: var(--lh-white);
+  --bs-btn-disabled-border-color: rgba(15, 111, 82, 0.38);
+  --bs-btn-disabled-color: rgba(15, 111, 82, 0.58);
+  border-radius: 0.56rem;
+  min-height: 2.75rem;
+}
+
+.resend-countdown {
+  color: #52656a;
+  font-size: 0.95rem;
+  font-weight: 700;
+}

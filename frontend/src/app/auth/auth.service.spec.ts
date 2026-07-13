@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { environment } from '../../environments/environment';
-import type { AuthResponse, MeResponse } from './auth.models';
+import type { AuthResponse, MeResponse, RegisterResponse } from './auth.models';
 import { AUTH_STORAGE_KEY, AuthService } from './auth.service';
 
 const AUTH_RESPONSE: AuthResponse = {
@@ -37,10 +37,17 @@ const ME_RESPONSE: MeResponse = {
   heroProfile: AUTH_RESPONSE.heroProfile
 };
 
+const REGISTER_RESPONSE: RegisterResponse = {
+  email: 'player@example.com',
+  requiresEmailVerification: true,
+  message: 'Account created. Enter the verification code sent to your email.'
+};
+
 describe('AuthService', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     localStorage.clear();
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()]
     });
@@ -72,7 +79,7 @@ describe('AuthService', () => {
     http.verify();
   });
 
-  it('registers with display and hero profile names', async () => {
+  it('registers with display and hero profile names without storing a session', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
 
@@ -91,12 +98,13 @@ describe('AuthService', () => {
       displayName: 'Player One',
       heroName: 'Morning Warden'
     });
-    request.flush(AUTH_RESPONSE);
+    request.flush(REGISTER_RESPONSE);
 
-    await responsePromise;
+    await expect(responsePromise).resolves.toEqual(REGISTER_RESPONSE);
 
-    expect(service.heroProfile()?.heroName).toBe('Morning Warden');
-    expect(service.accessToken()).toBe('jwt-token');
+    expect(service.heroProfile()).toBeNull();
+    expect(service.accessToken()).toBeNull();
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     http.verify();
   });
 
@@ -148,53 +156,69 @@ describe('AuthService', () => {
     http.verify();
   });
 
-  it('verifies an email with email and token', async () => {
+  it('confirms an email with email and code', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
 
     const responsePromise = firstValueFrom(
-      service.verifyEmail('player@example.com', 'verification-token')
+      service.confirmEmail('player@example.com', '004827')
     );
 
-    const request = http.expectOne(`${environment.apiUrl}/auth/verify-email`);
+    const request = http.expectOne(`${environment.apiUrl}/auth/confirm-email`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       email: 'player@example.com',
-      token: 'verification-token'
+      code: '004827'
     });
     request.flush({
-      message: 'Your email has been verified.'
+      message: 'Your email has been confirmed successfully.'
     });
 
     await expect(responsePromise).resolves.toEqual({
-      message: 'Your email has been verified.'
+      message: 'Your email has been confirmed successfully.'
     });
     http.verify();
   });
 
-  it('resends an email verification link', async () => {
+  it('resends an email verification code', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
 
     const responsePromise = firstValueFrom(
-      service.resendEmailVerification('player@example.com')
+      service.resendVerificationCode('player@example.com')
     );
 
     const request = http.expectOne(
-      `${environment.apiUrl}/auth/resend-email-verification`
+      `${environment.apiUrl}/auth/resend-verification-code`
     );
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       email: 'player@example.com'
     });
     request.flush({
-      message: 'If an account exists and needs email verification, a verification email has been sent.'
+      message: 'If an unconfirmed account exists for this email, a verification code has been sent.'
     });
 
     await expect(responsePromise).resolves.toEqual({
-      message: 'If an account exists and needs email verification, a verification email has been sent.'
+      message: 'If an unconfirmed account exists for this email, a verification code has been sent.'
     });
     http.verify();
+  });
+
+  it('tracks resend cooldown timestamps without storing verification codes', () => {
+    const service = TestBed.inject(AuthService);
+    const now = Date.now();
+
+    service.rememberVerificationCodeSent('Player@Example.com', now);
+
+    expect(
+      service.verificationResendRemainingSeconds('player@example.com', 60)
+    ).toBeGreaterThan(0);
+    expect(
+      sessionStorage.getItem(
+        'levelhabit.emailVerification.lastSent.v1.player@example.com'
+      )
+    ).toBe(String(now));
   });
 
   it('loads the current user from an existing token', async () => {

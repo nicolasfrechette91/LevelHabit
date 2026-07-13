@@ -5,6 +5,7 @@ public sealed class User
     public const int EmailMaxLength = 320;
     public const int DisplayNameMaxLength = 80;
     public const int PasswordHashMaxLength = 512;
+    public const int EmailVerificationCodeHashMaxLength = 64;
 
     public Guid Id { get; set; } = Guid.NewGuid();
 
@@ -19,6 +20,14 @@ public sealed class User
     public bool EmailConfirmed { get; set; }
 
     public DateTimeOffset? EmailConfirmedAtUtc { get; set; }
+
+    public string? EmailVerificationCodeHash { get; set; }
+
+    public DateTimeOffset? EmailVerificationCodeExpiresAtUtc { get; set; }
+
+    public DateTimeOffset? EmailVerificationCodeLastSentAtUtc { get; set; }
+
+    public int EmailVerificationFailedAttempts { get; set; }
 
     public DateTimeOffset CreatedAtUtc { get; set; }
 

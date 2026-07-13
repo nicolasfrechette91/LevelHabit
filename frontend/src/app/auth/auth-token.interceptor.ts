@@ -99,7 +99,7 @@ function isAuthLifecycleEndpoint(request: HttpRequest<unknown>): boolean {
     'logout',
     'forgot-password',
     'reset-password',
-    'verify-email',
-    'resend-email-verification'
+    'confirm-email',
+    'resend-verification-code'
   ].some((endpoint) => request.url.split('?')[0]?.endsWith(`/auth/${endpoint}`));
 }

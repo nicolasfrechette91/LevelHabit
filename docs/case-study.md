@@ -119,12 +119,13 @@ Security choices for the MVP include:
 - CORS configured with explicit local and production frontend origins.
 - Server-side authorization on protected controllers.
 - User-scoped data access in backend services.
+- Password reset links and six-digit email verification codes delivered by
+  Brevo, with local development logging for safe testing.
 - Secrets stored in user-secrets, environment variables, Render settings, or
   GitHub secrets rather than committed source files.
 
-Known security-related future work includes password reset, email verification,
-httpOnly cookie exploration for same-site deployments, and broader end-to-end
-authentication tests.
+Known security-related future work includes httpOnly cookie exploration for
+same-site deployments and broader end-to-end authentication tests.
 
 ## Testing Strategy
 
@@ -181,7 +182,6 @@ string before or during production releases.
 
 ## What I Would Improve Next
 
-- Add password reset and email verification.
 - Explore httpOnly cookie storage for a same-site deployment architecture.
 - Add notifications or reminders for habit follow-through.
 - Improve mobile layout polish and touch ergonomics.

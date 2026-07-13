@@ -37,10 +37,26 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(user => user.EmailConfirmed)
             .HasColumnName("email_confirmed")
+            .HasDefaultValue(false)
             .IsRequired();
 
         builder.Property(user => user.EmailConfirmedAtUtc)
             .HasColumnName("email_confirmed_at_utc");
+
+        builder.Property(user => user.EmailVerificationCodeHash)
+            .HasColumnName("email_verification_code_hash")
+            .HasMaxLength(User.EmailVerificationCodeHashMaxLength);
+
+        builder.Property(user => user.EmailVerificationCodeExpiresAtUtc)
+            .HasColumnName("email_verification_code_expires_at_utc");
+
+        builder.Property(user => user.EmailVerificationCodeLastSentAtUtc)
+            .HasColumnName("email_verification_code_last_sent_at_utc");
+
+        builder.Property(user => user.EmailVerificationFailedAttempts)
+            .HasColumnName("email_verification_failed_attempts")
+            .HasDefaultValue(0)
+            .IsRequired();
 
         builder.Property(user => user.CreatedAtUtc)
             .HasColumnName("created_at_utc")

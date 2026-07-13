@@ -57,26 +57,41 @@ builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<EmailOptions>(
     builder.Configuration.GetSection(EmailOptions.SectionName));
-builder.Services.Configure<BrevoOptions>(
-    builder.Configuration.GetSection(BrevoOptions.SectionName));
 builder.Services.Configure<FrontendOptions>(
     builder.Configuration.GetSection(FrontendOptions.SectionName));
+builder.Services.Configure<EmailVerificationOptions>(
+    builder.Configuration.GetSection(EmailVerificationOptions.SectionName));
 
-string emailProvider = GetRequiredConfigurationValue(
+BrevoOptions brevoOptions = ResolveBrevoOptions(builder.Configuration);
+builder.Services.Configure<BrevoOptions>(options =>
+{
+    options.ApiKey = brevoOptions.ApiKey;
+    options.SenderEmail = brevoOptions.SenderEmail;
+    options.SenderName = brevoOptions.SenderName;
+    options.FromEmail = brevoOptions.FromEmail;
+    options.FromName = brevoOptions.FromName;
+});
+
+string emailProvider = ResolveEmailProvider(
     builder.Configuration,
-    "Email:Provider");
+    builder.Environment,
+    brevoOptions);
 
 ValidateRequiredConfigurationValue(builder.Configuration, "Frontend:BaseUrl");
 
 if (string.Equals(emailProvider, "Development", StringComparison.OrdinalIgnoreCase))
 {
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException(
+            "The Development email provider can only be used in Development.");
+    }
+
     builder.Services.AddScoped<IEmailSender, DevelopmentEmailSender>();
 }
 else if (string.Equals(emailProvider, "Brevo", StringComparison.OrdinalIgnoreCase))
 {
-    ValidateRequiredConfigurationValue(builder.Configuration, "Brevo:ApiKey");
-    ValidateRequiredConfigurationValue(builder.Configuration, "Brevo:FromEmail");
-    ValidateRequiredConfigurationValue(builder.Configuration, "Brevo:FromName");
+    ValidateBrevoOptions(brevoOptions);
 
     builder.Services.AddHttpClient<IEmailSender, BrevoEmailSender>(httpClient =>
     {
@@ -118,6 +133,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddScoped<IEmailVerificationCodeService, EmailVerificationCodeService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
@@ -161,6 +177,86 @@ static string GetRequiredConfigurationValue(IConfiguration configuration, string
 static void ValidateRequiredConfigurationValue(IConfiguration configuration, string key)
 {
     _ = GetRequiredConfigurationValue(configuration, key);
+}
+
+static string ResolveEmailProvider(
+    IConfiguration configuration,
+    IHostEnvironment environment,
+    BrevoOptions brevoOptions)
+{
+    string? configuredProvider = configuration["Email:Provider"];
+
+    if (!string.IsNullOrWhiteSpace(configuredProvider))
+    {
+        return configuredProvider;
+    }
+
+    if (environment.IsDevelopment() && !BrevoOptionsAreConfigured(brevoOptions))
+    {
+        return "Development";
+    }
+
+    return "Brevo";
+}
+
+static BrevoOptions ResolveBrevoOptions(IConfiguration configuration)
+{
+    BrevoOptions options = configuration
+        .GetSection(BrevoOptions.SectionName)
+        .Get<BrevoOptions>() ?? new BrevoOptions();
+
+    options.ApiKey = FirstNonBlank(configuration["BREVO_API_KEY"], options.ApiKey);
+    options.SenderEmail = FirstNonBlank(
+        configuration["BREVO_SENDER_EMAIL"],
+        options.SenderEmail,
+        options.FromEmail);
+    options.SenderName = FirstNonBlank(
+        configuration["BREVO_SENDER_NAME"],
+        options.SenderName,
+        options.FromName);
+
+    return options;
+}
+
+static void ValidateBrevoOptions(BrevoOptions brevoOptions)
+{
+    ValidateResolvedConfigurationValue(
+        brevoOptions.ApiKey,
+        "BREVO_API_KEY or Brevo:ApiKey");
+    ValidateResolvedConfigurationValue(
+        brevoOptions.SenderEmail,
+        "BREVO_SENDER_EMAIL or Brevo:SenderEmail");
+    ValidateResolvedConfigurationValue(
+        brevoOptions.SenderName,
+        "BREVO_SENDER_NAME or Brevo:SenderName");
+}
+
+static void ValidateResolvedConfigurationValue(string? value, string key)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        throw new InvalidOperationException($"Configuration value '{key}' is required.");
+    }
+}
+
+static bool BrevoOptionsAreConfigured(BrevoOptions brevoOptions)
+{
+    return !string.IsNullOrWhiteSpace(brevoOptions.ApiKey)
+        && !string.IsNullOrWhiteSpace(brevoOptions.SenderEmail)
+        && !string.IsNullOrWhiteSpace(brevoOptions.SenderName);
+}
+
+static string? FirstNonBlank(params string?[] values)
+{
+    foreach (string? value in values)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+    }
+
+    return null;
 }
 
 public partial class Program;

@@ -364,6 +364,20 @@
               <p class="alert alert-danger mb-0" role="alert">{{ errorMessage() }}</p>
             }
 
+            @if (successMessage()) {
+              <p class="alert alert-success mb-0" role="status">{{ successMessage() }}</p>
+            }
+
+            @if (unconfirmedEmail()) {
+              <a
+                class="auth-flow-link fw-bold text-center"
+                routerLink="/verify-email"
+                [queryParams]="{ email: unconfirmedEmail() }"
+              >
+                Enter verification code
+              </a>
+            }
+
             <button
               type="submit"
               class="btn btn-lh-gold auth-submit fw-bold"

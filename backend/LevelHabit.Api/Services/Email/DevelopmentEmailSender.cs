@@ -3,7 +3,10 @@ namespace LevelHabit.Api.Services.Email;
 public sealed class DevelopmentEmailSender(
     ILogger<DevelopmentEmailSender> logger) : IEmailSender
 {
-    public Task SendPasswordResetEmailAsync(string toEmail, string resetUrl)
+    public Task SendPasswordResetEmailAsync(
+        string toEmail,
+        string resetUrl,
+        CancellationToken cancellationToken = default)
     {
         logger.LogInformation(
             "Development password reset email for {ToEmail}. Reset link: {ResetUrl}",
@@ -13,12 +16,17 @@ public sealed class DevelopmentEmailSender(
         return Task.CompletedTask;
     }
 
-    public Task SendEmailVerificationAsync(string toEmail, string verificationUrl)
+    public Task SendEmailVerificationCodeAsync(
+        string toEmail,
+        string verificationCode,
+        TimeSpan expiresIn,
+        CancellationToken cancellationToken = default)
     {
         logger.LogInformation(
-            "Development email verification for {ToEmail}. Verification link: {VerificationUrl}",
+            "Development email verification code for {ToEmail}: {VerificationCode}. Expires in {ExpirationMinutes} minutes.",
             toEmail,
-            verificationUrl);
+            verificationCode,
+            Math.Ceiling(expiresIn.TotalMinutes));
 
         return Task.CompletedTask;
     }

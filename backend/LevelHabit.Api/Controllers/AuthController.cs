@@ -10,13 +10,15 @@ namespace LevelHabit.Api.Controllers;
 public sealed class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(
+    public async Task<ActionResult<RegisterResponse>> Register(
         RegisterRequest request,
         CancellationToken cancellationToken)
     {
-        AuthResponse response = await authService.RegisterAsync(request, cancellationToken);
+        RegisterResponse response = await authService.RegisterAsync(
+            request,
+            cancellationToken);
 
-        return CreatedAtAction(nameof(Me), routeValues: null, value: response);
+        return StatusCode(StatusCodes.Status201Created, response);
     }
 
     [HttpPost("login")]
@@ -73,25 +75,25 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         return Ok(response);
     }
 
-    [HttpPost("verify-email")]
-    public async Task<ActionResult<AuthMessageResponse>> VerifyEmail(
-        VerifyEmailRequest request,
+    [HttpPost("confirm-email")]
+    public async Task<ActionResult<AuthMessageResponse>> ConfirmEmail(
+        ConfirmEmailRequest request,
         CancellationToken cancellationToken)
     {
-        AuthMessageResponse response = await authService.VerifyEmailAsync(
+        AuthMessageResponse response = await authService.ConfirmEmailAsync(
             request,
             cancellationToken);
 
         return Ok(response);
     }
 
-    [HttpPost("resend-email-verification")]
-    public async Task<ActionResult<AuthMessageResponse>> ResendEmailVerification(
-        ResendEmailVerificationRequest request,
+    [HttpPost("resend-verification-code")]
+    public async Task<ActionResult<AuthMessageResponse>> ResendVerificationCode(
+        ResendVerificationCodeRequest request,
         CancellationToken cancellationToken)
     {
         AuthMessageResponse response =
-            await authService.ResendEmailVerificationAsync(
+            await authService.ResendVerificationCodeAsync(
                 request,
                 cancellationToken);
 

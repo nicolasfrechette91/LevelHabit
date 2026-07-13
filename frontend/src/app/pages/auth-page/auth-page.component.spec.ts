@@ -7,7 +7,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
 
 import { environment } from '../../../environments/environment';
-import type { AuthResponse, LoginRequest, RegisterRequest } from '../../auth/auth.models';
+import type {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  RegisterResponse
+} from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
 import { AuthPageComponent } from './auth-page.component';
 
@@ -35,6 +40,12 @@ const AUTH_RESPONSE: AuthResponse = {
   }
 };
 
+const REGISTER_RESPONSE: RegisterResponse = {
+  email: 'player@example.com',
+  requiresEmailVerification: true,
+  message: 'Account created. Enter the verification code sent to your email.'
+};
+
 type AuthMode = 'login' | 'register';
 
 type ActivatedRouteStub = Pick<ActivatedRoute, 'data'> & {
@@ -45,9 +56,10 @@ class AuthServiceStub {
   readonly login = vi.fn((request: LoginRequest): Observable<AuthResponse> =>
     of(AUTH_RESPONSE)
   );
-  readonly register = vi.fn((request: RegisterRequest): Observable<AuthResponse> =>
-    of(AUTH_RESPONSE)
+  readonly register = vi.fn((request: RegisterRequest): Observable<RegisterResponse> =>
+    of(REGISTER_RESPONSE)
   );
+  readonly rememberVerificationCodeSent = vi.fn((email: string): void => undefined);
   readonly showEmailVerificationNotice = vi.fn((email: string): void => undefined);
 }
 
@@ -144,7 +156,7 @@ describe('AuthPageComponent', () => {
   });
 
   it('calls AuthService for a valid register form', async () => {
-    const { auth, fixture, navigateByUrl } = await setup('register');
+    const { auth, fixture, navigate } = await setup('register');
 
     setInputValue(fixture, '#register-email', 'player@example.com');
     setInputValue(fixture, '#register-password', 'CorrectHorse123!');
@@ -158,10 +170,57 @@ describe('AuthPageComponent', () => {
       displayName: 'Player One',
       heroName: 'Morning Warden'
     });
-    expect(auth.showEmailVerificationNotice).toHaveBeenCalledWith(
+    expect(auth.rememberVerificationCodeSent).toHaveBeenCalledWith(
       'player@example.com'
     );
-    expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    expect(auth.showEmailVerificationNotice).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/verify-email'], {
+      queryParams: {
+        email: 'player@example.com'
+      }
+    });
+  });
+
+  it('shows the email confirmed success message on the login page', async () => {
+    const { nativeElement } = await setup('login', {
+      queryParams: {
+        verified: 'email-confirmed'
+      }
+    });
+
+    expect(nativeElement.querySelector('[role="status"]')?.textContent).toContain(
+      'Your email has been confirmed. You can now log in.'
+    );
+  });
+
+  it('offers verification when login fails because email is unconfirmed', async () => {
+    const { auth, fixture, nativeElement } = await setup('login');
+    auth.login.mockReturnValueOnce(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: {
+              code: 'EMAIL_NOT_CONFIRMED',
+              detail: 'Please confirm your email address before logging in.'
+            }
+          })
+      )
+    );
+
+    setInputValue(fixture, '#login-email', 'player@example.com');
+    setInputValue(fixture, '#login-password', 'CorrectHorse123!');
+    submitForm(fixture);
+
+    const verificationLink = Array.from(nativeElement.querySelectorAll('a')).find(
+      (link) => link.textContent?.includes('Enter verification code')
+    );
+
+    expect(auth.login).toHaveBeenCalledOnce();
+    expect(nativeElement.querySelector('[role="alert"]')?.textContent).toContain(
+      'Please confirm your email address before logging in.'
+    );
+    expect(verificationLink).toBeDefined();
   });
 
   it('still displays backend authentication errors', async () => {
@@ -191,6 +250,7 @@ describe('AuthPageComponent', () => {
 
 type SetupOptions = Readonly<{
   flushWarmUp?: boolean;
+  queryParams?: Record<string, string>;
 }>;
 
 async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
@@ -198,6 +258,7 @@ async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
   fixture: ComponentFixture<AuthPageComponent>;
   http: HttpTestingController;
   nativeElement: HTMLElement;
+  navigate: MockInstance<Router['navigate']>;
   navigateByUrl: MockInstance<Router['navigateByUrl']>;
 }> {
   const auth = new AuthServiceStub();
@@ -205,7 +266,7 @@ async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
     data: of({ mode }),
     snapshot: {
       data: { mode },
-      queryParamMap: convertToParamMap({})
+      queryParamMap: convertToParamMap(options.queryParams ?? {})
     }
   };
 
@@ -222,6 +283,7 @@ async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
 
   const http = TestBed.inject(HttpTestingController);
   const router = TestBed.inject(Router);
+  const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(AuthPageComponent);
   fixture.detectChanges();
@@ -236,6 +298,7 @@ async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
     fixture,
     http,
     nativeElement: fixture.nativeElement as HTMLElement,
+    navigate,
     navigateByUrl
   };
 }

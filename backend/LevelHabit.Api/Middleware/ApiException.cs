@@ -6,13 +6,15 @@ public class ApiException : Exception
         int statusCode,
         string title,
         string? detail = null,
-        IReadOnlyDictionary<string, string[]>? errors = null)
+        IReadOnlyDictionary<string, string[]>? errors = null,
+        string? code = null)
         : base(detail ?? title)
     {
         StatusCode = statusCode;
         Title = title;
         Detail = detail;
         Errors = errors;
+        Code = code;
     }
 
     public int StatusCode { get; }
@@ -22,4 +24,6 @@ public class ApiException : Exception
     public string? Detail { get; }
 
     public IReadOnlyDictionary<string, string[]>? Errors { get; }
+
+    public string? Code { get; }
 }

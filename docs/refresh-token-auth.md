@@ -6,8 +6,14 @@ only in JSON request bodies to `/api/auth/refresh` and `/api/auth/logout`.
 
 ## Backend Behavior
 
-- `POST /api/auth/register` and `POST /api/auth/login` return an access token,
-  its expiry, a refresh token, its expiry, and the current user/profile payload.
+- `POST /api/auth/register` creates an unconfirmed account, creates the hero
+  profile, sends a six-digit email verification code, and returns a
+  verification-required message without issuing tokens.
+- `POST /api/auth/confirm-email` confirms the account when the six-digit code
+  is valid and unexpired.
+- `POST /api/auth/login` returns an access token, its expiry, a refresh token,
+  its expiry, and the current user/profile payload only after the user's email
+  has been confirmed.
 - `POST /api/auth/refresh` validates the refresh token, rejects unknown,
   expired, or revoked tokens with `401`, revokes the token that was used, and
   returns a new access token and a new refresh token.
@@ -46,6 +52,17 @@ Jwt__Audience=LevelHabit.Frontend
 `Jwt__ExpirationMinutes` controls access-token lifetime.
 `Jwt__RefreshTokenExpirationDays` controls refresh-token lifetime.
 
+Email verification configuration keys:
+
+```text
+EmailVerification__CodeExpirationMinutes=10
+EmailVerification__ResendCooldownSeconds=60
+EmailVerification__MaximumFailedAttempts=5
+BREVO_API_KEY=<Brevo transactional email API key>
+BREVO_SENDER_EMAIL=<verified sender email>
+BREVO_SENDER_NAME=LevelHabit
+```
+
 ## Local Migration Steps
 
 ```powershell
@@ -63,19 +80,27 @@ refresh tokens:
 cd backend\LevelHabit.Api
 $env:ConnectionStrings__DefaultConnection = "<Supabase PostgreSQL connection string>"
 $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
+$env:Frontend__BaseUrl = "https://nicolasfrechette91.github.io/LevelHabit"
+$env:Email__Provider = "Brevo"
+$env:BREVO_API_KEY = "<Brevo transactional email API key>"
+$env:BREVO_SENDER_EMAIL = "<verified sender email>"
+$env:BREVO_SENDER_NAME = "LevelHabit"
 dotnet ef database update
 ```
 
-Render also needs `Jwt__RefreshTokenExpirationDays` set before or during the
-backend release.
+Render also needs the JWT, Brevo, frontend URL, and email verification settings
+set before or during the backend release.
 
 ## Manual Validation
 
-1. Register or log in and confirm authenticated routes load.
-2. Refresh the browser and confirm the session survives while the refresh token
+1. Register a new account and confirm no tokens are issued before email
+   confirmation.
+2. Confirm the email with the six-digit code, then log in and confirm
+   authenticated routes load.
+3. Refresh the browser and confirm the session survives while the refresh token
    is valid.
-3. Simulate an expired access token if practical and confirm the next API call
+4. Simulate an expired access token if practical and confirm the next API call
    refreshes and retries once.
-4. Log out and confirm access token, refresh token, and user-scoped state clear.
-5. Log in as user A, load data, log out, log in as user B, and confirm user A
+5. Log out and confirm access token, refresh token, and user-scoped state clear.
+6. Log in as user A, load data, log out, log in as user B, and confirm user A
    data does not appear.

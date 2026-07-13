@@ -35,6 +35,12 @@ export type AuthMessageResponse = Readonly<{
   message: string;
 }>;
 
+export type RegisterResponse = AuthMessageResponse &
+  Readonly<{
+    email: string;
+    requiresEmailVerification: boolean;
+  }>;
+
 export type LoginRequest = Readonly<{
   email: string;
   password: string;
@@ -62,9 +68,9 @@ export type ResetPasswordRequest = Readonly<{
   newPassword: string;
 }>;
 
-export type VerifyEmailRequest = Readonly<{
+export type ConfirmEmailRequest = Readonly<{
   email: string;
-  token: string;
+  code: string;
 }>;
 
-export type ResendEmailVerificationRequest = ForgotPasswordRequest;
+export type ResendVerificationCodeRequest = ForgotPasswordRequest;

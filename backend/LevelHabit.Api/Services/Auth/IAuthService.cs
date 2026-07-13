@@ -5,7 +5,7 @@ namespace LevelHabit.Api.Services.Auth;
 
 public interface IAuthService
 {
-    Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken);
+    Task<RegisterResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken);
 
     Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
 
@@ -21,12 +21,12 @@ public interface IAuthService
         ResetPasswordRequest request,
         CancellationToken cancellationToken);
 
-    Task<AuthMessageResponse> VerifyEmailAsync(
-        VerifyEmailRequest request,
+    Task<AuthMessageResponse> ConfirmEmailAsync(
+        ConfirmEmailRequest request,
         CancellationToken cancellationToken);
 
-    Task<AuthMessageResponse> ResendEmailVerificationAsync(
-        ResendEmailVerificationRequest request,
+    Task<AuthMessageResponse> ResendVerificationCodeAsync(
+        ResendVerificationCodeRequest request,
         CancellationToken cancellationToken);
 
     Task<MeResponse> GetCurrentUserAsync(ClaimsPrincipal principal, CancellationToken cancellationToken);

@@ -17,19 +17,22 @@ import type {
   AuthMessageResponse,
   AuthResponse,
   AuthUser,
+  ConfirmEmailRequest,
   ForgotPasswordRequest,
   HeroProfile,
   LoginRequest,
   LogoutRequest,
   MeResponse,
   RefreshRequest,
+  RegisterResponse,
   RegisterRequest,
-  ResendEmailVerificationRequest,
+  ResendVerificationCodeRequest,
   ResetPasswordRequest,
-  VerifyEmailRequest
 } from './auth.models';
 
 export const AUTH_STORAGE_KEY = 'levelhabit.auth.v1';
+const EMAIL_VERIFICATION_SENT_STORAGE_PREFIX =
+  'levelhabit.emailVerification.lastSent.v1.';
 
 type StoredAuth = Readonly<{
   accessToken: string;
@@ -96,10 +99,12 @@ export class AuthService {
     );
   }
 
-  register(request: RegisterRequest): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${environment.apiUrl}/auth/register`, request)
-      .pipe(tap((response) => this.persistSession(response)));
+  register(request: RegisterRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(
+      `${environment.apiUrl}/auth/register`,
+      request,
+      { context: this.skipRefreshContext() }
+    );
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
@@ -132,24 +137,57 @@ export class AuthService {
     );
   }
 
-  verifyEmail(email: string, token: string): Observable<AuthMessageResponse> {
-    const request: VerifyEmailRequest = { email, token };
+  confirmEmail(email: string, code: string): Observable<AuthMessageResponse> {
+    const request: ConfirmEmailRequest = { email, code };
 
     return this.http.post<AuthMessageResponse>(
-      `${environment.apiUrl}/auth/verify-email`,
+      `${environment.apiUrl}/auth/confirm-email`,
       request,
       { context: this.skipRefreshContext() }
     );
   }
 
-  resendEmailVerification(email: string): Observable<AuthMessageResponse> {
-    const request: ResendEmailVerificationRequest = { email };
+  resendVerificationCode(email: string): Observable<AuthMessageResponse> {
+    const request: ResendVerificationCodeRequest = { email };
 
     return this.http.post<AuthMessageResponse>(
-      `${environment.apiUrl}/auth/resend-email-verification`,
+      `${environment.apiUrl}/auth/resend-verification-code`,
       request,
       { context: this.skipRefreshContext() }
     );
+  }
+
+  rememberVerificationCodeSent(email: string, sentAt = Date.now()): void {
+    if (typeof sessionStorage === 'undefined') {
+      return;
+    }
+
+    sessionStorage.setItem(
+      this.verificationSentStorageKey(email),
+      String(sentAt)
+    );
+  }
+
+  verificationResendRemainingSeconds(
+    email: string,
+    cooldownSeconds: number
+  ): number {
+    if (typeof sessionStorage === 'undefined') {
+      return 0;
+    }
+
+    const storedValue = sessionStorage.getItem(
+      this.verificationSentStorageKey(email)
+    );
+    const sentAt = storedValue ? Number(storedValue) : Number.NaN;
+
+    if (!Number.isFinite(sentAt)) {
+      return 0;
+    }
+
+    const elapsedSeconds = Math.floor((Date.now() - sentAt) / 1000);
+
+    return Math.max(0, cooldownSeconds - elapsedSeconds);
   }
 
   refreshSession(): Observable<AuthResponse> {
@@ -361,6 +399,10 @@ export class AuthService {
 
   private isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  private verificationSentStorageKey(email: string): string {
+    return `${EMAIL_VERIFICATION_SENT_STORAGE_PREFIX}${email.trim().toLowerCase()}`;
   }
 
   private skipRefreshContext(): HttpContext {

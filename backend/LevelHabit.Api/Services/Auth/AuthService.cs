@@ -20,24 +20,32 @@ public sealed class AuthService(
     IPasswordHashService passwordHashService,
     IJwtTokenService jwtTokenService,
     IRefreshTokenService refreshTokenService,
+    IEmailVerificationCodeService emailVerificationCodeService,
     IEmailSender emailSender,
     IOptions<FrontendOptions> frontendOptions,
+    IOptions<EmailVerificationOptions> emailVerificationOptions,
     TimeProvider timeProvider,
     ILogger<AuthService> logger) : IAuthService
 {
     private const string RefreshTokenReplacedReason = "Rotated";
     private const string RefreshTokenLogoutReason = "Logout";
     private const int AuthTokenByteLength = 64;
+    private const string EmailNotConfirmedCode = "EMAIL_NOT_CONFIRMED";
+    private const string RegistrationEmailVerificationMessage =
+        "Account created. Enter the verification code sent to your email.";
+    private const string EmailConfirmedMessage =
+        "Your email has been confirmed successfully.";
     private const string ForgotPasswordSuccessMessage =
         "If an account exists for that email, a password reset link has been sent.";
-    private const string ResendEmailVerificationSuccessMessage =
-        "If an account exists and needs email verification, a verification email has been sent.";
+    private const string ResendVerificationCodeSuccessMessage =
+        "If an unconfirmed account exists for this email, a verification code has been sent.";
     private static readonly TimeSpan PasswordResetTokenLifetime = TimeSpan.FromHours(1);
-    private static readonly TimeSpan EmailVerificationTokenLifetime = TimeSpan.FromHours(24);
 
     private readonly FrontendOptions frontendOptions = frontendOptions.Value;
+    private readonly EmailVerificationOptions emailVerificationOptions =
+        emailVerificationOptions.Value;
 
-    public async Task<AuthResponse> RegisterAsync(
+    public async Task<RegisterResponse> RegisterAsync(
         RegisterRequest request,
         CancellationToken cancellationToken)
     {
@@ -85,22 +93,21 @@ public sealed class AuthService(
 
         dbContext.Users.Add(user);
         dbContext.HeroProfiles.Add(heroProfile);
-        CreatedAuthToken emailVerificationToken = CreateAuthToken(
-            user.Id,
-            AuthToken.EmailVerificationPurpose,
-            now,
-            EmailVerificationTokenLifetime);
-        dbContext.AuthTokens.Add(emailVerificationToken.Entity);
-        IssuedAuthSession session = IssueAuthSession(user, heroProfile);
+        string verificationCode = emailVerificationCodeService.GenerateCode();
+        SetEmailVerificationCode(user, normalizedEmail, verificationCode, now);
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        string verificationUrl = BuildFrontendUrl(
-            "verify-email",
-            user.Email,
-            emailVerificationToken.PlaintextToken);
-        await TrySendEmailVerificationAsync(user.Email, verificationUrl);
+        await TrySendEmailVerificationCodeAsync(
+            user,
+            verificationCode,
+            now,
+            cancellationToken);
 
-        return session.Response;
+        return new RegisterResponse(
+            Email: user.Email,
+            RequiresEmailVerification: true,
+            Message: RegistrationEmailVerificationMessage);
     }
 
     public async Task<AuthResponse> LoginAsync(
@@ -134,6 +141,11 @@ public sealed class AuthService(
         {
             user.PasswordHash = passwordHashService.HashPassword(user, request.Password);
             user.UpdatedAtUtc = timeProvider.GetUtcNow();
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            throw EmailNotConfirmed();
         }
 
         IssuedAuthSession session = IssueAuthSession(user, user.HeroProfile);
@@ -217,7 +229,10 @@ public sealed class AuthService(
                 "reset-password",
                 user.Email,
                 passwordResetToken.PlaintextToken);
-            await TrySendPasswordResetEmailAsync(user.Email, resetUrl);
+            await TrySendPasswordResetEmailAsync(
+                user.Email,
+                resetUrl,
+                cancellationToken);
         }
 
         return new AuthMessageResponse(ForgotPasswordSuccessMessage);
@@ -265,10 +280,13 @@ public sealed class AuthService(
         return new AuthMessageResponse("Your password has been reset.");
     }
 
-    public async Task<AuthMessageResponse> VerifyEmailAsync(
-        VerifyEmailRequest request,
+    public async Task<AuthMessageResponse> ConfirmEmailAsync(
+        ConfirmEmailRequest request,
         CancellationToken cancellationToken)
     {
+        string code = Clean(request.Code);
+        ValidateEmailVerificationCode(code);
+
         string normalizedEmail = NormalizeEmail(Clean(request.Email));
         User? user = await dbContext.Users
             .SingleOrDefaultAsync(
@@ -281,26 +299,69 @@ public sealed class AuthService(
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
-        AuthToken authToken = await GetUsableAuthTokenAsync(
-            user.Id,
-            AuthToken.EmailVerificationPurpose,
-            request.Token,
-            now,
-            InvalidEmailVerificationToken,
-            cancellationToken);
+
+        if (user.EmailConfirmed)
+        {
+            throw EmailAlreadyConfirmed();
+        }
+
+        if (
+            string.IsNullOrWhiteSpace(user.EmailVerificationCodeHash)
+            || user.EmailVerificationCodeExpiresAtUtc is null)
+        {
+            throw InvalidEmailVerificationToken();
+        }
+
+        if (user.EmailVerificationCodeExpiresAtUtc <= now)
+        {
+            ClearEmailVerificationCode(user);
+            user.UpdatedAtUtc = now;
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            throw InvalidEmailVerificationToken();
+        }
+
+        if (user.EmailVerificationFailedAttempts >= MaximumFailedAttempts)
+        {
+            ClearEmailVerificationCode(user);
+            user.UpdatedAtUtc = now;
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            throw InvalidEmailVerificationToken();
+        }
+
+        bool codeMatches = emailVerificationCodeService.VerifyCode(
+            normalizedEmail,
+            code,
+            user.EmailVerificationCodeHash);
+
+        if (!codeMatches)
+        {
+            user.EmailVerificationFailedAttempts += 1;
+            user.UpdatedAtUtc = now;
+
+            if (user.EmailVerificationFailedAttempts >= MaximumFailedAttempts)
+            {
+                ClearEmailVerificationCode(user);
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            throw InvalidEmailVerificationToken();
+        }
 
         user.EmailConfirmed = true;
         user.EmailConfirmedAtUtc = now;
         user.UpdatedAtUtc = now;
-        authToken.UsedAtUtc = now;
+        ClearEmailVerificationCode(user);
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new AuthMessageResponse("Your email has been verified.");
+        return new AuthMessageResponse(EmailConfirmedMessage);
     }
 
-    public async Task<AuthMessageResponse> ResendEmailVerificationAsync(
-        ResendEmailVerificationRequest request,
+    public async Task<AuthMessageResponse> ResendVerificationCodeAsync(
+        ResendVerificationCodeRequest request,
         CancellationToken cancellationToken)
     {
         string normalizedEmail = NormalizeEmail(Clean(request.Email));
@@ -312,23 +373,24 @@ public sealed class AuthService(
         if (user is not null && !user.EmailConfirmed)
         {
             DateTimeOffset now = timeProvider.GetUtcNow();
-            CreatedAuthToken emailVerificationToken = CreateAuthToken(
-                user.Id,
-                AuthToken.EmailVerificationPurpose,
-                now,
-                EmailVerificationTokenLifetime);
 
-            dbContext.AuthTokens.Add(emailVerificationToken.Entity);
+            if (!ResendCooldownHasElapsed(user, now))
+            {
+                return new AuthMessageResponse(ResendVerificationCodeSuccessMessage);
+            }
+
+            string verificationCode = emailVerificationCodeService.GenerateCode();
+            SetEmailVerificationCode(user, normalizedEmail, verificationCode, now);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            string verificationUrl = BuildFrontendUrl(
-                "verify-email",
-                user.Email,
-                emailVerificationToken.PlaintextToken);
-            await TrySendEmailVerificationAsync(user.Email, verificationUrl);
+            await TrySendEmailVerificationCodeAsync(
+                user,
+                verificationCode,
+                now,
+                cancellationToken);
         }
 
-        return new AuthMessageResponse(ResendEmailVerificationSuccessMessage);
+        return new AuthMessageResponse(ResendVerificationCodeSuccessMessage);
     }
 
     public async Task<MeResponse> GetCurrentUserAsync(
@@ -359,6 +421,11 @@ public sealed class AuthService(
                 "The current user could not be found.");
         }
 
+        if (!user.EmailConfirmed)
+        {
+            throw EmailNotConfirmed();
+        }
+
         return new MeResponse(
             User: MapUser(user),
             HeroProfile: MapHeroProfile(user.HeroProfile));
@@ -385,6 +452,7 @@ public sealed class AuthService(
 
         if (
             refreshToken?.User?.HeroProfile is null
+            || !refreshToken.User.EmailConfirmed
             || refreshToken.RevokedAtUtc is not null
             || refreshToken.ExpiresAtUtc <= now)
         {
@@ -486,6 +554,42 @@ public sealed class AuthService(
         return new CreatedAuthToken(plaintextToken, authToken);
     }
 
+    private void SetEmailVerificationCode(
+        User user,
+        string normalizedEmail,
+        string verificationCode,
+        DateTimeOffset now)
+    {
+        user.EmailVerificationCodeHash = emailVerificationCodeService.HashCode(
+            normalizedEmail,
+            verificationCode);
+        user.EmailVerificationCodeExpiresAtUtc = now.Add(EmailVerificationCodeLifetime);
+        user.EmailVerificationFailedAttempts = 0;
+        user.UpdatedAtUtc = now;
+    }
+
+    private static void ClearEmailVerificationCode(User user)
+    {
+        user.EmailVerificationCodeHash = null;
+        user.EmailVerificationCodeExpiresAtUtc = null;
+        user.EmailVerificationFailedAttempts = 0;
+    }
+
+    private bool ResendCooldownHasElapsed(User user, DateTimeOffset now)
+    {
+        return user.EmailVerificationCodeLastSentAtUtc is null
+            || user.EmailVerificationCodeLastSentAtUtc.Value.Add(ResendCooldown) <= now;
+    }
+
+    private TimeSpan EmailVerificationCodeLifetime =>
+        TimeSpan.FromMinutes(Math.Max(1, emailVerificationOptions.CodeExpirationMinutes));
+
+    private TimeSpan ResendCooldown =>
+        TimeSpan.FromSeconds(Math.Max(0, emailVerificationOptions.ResendCooldownSeconds));
+
+    private int MaximumFailedAttempts =>
+        Math.Max(1, emailVerificationOptions.MaximumFailedAttempts);
+
     private string BuildFrontendUrl(
         string path,
         string email,
@@ -508,11 +612,21 @@ public sealed class AuthService(
         return frontendOptions.BaseUrl.Trim().TrimEnd('/');
     }
 
-    private async Task TrySendPasswordResetEmailAsync(string toEmail, string resetUrl)
+    private async Task TrySendPasswordResetEmailAsync(
+        string toEmail,
+        string resetUrl,
+        CancellationToken cancellationToken)
     {
         try
         {
-            await emailSender.SendPasswordResetEmailAsync(toEmail, resetUrl);
+            await emailSender.SendPasswordResetEmailAsync(
+                toEmail,
+                resetUrl,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception exception)
         {
@@ -523,21 +637,38 @@ public sealed class AuthService(
         }
     }
 
-    private async Task TrySendEmailVerificationAsync(
-        string toEmail,
-        string verificationUrl)
+    private async Task TrySendEmailVerificationCodeAsync(
+        User user,
+        string verificationCode,
+        DateTimeOffset sentAtUtc,
+        CancellationToken cancellationToken)
     {
         try
         {
-            await emailSender.SendEmailVerificationAsync(toEmail, verificationUrl);
+            await emailSender.SendEmailVerificationCodeAsync(
+                user.Email,
+                verificationCode,
+                EmailVerificationCodeLifetime,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
                 "Failed to send email verification to {ToEmail}.",
-                toEmail);
+                user.Email);
+
+            return;
         }
+
+        user.EmailVerificationCodeLastSentAtUtc = sentAtUtc;
+        user.UpdatedAtUtc = sentAtUtc;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private static UserResponse MapUser(User user)
@@ -630,6 +761,22 @@ public sealed class AuthService(
         }
     }
 
+    private static void ValidateEmailVerificationCode(string code)
+    {
+        Dictionary<string, string[]> errors = [];
+
+        if (code.Length != 6 || code.Any(character => character < '0' || character > '9'))
+        {
+            errors[nameof(ConfirmEmailRequest.Code)] =
+                ["Enter the six-digit verification code."];
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new ApiValidationException(errors);
+        }
+    }
+
     private static ApiException InvalidCredentials()
     {
         return new ApiException(
@@ -654,12 +801,29 @@ public sealed class AuthService(
             "The password reset token is invalid or expired.");
     }
 
+    private static ApiException EmailNotConfirmed()
+    {
+        return new ApiException(
+            StatusCodes.Status403Forbidden,
+            "Email not confirmed",
+            "Please confirm your email address before logging in.",
+            code: EmailNotConfirmedCode);
+    }
+
+    private static ApiException EmailAlreadyConfirmed()
+    {
+        return new ApiException(
+            StatusCodes.Status400BadRequest,
+            "Email already confirmed",
+            "This email address has already been confirmed.");
+    }
+
     private static ApiException InvalidEmailVerificationToken()
     {
         return new ApiException(
             StatusCodes.Status400BadRequest,
-            "Invalid email verification token",
-            "The email verification token is invalid or expired.");
+            "Invalid verification code",
+            "The verification code is invalid or expired.");
     }
 
     private sealed record IssuedAuthSession(

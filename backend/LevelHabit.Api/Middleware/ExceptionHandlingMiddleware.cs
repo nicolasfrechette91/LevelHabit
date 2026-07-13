@@ -50,6 +50,11 @@ public sealed class ExceptionHandlingMiddleware(
         problemDetails.Title = exception.Title;
         problemDetails.Detail = exception.Detail;
 
+        if (!string.IsNullOrWhiteSpace(exception.Code))
+        {
+            problemDetails.Extensions["code"] = exception.Code;
+        }
+
         context.Response.StatusCode = exception.StatusCode;
         await context.Response.WriteAsJsonAsync(problemDetails);
     }

@@ -36,7 +36,9 @@ export class AuthPageComponent implements OnInit {
   protected readonly pending = signal(false);
   protected readonly loginSubmitted = signal(false);
   protected readonly registerSubmitted = signal(false);
+  protected readonly successMessage = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly unconfirmedEmail = signal<string | null>(null);
   protected readonly mode = computed<AuthMode>(() =>
     this.routeData()['mode'] === 'register' ? 'register' : 'login'
   );
@@ -54,6 +56,12 @@ export class AuthPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('verified') === 'email-confirmed') {
+      this.successMessage.set(
+        'Your email has been confirmed. You can now log in.'
+      );
+    }
+
     this.backendHealth
       .warmUp()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -62,7 +70,9 @@ export class AuthPageComponent implements OnInit {
 
   protected submitLogin(): void {
     this.loginSubmitted.set(true);
+    this.successMessage.set(null);
     this.errorMessage.set(null);
+    this.unconfirmedEmail.set(null);
 
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -74,7 +84,9 @@ export class AuthPageComponent implements OnInit {
 
   protected submitRegister(): void {
     this.registerSubmitted.set(true);
+    this.successMessage.set(null);
     this.errorMessage.set(null);
+    this.unconfirmedEmail.set(null);
 
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -83,8 +95,22 @@ export class AuthPageComponent implements OnInit {
 
     const request = this.registerForm.getRawValue() satisfies RegisterRequest;
 
-    this.submitAuth(this.auth.register(request), () => {
-      this.auth.showEmailVerificationNotice(request.email);
+    this.pending.set(true);
+
+    this.auth.register(request).pipe(finalize(() => this.pending.set(false))).subscribe({
+      next: (response) => {
+        const email = response.email || request.email;
+
+        this.auth.rememberVerificationCodeSent(email);
+        void this.router.navigate(['/verify-email'], {
+          queryParams: {
+            email
+          }
+        });
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(this.readErrorMessage(error));
+      }
     });
   }
 
@@ -109,6 +135,10 @@ export class AuthPageComponent implements OnInit {
         void this.router.navigateByUrl(this.getReturnUrl());
       },
       error: (error: unknown) => {
+        if (this.readErrorCode(error) === 'EMAIL_NOT_CONFIRMED') {
+          this.unconfirmedEmail.set(this.loginForm.controls.email.value.trim());
+        }
+
         this.errorMessage.set(this.readErrorMessage(error));
       }
     });
@@ -154,6 +184,16 @@ export class AuthPageComponent implements OnInit {
     }
 
     return 'Authentication failed. Please try again.';
+  }
+
+  private readErrorCode(error: unknown): string | null {
+    if (!(error instanceof HttpErrorResponse)) {
+      return null;
+    }
+
+    const problem = error.error as { code?: unknown } | undefined;
+
+    return typeof problem?.code === 'string' ? problem.code : null;
   }
 
   private shouldShowControlError(

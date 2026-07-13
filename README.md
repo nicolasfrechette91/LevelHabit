@@ -22,9 +22,9 @@ the analytics view.
 
 ## Feature Summary
 
-- Registration, login, logout, short-lived JWT access tokens, refresh-token
-  rotation, password reset, email verification, protected API endpoints, and
-  authenticated frontend routes.
+- Registration with six-digit email verification, login, logout, short-lived
+  JWT access tokens, refresh-token rotation, password reset, protected API
+  endpoints, and authenticated frontend routes.
 - User-scoped quests with create, update, archive, and complete-today flows.
 - XP rewards, hero level progression, streak calculations, and achievement
   unlocks based on completion history.
@@ -182,11 +182,21 @@ dotnet user-secrets set "Jwt:Issuer" "LevelHabit.Api"
 dotnet user-secrets set "Jwt:Audience" "LevelHabit.Frontend"
 dotnet user-secrets set "Jwt:ExpirationMinutes" "15"
 dotnet user-secrets set "Jwt:RefreshTokenExpirationDays" "30"
-dotnet user-secrets set "Email:Provider" "Brevo"
-dotnet user-secrets set "Brevo:ApiKey" "xkeysib-your-key"
-dotnet user-secrets set "Brevo:FromEmail" "your-verified-sender-email"
-dotnet user-secrets set "Brevo:FromName" "LevelHabit"
+dotnet user-secrets set "Email:Provider" "Development"
+dotnet user-secrets set "EmailVerification:CodeExpirationMinutes" "10"
+dotnet user-secrets set "EmailVerification:ResendCooldownSeconds" "60"
+dotnet user-secrets set "EmailVerification:MaximumFailedAttempts" "5"
 dotnet user-secrets set "Frontend:BaseUrl" "http://localhost:4200"
+```
+
+`Email:Provider=Development` is safe for local development only. It logs
+password reset links and email verification codes to the backend console. To
+test real Brevo delivery locally, set `Email:Provider` to `Brevo` and add:
+
+```powershell
+dotnet user-secrets set "BREVO_API_KEY" "replace-with-brevo-api-key"
+dotnet user-secrets set "BREVO_SENDER_EMAIL" "your-verified-sender-email"
+dotnet user-secrets set "BREVO_SENDER_NAME" "LevelHabit"
 ```
 
 Apply local EF Core migrations and run the backend:
@@ -235,7 +245,10 @@ Local service URLs:
 - Refresh-token behavior is documented in
   [docs/refresh-token-auth.md](docs/refresh-token-auth.md).
 - Password reset and email verification use Brevo transactional email when
-  `Email:Provider` is `Brevo`; use `Development` to log links locally instead.
+  `Email:Provider` is `Brevo`. In Development only, `Email:Provider=Development`
+  logs password reset links and six-digit verification codes to the console.
+- Verification codes expire after 10 minutes by default, use a 60-second resend
+  cooldown, and are stored only as hashes.
 
 Temporary PowerShell environment variables can be used for a single backend
 session:
@@ -247,11 +260,19 @@ $env:Jwt__Issuer = "LevelHabit.Api"
 $env:Jwt__Audience = "LevelHabit.Frontend"
 $env:Jwt__ExpirationMinutes = "15"
 $env:Jwt__RefreshTokenExpirationDays = "30"
-$env:Email__Provider = "Brevo"
-$env:Brevo__ApiKey = "xkeysib-your-key"
-$env:Brevo__FromEmail = "your-verified-sender-email"
-$env:Brevo__FromName = "LevelHabit"
+$env:Email__Provider = "Development"
+$env:EmailVerification__CodeExpirationMinutes = "10"
+$env:EmailVerification__ResendCooldownSeconds = "60"
+$env:EmailVerification__MaximumFailedAttempts = "5"
 $env:Frontend__BaseUrl = "http://localhost:4200"
+```
+
+For local Brevo delivery, use `Email__Provider=Brevo` and add:
+
+```powershell
+$env:BREVO_API_KEY = "replace-with-brevo-api-key"
+$env:BREVO_SENDER_EMAIL = "your-verified-sender-email"
+$env:BREVO_SENDER_NAME = "LevelHabit"
 ```
 
 Render backend environment variables:
@@ -264,9 +285,12 @@ Jwt__Audience=LevelHabit.Frontend
 Jwt__ExpirationMinutes=15
 Jwt__RefreshTokenExpirationDays=30
 Email__Provider=Brevo
-Brevo__ApiKey=<Brevo transactional email API key>
-Brevo__FromEmail=<verified sender email>
-Brevo__FromName=LevelHabit
+EmailVerification__CodeExpirationMinutes=10
+EmailVerification__ResendCooldownSeconds=60
+EmailVerification__MaximumFailedAttempts=5
+BREVO_API_KEY=<Brevo transactional email API key>
+BREVO_SENDER_EMAIL=<verified sender email>
+BREVO_SENDER_NAME=LevelHabit
 Frontend__BaseUrl=https://nicolasfrechette91.github.io/LevelHabit
 Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
 Cors__AllowedOrigins__1=http://localhost:4200
@@ -345,13 +369,18 @@ Apply migrations to Supabase before or during a production release:
 cd backend\LevelHabit.Api
 $env:ConnectionStrings__DefaultConnection = "<Supabase PostgreSQL connection string>"
 $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
+$env:Frontend__BaseUrl = "https://nicolasfrechette91.github.io/LevelHabit"
+$env:Email__Provider = "Brevo"
+$env:BREVO_API_KEY = "<Brevo transactional email API key>"
+$env:BREVO_SENDER_EMAIL = "<verified sender email>"
+$env:BREVO_SENDER_NAME = "LevelHabit"
 dotnet ef database update
 ```
 
 Production reminder: Supabase needs every EF migration in
 `backend/LevelHabit.Api/Migrations`, including authentication, refresh tokens,
-hero profiles, quests, quest completions, completion XP, achievements, and
-analytics-related tables.
+hero profiles, quests, quest completions, completion XP, achievements,
+six-digit email verification, and analytics-related tables.
 
 ## Testing Commands
 
@@ -410,16 +439,18 @@ After Render deploys the backend and Supabase has the current migrations:
 
 1. Open `https://nicolasfrechette91.github.io/LevelHabit/`.
 2. Register a new demo account.
-3. Log in.
-4. Create a quest.
-5. Complete the quest.
-6. Verify XP and level updates.
-7. Verify streaks update.
-8. Verify achievements unlock when criteria are met.
-9. Verify analytics reflects completions and XP.
-10. Log out and log in again.
-11. Verify the same user data persists.
-12. Create or log into a second account and verify user data is isolated.
+3. Confirm login is blocked until the email code is verified.
+4. Enter the six-digit email verification code and confirm redirect to login.
+5. Log in.
+6. Create a quest.
+7. Complete the quest.
+8. Verify XP and level updates.
+9. Verify streaks update.
+10. Verify achievements unlock when criteria are met.
+11. Verify analytics reflects completions and XP.
+12. Log out and log in again.
+13. Verify the same user data persists.
+14. Create or log into a second account and verify user data is isolated.
 
 ## Known Limitations
 

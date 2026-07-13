@@ -14,48 +14,86 @@ public sealed class BrevoEmailSender(
 
     private readonly BrevoOptions brevoOptions = brevoOptions.Value;
 
-    public Task SendPasswordResetEmailAsync(string toEmail, string resetUrl)
+    public Task SendPasswordResetEmailAsync(
+        string toEmail,
+        string resetUrl,
+        CancellationToken cancellationToken = default)
     {
         string htmlContent = $"""
             <p>Hello,</p>
-            <p>We received a request to reset your LevelHabit password.</p>
+            <p>We received a request to reset your Level Habit password.</p>
             <p><a href="{WebUtility.HtmlEncode(resetUrl)}">Reset your password</a></p>
             <p>This link expires in 1 hour. If you did not request this, you can ignore this email.</p>
             """;
+        string textContent = $"""
+            Hello,
 
-        return SendTransactionalEmailAsync(
-            toEmail,
-            "Reset your LevelHabit password",
-            htmlContent);
-    }
+            We received a request to reset your Level Habit password.
 
-    public Task SendEmailVerificationAsync(string toEmail, string verificationUrl)
-    {
-        string htmlContent = $"""
-            <p>Hello,</p>
-            <p>Please verify your email address to finish setting up LevelHabit.</p>
-            <p><a href="{WebUtility.HtmlEncode(verificationUrl)}">Verify your email</a></p>
-            <p>This link expires in 24 hours.</p>
+            Reset your password:
+            {resetUrl}
+
+            This link expires in 1 hour. If you did not request this, you can ignore this email.
             """;
 
         return SendTransactionalEmailAsync(
             toEmail,
-            "Verify your LevelHabit email",
-            htmlContent);
+            "Reset your Level Habit password",
+            htmlContent,
+            textContent,
+            cancellationToken);
+    }
+
+    public Task SendEmailVerificationCodeAsync(
+        string toEmail,
+        string verificationCode,
+        TimeSpan expiresIn,
+        CancellationToken cancellationToken = default)
+    {
+        int expirationMinutes = Math.Max(1, (int)Math.Ceiling(expiresIn.TotalMinutes));
+        string encodedCode = WebUtility.HtmlEncode(verificationCode);
+        string htmlContent = $"""
+            <p>Hello,</p>
+            <p>Use this Level Habit verification code to finish creating your account:</p>
+            <p style="font-size: 28px; font-weight: 700; letter-spacing: 8px; margin: 24px 0;">{encodedCode}</p>
+            <p>This code expires in {expirationMinutes} minutes.</p>
+            <p>If you did not create a Level Habit account, you can ignore this email.</p>
+            """;
+        string textContent = $"""
+            Hello,
+
+            Use this Level Habit verification code to finish creating your account:
+
+            {verificationCode}
+
+            This code expires in {expirationMinutes} minutes.
+
+            If you did not create a Level Habit account, you can ignore this email.
+            """;
+
+        return SendTransactionalEmailAsync(
+            toEmail,
+            "Verify your Level Habit email",
+            htmlContent,
+            textContent,
+            cancellationToken);
     }
 
     private async Task SendTransactionalEmailAsync(
         string toEmail,
         string subject,
-        string htmlContent)
+        string htmlContent,
+        string textContent,
+        CancellationToken cancellationToken)
     {
         BrevoEmailRequest request = new(
             Sender: new BrevoEmailAddress(
-                Email: brevoOptions.FromEmail ?? string.Empty,
-                Name: brevoOptions.FromName ?? string.Empty),
+                Email: ResolveSenderEmail(),
+                Name: ResolveSenderName()),
             To: [new BrevoEmailAddress(Email: toEmail)],
             Subject: subject,
-            HtmlContent: htmlContent);
+            HtmlContent: htmlContent,
+            TextContent: textContent);
 
         using HttpRequestMessage httpRequest = new(HttpMethod.Post, "smtp/email")
         {
@@ -64,14 +102,16 @@ public sealed class BrevoEmailSender(
 
         httpRequest.Headers.Add("api-key", brevoOptions.ApiKey);
 
-        using HttpResponseMessage response = await httpClient.SendAsync(httpRequest);
+        using HttpResponseMessage response = await httpClient.SendAsync(
+            httpRequest,
+            cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
             return;
         }
 
-        string responseBody = await response.Content.ReadAsStringAsync();
+        string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
         logger.LogError(
             "Brevo transactional email failed for {ToEmail}. StatusCode: {StatusCode}. Response: {ResponseBody}",
@@ -83,6 +123,31 @@ public sealed class BrevoEmailSender(
             $"Brevo transactional email failed with status code {(int)response.StatusCode}.");
     }
 
+    private string ResolveSenderEmail()
+    {
+        return FirstNonBlank(brevoOptions.SenderEmail, brevoOptions.FromEmail)
+            ?? string.Empty;
+    }
+
+    private string ResolveSenderName()
+    {
+        return FirstNonBlank(brevoOptions.SenderName, brevoOptions.FromName)
+            ?? string.Empty;
+    }
+
+    private static string? FirstNonBlank(params string?[] values)
+    {
+        foreach (string? value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
     private sealed record BrevoEmailRequest(
         [property: JsonPropertyName("sender")]
         BrevoEmailAddress Sender,
@@ -91,7 +156,9 @@ public sealed class BrevoEmailSender(
         [property: JsonPropertyName("subject")]
         string Subject,
         [property: JsonPropertyName("htmlContent")]
-        string HtmlContent);
+        string HtmlContent,
+        [property: JsonPropertyName("textContent")]
+        string TextContent);
 
     private sealed record BrevoEmailAddress(
         [property: JsonPropertyName("email")]
