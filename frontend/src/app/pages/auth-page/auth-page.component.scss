@@ -112,7 +112,7 @@
 }
 
 .auth-panel-body {
-  padding: clamp(1.75rem, 3vw, 2.55rem);
+  padding: clamp(1.65rem, 2.7vw, 2.25rem);
 }
 
 .panel-icon {
@@ -163,7 +163,7 @@
 
 .panel-divider {
   color: rgba(#7f9d98, 0.72);
-  margin: 1.15rem 0;
+  margin: 0.95rem 0;
 
   svg {
     height: 1.1rem;
@@ -208,12 +208,16 @@
 }
 
 .form-control {
-  background-color: rgba($lh-white, 0.94);
-  border-color: rgba(#173b42, 0.18);
+  background-color: #fffefa;
+  border-color: rgba($lh-ink, 0.2);
   border-radius: 0.62rem;
   color: var(--auth-ink);
   min-height: 3.55rem;
   padding-left: 3.15rem;
+
+  &:-webkit-autofill {
+    -webkit-text-fill-color: var(--auth-ink);
+  }
 
   &:focus {
     border-color: var(--auth-green);
@@ -253,9 +257,15 @@
 
 .auth-panel a {
   color: var(--auth-green);
-  text-decoration: underline;
+  text-decoration: none;
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.22em;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--lh-emerald-strong);
+    text-decoration: underline;
+  }
 }
 
 :where(.auth-submit, .auth-panel a):focus-visible {

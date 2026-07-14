@@ -155,6 +155,24 @@ describe('AuthPageComponent', () => {
     expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
   });
 
+  it('toggles login password visibility without changing its value', async () => {
+    const { fixture, nativeElement } = await setup('login');
+
+    setInputValue(fixture, '#login-password', 'CorrectHorse123!');
+    const toggle = nativeElement.querySelector('.password-toggle') as HTMLButtonElement;
+    const password = nativeElement.querySelector('#login-password') as HTMLInputElement;
+
+    expect(password.type).toBe('password');
+    expect(toggle.getAttribute('aria-label')).toBe('Show password');
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(password.type).toBe('text');
+    expect(password.value).toBe('CorrectHorse123!');
+    expect(toggle.getAttribute('aria-label')).toBe('Hide password');
+  });
+
   it('calls AuthService for a valid register form', async () => {
     const { auth, fixture, navigate } = await setup('register');
 

@@ -34,6 +34,8 @@ export class AuthPageComponent implements OnInit {
   });
 
   protected readonly pending = signal(false);
+  protected readonly loginPasswordVisible = signal(false);
+  protected readonly registerPasswordVisible = signal(false);
   protected readonly loginSubmitted = signal(false);
   protected readonly registerSubmitted = signal(false);
   protected readonly successMessage = signal<string | null>(null);
@@ -123,6 +125,14 @@ export class AuthPageComponent implements OnInit {
 
   protected shouldShowRegisterError(control: AbstractControl<string>): boolean {
     return this.shouldShowControlError(control, this.registerSubmitted());
+  }
+
+  protected toggleLoginPasswordVisibility(): void {
+    this.loginPasswordVisible.update((visible) => !visible);
+  }
+
+  protected toggleRegisterPasswordVisibility(): void {
+    this.registerPasswordVisible.update((visible) => !visible);
   }
 
   private submitAuth(

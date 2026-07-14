@@ -38,6 +38,13 @@
     <path d="M6.5 10h11v9.5h-11z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
     <path d="M8.8 10V7.8a3.2 3.2 0 1 1 6.4 0V10M12 14v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
   </symbol>
+  <symbol id="auth-icon-eye" viewBox="0 0 24 24">
+    <path d="M3.5 12s3.1-5.5 8.5-5.5 8.5 5.5 8.5 5.5-3.1 5.5-8.5 5.5S3.5 12 3.5 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+  </symbol>
+  <symbol id="auth-icon-eye-off" viewBox="0 0 24 24">
+    <path d="M4 4 20 20M9.6 6.9A9.7 9.7 0 0 1 12 6.5c5.4 0 8.5 5.5 8.5 5.5a14 14 0 0 1-2.3 2.9M14.4 17.1a9.7 9.7 0 0 1-2.4.4C6.6 17.5 3.5 12 3.5 12a14 14 0 0 1 2.3-2.9M10.2 10.2a2.5 2.5 0 0 0 3.6 3.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
   <symbol id="auth-icon-user" viewBox="0 0 24 24">
     <path d="M12 12.5A4.2 4.2 0 1 0 12 4a4.2 4.2 0 0 0 0 8.5ZM4.8 20c.8-3.4 3.4-5.1 7.2-5.1s6.4 1.7 7.2 5.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
   </symbol>
@@ -195,12 +202,23 @@
                   [class.is-invalid]="shouldShowRegisterError(registerForm.controls.password)"
                   [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.password) ? 'true' : null"
                   [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.password) ? 'register-password-error' : null"
-                  type="password"
+                  [type]="registerPasswordVisible() ? 'text' : 'password'"
                   autocomplete="new-password"
                   formControlName="password"
                   required
                   minlength="8"
                 >
+                <button
+                  type="button"
+                  class="password-toggle"
+                  [attr.aria-label]="registerPasswordVisible() ? 'Hide password' : 'Show password'"
+                  [attr.aria-pressed]="registerPasswordVisible()"
+                  (click)="toggleRegisterPasswordVisibility()"
+                >
+                  <svg aria-hidden="true">
+                    <use [attr.href]="registerPasswordVisible() ? '#auth-icon-eye-off' : '#auth-icon-eye'"/>
+                  </svg>
+                </button>
               </div>
 
               @if (shouldShowRegisterError(registerForm.controls.password)) {
@@ -346,11 +364,22 @@
                   [class.is-invalid]="shouldShowLoginError(loginForm.controls.password)"
                   [attr.aria-invalid]="shouldShowLoginError(loginForm.controls.password) ? 'true' : null"
                   [attr.aria-describedby]="shouldShowLoginError(loginForm.controls.password) ? 'login-password-error' : null"
-                  type="password"
+                  [type]="loginPasswordVisible() ? 'text' : 'password'"
                   autocomplete="current-password"
                   formControlName="password"
                   required
                 >
+                <button
+                  type="button"
+                  class="password-toggle"
+                  [attr.aria-label]="loginPasswordVisible() ? 'Hide password' : 'Show password'"
+                  [attr.aria-pressed]="loginPasswordVisible()"
+                  (click)="toggleLoginPasswordVisibility()"
+                >
+                  <svg aria-hidden="true">
+                    <use [attr.href]="loginPasswordVisible() ? '#auth-icon-eye-off' : '#auth-icon-eye'"/>
+                  </svg>
+                </button>
               </div>
 
               @if (shouldShowLoginError(loginForm.controls.password)) {
@@ -380,9 +409,11 @@
 
             <button
               type="submit"
-              class="btn btn-lh-gold auth-submit fw-bold"
+              class="btn btn-lh-primary auth-submit auth-submit-login fw-bold"
               data-testid="login-submit-button"
               [disabled]="pending()"
+              [class.is-loading]="pending()"
+              [attr.aria-busy]="pending()"
             >
               <span>{{ pending() ? 'Signing in...' : 'Sign in' }}</span>
               <svg aria-hidden="true"><use href="#auth-icon-arrow"/></svg>

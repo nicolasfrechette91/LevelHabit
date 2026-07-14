@@ -161,4 +161,29 @@
       text-align: center;
     }
   }
+
+  .site-header-anonymous {
+    .container-xl {
+      align-items: center !important;
+      flex-direction: row !important;
+    }
+
+    .auth-nav {
+      margin-left: auto;
+      width: auto;
+    }
+  }
+}
+
+@media (max-width: 359.98px) {
+  .site-header-anonymous {
+    .brand {
+      font-size: 0.95rem;
+    }
+
+    .auth-create-link {
+      font-size: 0.85rem;
+      padding-inline: 0.7rem;
+    }
+  }
 }

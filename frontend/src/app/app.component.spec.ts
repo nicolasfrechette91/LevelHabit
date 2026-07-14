@@ -31,6 +31,16 @@ describe('AppComponent', () => {
     http.verify();
   });
 
+  it('hides the redundant login link on the login page', async () => {
+    const { element, http } = await setupApp({ path: '/login' });
+
+    expect(element.querySelector('.auth-nav')?.textContent).not.toContain('Log in');
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
+
+    http.expectOne(`${environment.apiUrl}/health`).flush('Healthy');
+    http.verify();
+  });
+
   it('renders the app shell, brand, and primary navigation for authenticated users', async () => {
     const { element, http } = await setupApp({ authenticated: true });
 
@@ -68,6 +78,7 @@ describe('AppComponent', () => {
 
 type SetupOptions = Readonly<{
   authenticated?: boolean;
+  path?: string;
 }>;
 
 async function setupApp(options: SetupOptions = {}): Promise<{
@@ -97,6 +108,10 @@ async function setupApp(options: SetupOptions = {}): Promise<{
   }).compileComponents();
 
   const router = TestBed.inject(Router);
+
+  if (options.path) {
+    await router.navigateByUrl(options.path);
+  }
 
   vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 

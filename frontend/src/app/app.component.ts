@@ -51,6 +51,17 @@ export class AppComponent {
     }
   );
 
+  protected readonly isLoginPage = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects.split(/[?#]/, 1)[0] === '/login'),
+      startWith(this.router.url.split(/[?#]/, 1)[0] === '/login')
+    ),
+    {
+      initialValue: this.router.url.split(/[?#]/, 1)[0] === '/login'
+    }
+  );
+
   protected readonly navItems: readonly NavItem[] = PROTOTYPE_ROUTE_CONFIGS.map(
     ({ navLabel, path }) => ({
       label: navLabel,
