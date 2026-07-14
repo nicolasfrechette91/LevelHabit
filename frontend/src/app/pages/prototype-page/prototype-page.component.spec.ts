@@ -292,7 +292,7 @@ describe('Dashboard view', () => {
     expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.progressProfile.level}`);
     expect(pageText).toContain(AUTH_ME_RESPONSE.progressProfile.displayName);
     expect(state.levelTitle()).toBe(AUTH_ME_RESPONSE.progressProfile.displayName);
-    expect(pageText).toContain(`${state.completedCount()}/${state.questCount()}`);
+    expect(pageText).toContain(`${state.completedCount()}/${state.todayQuestCount()}`);
 
     for (const quest of PROTOTYPE_QUESTS.filter(
       (candidate) => !DEFAULT_COMPLETED_IDS.includes(candidate.id)
@@ -316,7 +316,7 @@ describe('Dashboard view', () => {
 
     expect(state.quests().find((candidate) => candidate.id === quest!.id)?.completed).toBe(true);
     expect(state.totalXp()).toBe(AUTH_ME_RESPONSE.progressProfile.totalXp);
-    expect(pageText).toContain(`${state.completedCount()}/${state.questCount()}`);
+    expect(pageText).toContain(`${state.completedCount()}/${state.todayQuestCount()}`);
   });
 });
 

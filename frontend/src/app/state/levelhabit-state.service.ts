@@ -106,6 +106,10 @@ export class LevelHabitStateService {
     this.quests().filter((quest) => !quest.isArchived).length
   );
 
+  readonly todayQuestCount = computed(() =>
+    Math.max(this.questCount(), this.completedCount())
+  );
+
   readonly earnedXp = computed(() => {
     return this.completedQuests().reduce((total, quest) => total + quest.xp, 0);
   });
@@ -210,9 +214,9 @@ export class LevelHabitStateService {
   });
 
   readonly completionPercent = computed(() =>
-    this.questCount() === 0
+    this.todayQuestCount() === 0
       ? 0
-      : Math.round((this.completedCount() / this.questCount()) * 100)
+      : Math.round((this.completedCount() / this.todayQuestCount()) * 100)
   );
 
   readonly weeklyHistory = computed<WeekDay[]>(() => [
@@ -220,7 +224,7 @@ export class LevelHabitStateService {
     {
       label: 'Today',
       completed: this.completedCount(),
-      total: this.questCount(),
+      total: this.todayQuestCount(),
       xp: this.earnedXp()
     }
   ]);

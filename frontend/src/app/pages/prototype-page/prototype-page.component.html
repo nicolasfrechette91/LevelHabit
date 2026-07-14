@@ -27,7 +27,7 @@
           <span class="status-label">{{ playerDisplayName() }}</span>
           <strong>{{ progressDisplayName() }}</strong>
           @if (profileUser()?.email; as email) {
-            <small class="lh-muted d-block">{{ email }}</small>
+            <small class="status-label d-block">{{ email }}</small>
           }
         </div>
         <div>
@@ -55,7 +55,7 @@
             <span>day streak</span>
           </div>
           <div class="col-4">
-            <strong data-testid="progress-today-count">{{ game.completedCount() }}/{{ game.questCount() }}</strong>
+            <strong data-testid="progress-today-count">{{ game.completedCount() }}/{{ game.todayQuestCount() }}</strong>
             <span>today</span>
           </div>
         </div>

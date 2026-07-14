@@ -165,6 +165,21 @@ describe('LevelHabitStateService', () => {
     expect(state.levelProgress()).toBeGreaterThan(startingProgress);
   });
 
+  it('keeps today totals valid when a completed quest is archived', () => {
+    const { auth, questApi, state } = setupAuthenticatedState();
+    auth.loginAs(USER_A, PROGRESS_PROFILE_A);
+    TestBed.tick();
+    questApi.setResponses(USER_A.id, [{ ...USER_A_QUEST, isArchived: true }]);
+
+    state.loadQuests();
+
+    expect(state.completedCount()).toBe(1);
+    expect(state.questCount()).toBe(0);
+    expect(state.todayQuestCount()).toBe(1);
+    expect(state.completionPercent()).toBe(100);
+    expect(state.weeklyHistory().at(-1)).toMatchObject({ completed: 1, total: 1 });
+  });
+
   it('clears authenticated user-specific state on logout', () => {
     const { achievementApi, analyticsApi, auth, questApi, state } =
       setupAuthenticatedState();

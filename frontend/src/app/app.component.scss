@@ -130,17 +130,24 @@
 
   .site-nav {
     align-items: center;
-    display: flex;
+    display: grid;
+    gap: 0.25rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
 
     .nav-link,
     .logout-button,
     app-notification-center {
-      flex: 1 1 calc(50% - 0.25rem);
       justify-content: center;
       padding-inline: 0.5rem !important;
       text-align: center;
       width: 100%;
+    }
+
+    .nav-link,
+    .logout-button {
+      font-size: 0.8rem;
+      min-height: 2.5rem;
     }
   }
 
