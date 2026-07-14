@@ -7,7 +7,7 @@ complete them for XP, build streaks, unlock achievements, and level up a hero
 profile that represents their progress.
 
 The project is deployed end to end with an Angular frontend on GitHub Pages, an
-ASP.NET Core API on Render, and PostgreSQL hosted on Supabase. It was built as
+ASP.NET Core API on Render, and PostgreSQL hosted on Neon. It was built as
 a focused MVP to demonstrate product thinking, secure user-scoped data,
 backend API design, frontend integration, automated tests, and production
 deployment.
@@ -51,7 +51,7 @@ origins, service classes for business logic, and Entity Framework Core for data
 access.
 
 PostgreSQL is used in both local and production environments. Local development
-uses Docker Compose. Production uses Supabase PostgreSQL. EF Core migrations
+uses Docker Compose. Production uses Neon-hosted PostgreSQL. EF Core migrations
 manage schema changes across authentication, hero profiles, quests, quest
 completions, XP rewards, achievements, and analytics-related data.
 
@@ -153,20 +153,20 @@ The production deployment uses separate services:
 
 - GitHub Pages serves the Angular frontend.
 - Render hosts the ASP.NET Core backend.
-- Supabase hosts the PostgreSQL production database.
+- Neon hosts the PostgreSQL production database.
 - GitHub Actions validates backend and frontend changes.
 - The frontend deploys automatically from GitHub Actions on `main` and manual
   workflow runs.
 - The backend deploy can be triggered by a Render deploy hook stored as the
   `RENDER_DEPLOY_HOOK_URL` GitHub secret.
 
-Database migrations are applied with EF Core against the Supabase connection
+Database migrations are applied with EF Core against the Neon connection
 string before or during production releases.
 
 ## Key Challenges Solved
 
 - Moving from a local MVP to a real production deployment across GitHub Pages,
-  Render, and Supabase.
+  Render, and Neon.
 - Configuring frontend and backend environments so local development and
   production use the correct API origins.
 - Implementing authentication with JWT tokens and protected frontend/backend

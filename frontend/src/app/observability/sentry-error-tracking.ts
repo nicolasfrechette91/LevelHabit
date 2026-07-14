@@ -6,7 +6,7 @@ import { environment } from '../../environments/environment';
 type SentryAngular = typeof import('@sentry/angular');
 
 const SENSITIVE_KEY_PATTERN =
-  /(authorization|password|passwd|access.?token|refresh.?token|jwt|secret|supabase|connection.?string|database.?url)/i;
+  /(authorization|password|passwd|access.?token|refresh.?token|jwt|secret|postgres(?:ql)?|connection.?string|database.?url)/i;
 
 let sentryModulePromise: Promise<SentryAngular> | null = null;
 

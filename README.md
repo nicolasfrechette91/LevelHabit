@@ -37,7 +37,8 @@ the analytics view.
 
 ## Technical Highlights
 
-- Production full-stack deployment across GitHub Pages, Render, and Supabase.
+- Production full-stack deployment across GitHub Pages, Render, and Neon
+  PostgreSQL.
 - User-scoped data isolation for quests, completions, achievements, progress
   profiles, analytics, reminders, and notifications.
 - JWT authentication with access tokens, rotating refresh tokens, server-side
@@ -59,7 +60,7 @@ the analytics view.
 - ASP.NET Core Web API on .NET 10.
 - Entity Framework Core with the Npgsql PostgreSQL provider.
 - PostgreSQL locally through Docker Compose.
-- Supabase PostgreSQL in production.
+- Neon-hosted PostgreSQL in production.
 - GitHub Pages for the production frontend.
 - Render for the production backend API.
 - GitHub Actions for CI, frontend deployment, and Render deploy hook triggering.
@@ -72,7 +73,7 @@ flowchart LR
   Frontend -->|"HTTPS API calls"| Api["ASP.NET Core API\nRender"]
   Frontend -->|"JWT bearer token"| Jwt["JWT authentication\naccess + refresh tokens"]
   Jwt --> Api
-  Api -->|"EF Core + Npgsql"| Database[("PostgreSQL\nSupabase")]
+  Api -->|"EF Core + Npgsql"| Database[("PostgreSQL\nNeon")]
 
   Developer["Developer"] -->|"push / pull request"| Actions["GitHub Actions CI/CD"]
   Actions -->|"restore, build, test"| Api
@@ -87,7 +88,7 @@ The Angular app is deployed as static assets on GitHub Pages with the
 `/LevelHabit/` base href and hash routing. It calls the ASP.NET Core API hosted
 on Render. The API validates JWT bearer tokens, rotates refresh tokens, enforces
 CORS for known frontend origins, and uses EF Core migrations to manage the
-PostgreSQL schema. Supabase provides the production database, while Docker
+PostgreSQL schema. Neon hosts the production PostgreSQL database, while Docker
 Compose provides local PostgreSQL.
 
 ## Reminders And Notifications
@@ -320,7 +321,7 @@ $env:BREVO_SENDER_NAME = "LevelHabit"
 Render backend environment variables:
 
 ```text
-ConnectionStrings__DefaultConnection=<Supabase PostgreSQL connection string>
+ConnectionStrings__DefaultConnection=Host=<neon-host>;Port=5432;Database=<database>;Username=<username>;Password=<password>;SSL Mode=Require;Trust Server Certificate=true
 Jwt__Secret=<at least 32 random characters>
 Jwt__Issuer=LevelHabit.Api
 Jwt__Audience=LevelHabit.Frontend
@@ -341,7 +342,7 @@ Sentry__Environment=production
 ```
 
 Do not commit real connection strings, JWT secrets, passwords, deploy hooks, or
-tokens. Store production values in Render, Supabase, GitHub secrets, or local
+tokens. Store production values in Render, Neon, GitHub secrets, or local
 developer secret stores.
 
 ## Production Error Tracking
@@ -381,7 +382,7 @@ What is intentionally excluded or scrubbed:
   breadcrumbs, query strings, and request headers on frontend events.
 - Backend request bodies, cookies, query strings, server name, user context,
   request headers, failed-request auto-capture, and Sentry log-event capture.
-- Do not place passwords, access tokens, refresh tokens, JWT secrets, Supabase
+- Do not place passwords, access tokens, refresh tokens, JWT secrets, database
   secrets, database URLs, or connection strings in Sentry context, logs, commit
   history, Render logs, or GitHub Actions output.
 
@@ -405,11 +406,12 @@ cd backend\LevelHabit.Api
 dotnet ef database update
 ```
 
-Apply migrations to Supabase before or during a production release:
+Apply migrations to the Neon production PostgreSQL database before or during a
+production release:
 
 ```powershell
 cd backend\LevelHabit.Api
-$env:ConnectionStrings__DefaultConnection = "<Supabase PostgreSQL connection string>"
+$env:ConnectionStrings__DefaultConnection = "Host=<neon-host>;Port=5432;Database=<database>;Username=<username>;Password=<password>;SSL Mode=Require;Trust Server Certificate=true"
 $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
 $env:Frontend__BaseUrl = "https://nicolasfrechette91.github.io/LevelHabit"
 $env:Email__Provider = "Brevo"
@@ -419,7 +421,7 @@ $env:BREVO_SENDER_NAME = "LevelHabit"
 dotnet ef database update
 ```
 
-Production reminder: Supabase needs every EF migration in
+Production reminder: the Neon database needs every EF migration in
 `backend/LevelHabit.Api/Migrations`, including authentication, refresh tokens,
 progress profiles, quests, quest completions, completion XP, achievements,
 six-digit email verification, analytics-related tables, quest reminders, and
@@ -479,7 +481,8 @@ runs.
 
 ## Production Smoke Checklist
 
-After Render deploys the backend and Supabase has the current migrations:
+After Render deploys the backend and the Neon database has the current
+migrations:
 
 1. Open `https://nicolasfrechette91.github.io/LevelHabit/`.
 2. Register a new demo account.

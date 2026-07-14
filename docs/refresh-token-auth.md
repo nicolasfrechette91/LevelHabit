@@ -73,12 +73,12 @@ dotnet ef database update
 
 ## Production Migration Steps
 
-Apply the EF migration to Supabase before deploying the backend that depends on
-refresh tokens:
+Apply the EF migration to the Neon production PostgreSQL database before
+deploying the backend that depends on refresh tokens:
 
 ```powershell
 cd backend\LevelHabit.Api
-$env:ConnectionStrings__DefaultConnection = "<Supabase PostgreSQL connection string>"
+$env:ConnectionStrings__DefaultConnection = "Host=<neon-host>;Port=5432;Database=<database>;Username=<username>;Password=<password>;SSL Mode=Require;Trust Server Certificate=true"
 $env:Jwt__Secret = "replace-with-at-least-32-random-characters"
 $env:Frontend__BaseUrl = "https://nicolasfrechette91.github.io/LevelHabit"
 $env:Email__Provider = "Brevo"
