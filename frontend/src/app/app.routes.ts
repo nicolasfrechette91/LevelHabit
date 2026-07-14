@@ -76,6 +76,7 @@ export const routes: Routes = [
     title: `${title} | LevelHabit`,
     canActivate: [authGuard],
     data: {
+      layout: 'authenticated',
       view: path
     }
   })),

@@ -1,7 +1,10 @@
 @use "variables" as *;
 
 .app-shell {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .site-header {
@@ -87,7 +90,25 @@
 }
 
 .app-main {
+  flex: 1 0 auto;
   min-height: calc(100vh - 4.25rem);
+  min-height: calc(100dvh - 4.25rem);
+}
+
+.app-main-authenticated {
+  background-color: var(--lh-surface);
+  background-image:
+    linear-gradient(rgba(#fffdf7, 0.18), rgba(#fffdf7, 0.18)),
+    var(--authenticated-background-image);
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (min-width: 768px) {
+  .app-main-authenticated {
+    background-attachment: fixed;
+  }
 }
 
 .app-notice {

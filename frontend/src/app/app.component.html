@@ -73,7 +73,11 @@
     </div>
   }
 
-  <main class="app-main">
+  <main
+    class="app-main"
+    [class.app-main-authenticated]="usesAuthenticatedLayout()"
+    style="--authenticated-background-image: url('authenticated-background.png')"
+  >
     <router-outlet />
   </main>
 </div>
