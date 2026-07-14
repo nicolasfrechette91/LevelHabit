@@ -67,7 +67,7 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
-    redirectTo: 'hero',
+    redirectTo: 'progress',
     pathMatch: 'full'
   },
   ...PROTOTYPE_ROUTE_CONFIGS.map(({ path, title }) => ({

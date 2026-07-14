@@ -40,9 +40,9 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
   completedAtUtc: '2026-06-18T13:00:00Z',
   xpAwarded: 20,
   wasAlreadyCompleted: false,
-  heroProfile: {
+  progressProfile: {
     id: '883089e0-6d74-4564-814d-1a3c5fe1fcff',
-    heroName: 'Morning Warden',
+    displayName: 'Morning Warden',
     level: 1,
     totalXp: 20,
     xpInCurrentLevel: 20,

@@ -5,7 +5,7 @@ using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Achievements;
-using LevelHabit.Api.Services.Heroes;
+using LevelHabit.Api.Services.Progress;
 using LevelHabit.Api.Services.Quests;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -80,10 +80,10 @@ public sealed class AchievementServiceTests
     {
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
-        await harness.SetHeroXpAsync(userId, totalXp: 990);
+        await harness.SetProgressXpAsync(userId, totalXp: 990);
         QuestResponse quest = await harness.CreateQuestAsync(
             userId,
-            "Hero rising",
+            "Progress Rising",
             difficulty: "Easy");
 
         await harness.QuestService.CompleteTodayAsync(
@@ -101,7 +101,7 @@ public sealed class AchievementServiceTests
             AchievementCatalog.LevelUp).IsUnlocked);
         Assert.True(FindAchievement(
             achievements,
-            AchievementCatalog.HeroRising).IsUnlocked);
+            AchievementCatalog.ProgressRising).IsUnlocked);
     }
 
     [Theory]
@@ -166,7 +166,7 @@ public sealed class AchievementServiceTests
     }
 
     [Fact]
-    public async Task Completing_three_categories_unlocks_balanced_hero()
+    public async Task Completing_three_categories_unlocks_balanced_progress()
     {
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
@@ -189,12 +189,12 @@ public sealed class AchievementServiceTests
                 harness.CreatePrincipal(userId),
                 CancellationToken.None);
 
-        AchievementResponse balancedHero = FindAchievement(
+        AchievementResponse balancedProgress = FindAchievement(
             achievements,
-            AchievementCatalog.BalancedHero);
+            AchievementCatalog.BalancedProgress);
 
-        Assert.True(balancedHero.IsUnlocked);
-        Assert.Equal(3, balancedHero.Progress);
+        Assert.True(balancedProgress.IsUnlocked);
+        Assert.Equal(3, balancedProgress.Progress);
     }
 
     [Fact]
@@ -347,10 +347,10 @@ public sealed class AchievementServiceTests
                 UpdatedAtUtc = now
             });
 
-            DbContext.HeroProfiles.Add(new HeroProfile
+            DbContext.ProgressProfiles.Add(new ProgressProfile
             {
                 UserId = userId,
-                HeroName = "Test Hero",
+                DisplayName = "Test Profile",
                 Level = 1,
                 TotalXp = 0,
                 CurrentStreak = 0,
@@ -363,15 +363,15 @@ public sealed class AchievementServiceTests
             return userId;
         }
 
-        public async Task SetHeroXpAsync(Guid userId, int totalXp)
+        public async Task SetProgressXpAsync(Guid userId, int totalXp)
         {
-            HeroProfile heroProfile = await DbContext.HeroProfiles.SingleAsync(
+            ProgressProfile progressProfile = await DbContext.ProgressProfiles.SingleAsync(
                 profile => profile.UserId == userId);
-            HeroProgress progress = HeroProgressCalculator.Calculate(totalXp);
+            LevelProgress progress = ProgressCalculator.Calculate(totalXp);
 
-            heroProfile.TotalXp = progress.TotalXp;
-            heroProfile.Level = progress.Level;
-            heroProfile.UpdatedAtUtc = Time.GetUtcNow();
+            progressProfile.TotalXp = progress.TotalXp;
+            progressProfile.Level = progress.Level;
+            progressProfile.UpdatedAtUtc = Time.GetUtcNow();
 
             await DbContext.SaveChangesAsync();
         }

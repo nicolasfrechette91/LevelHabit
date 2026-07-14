@@ -19,7 +19,7 @@ import type {
   AuthUser,
   ConfirmEmailRequest,
   ForgotPasswordRequest,
-  HeroProfile,
+  ProgressProfile,
   LoginRequest,
   LogoutRequest,
   MeResponse,
@@ -60,13 +60,13 @@ export class AuthService {
     this.storedAuth?.refreshTokenExpiresAtUtc ?? null
   );
   private readonly userSignal = signal<AuthUser | null>(null);
-  private readonly heroProfileSignal = signal<HeroProfile | null>(null);
+  private readonly progressProfileSignal = signal<ProgressProfile | null>(null);
   private readonly emailVerificationNoticeSignal = signal<string | null>(null);
   private refreshRequest$: Observable<AuthResponse> | null = null;
   private sessionVersion = 0;
 
   readonly user = this.userSignal.asReadonly();
-  readonly heroProfile = this.heroProfileSignal.asReadonly();
+  readonly progressProfile = this.progressProfileSignal.asReadonly();
   readonly emailVerificationNotice =
     this.emailVerificationNoticeSignal.asReadonly();
   readonly isAuthenticated = computed(() =>
@@ -252,17 +252,17 @@ export class AuthService {
     }
 
     const user = this.userSignal();
-    const heroProfile = this.heroProfileSignal();
+    const progressProfile = this.progressProfileSignal();
 
-    if (user && heroProfile) {
-      return of({ user, heroProfile });
+    if (user && progressProfile) {
+      return of({ user, progressProfile });
     }
 
     return this.loadCurrentUser();
   }
 
-  updateHeroProfile(heroProfile: HeroProfile): void {
-    this.heroProfileSignal.set(heroProfile);
+  updateProgressProfile(progressProfile: ProgressProfile): void {
+    this.progressProfileSignal.set(progressProfile);
   }
 
   showEmailVerificationNotice(email: string): void {
@@ -304,7 +304,7 @@ export class AuthService {
     this.refreshTokenSignal.set(null);
     this.refreshTokenExpiresAtUtcSignal.set(null);
     this.userSignal.set(null);
-    this.heroProfileSignal.set(null);
+    this.progressProfileSignal.set(null);
     this.emailVerificationNoticeSignal.set(null);
 
     if (typeof localStorage !== 'undefined') {
@@ -336,7 +336,7 @@ export class AuthService {
 
   private setCurrentUser(response: MeResponse): void {
     this.userSignal.set(response.user);
-    this.heroProfileSignal.set(response.heroProfile);
+    this.progressProfileSignal.set(response.progressProfile);
   }
 
   private readStoredAuth(): StoredAuth | null {

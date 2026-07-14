@@ -6,7 +6,7 @@ using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Achievements;
-using LevelHabit.Api.Services.Heroes;
+using LevelHabit.Api.Services.Progress;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -169,7 +169,7 @@ public sealed class QuestService(
 
         if (existingCompletion is not null)
         {
-            HeroProfile existingHeroProfile = await FindHeroProfileAsync(
+            ProgressProfile existingProgressProfile = await FindProgressProfileAsync(
                 userId,
                 asNoTracking: true,
                 cancellationToken);
@@ -178,12 +178,12 @@ public sealed class QuestService(
 
             return MapCompletion(
                 existingCompletion,
-                existingHeroProfile,
+                existingProgressProfile,
                 wasAlreadyCompleted: true,
                 quest: questResponse);
         }
 
-        HeroProfile heroProfile = await FindHeroProfileAsync(
+        ProgressProfile progressProfile = await FindProgressProfileAsync(
             userId,
             asNoTracking: false,
             cancellationToken);
@@ -198,9 +198,9 @@ public sealed class QuestService(
             XpAwarded = xpAwarded
         };
 
-        heroProfile.TotalXp += xpAwarded;
-        heroProfile.Level = HeroProgressCalculator.Calculate(heroProfile.TotalXp).Level;
-        heroProfile.UpdatedAtUtc = now;
+        progressProfile.TotalXp += xpAwarded;
+        progressProfile.Level = ProgressCalculator.Calculate(progressProfile.TotalXp).Level;
+        progressProfile.UpdatedAtUtc = now;
 
         dbContext.QuestCompletions.Add(completion);
 
@@ -225,7 +225,7 @@ public sealed class QuestService(
 
             if (existingCompletion is not null)
             {
-                HeroProfile existingHeroProfile = await FindHeroProfileAsync(
+                ProgressProfile existingProgressProfile = await FindProgressProfileAsync(
                     userId,
                     asNoTracking: true,
                     cancellationToken);
@@ -234,7 +234,7 @@ public sealed class QuestService(
 
                 return MapCompletion(
                     existingCompletion,
-                    existingHeroProfile,
+                    existingProgressProfile,
                     wasAlreadyCompleted: true,
                     quest: questResponse);
             }
@@ -259,7 +259,7 @@ public sealed class QuestService(
 
         return MapCompletion(
             completion,
-            heroProfile,
+            progressProfile,
             wasAlreadyCompleted: false,
             quest: completedQuestResponse);
     }
@@ -312,26 +312,26 @@ public sealed class QuestService(
                 cancellationToken);
     }
 
-    private async Task<HeroProfile> FindHeroProfileAsync(
+    private async Task<ProgressProfile> FindProgressProfileAsync(
         Guid userId,
         bool asNoTracking,
         CancellationToken cancellationToken)
     {
-        IQueryable<HeroProfile> query = dbContext.HeroProfiles;
+        IQueryable<ProgressProfile> query = dbContext.ProgressProfiles;
 
         if (asNoTracking)
         {
             query = query.AsNoTracking();
         }
 
-        HeroProfile? heroProfile = await query.SingleOrDefaultAsync(
+        ProgressProfile? progressProfile = await query.SingleOrDefaultAsync(
             profile => profile.UserId == userId,
             cancellationToken);
 
-        return heroProfile ?? throw new ApiException(
+        return progressProfile ?? throw new ApiException(
             StatusCodes.Status404NotFound,
-            "Hero profile not found",
-            "The current user's hero profile could not be found.");
+            "Progress profile not found",
+            "The current user's progress profile could not be found.");
     }
 
     private async Task<IReadOnlyList<QuestResponse>> MapQuestsAsync(
@@ -453,7 +453,7 @@ public sealed class QuestService(
 
     private static QuestCompletionResponse MapCompletion(
         QuestCompletion completion,
-        HeroProfile heroProfile,
+        ProgressProfile progressProfile,
         bool wasAlreadyCompleted,
         QuestResponse quest)
     {
@@ -465,24 +465,24 @@ public sealed class QuestService(
             CompletedAtUtc: completion.CompletedAtUtc,
             XpAwarded: completion.XpAwarded,
             WasAlreadyCompleted: wasAlreadyCompleted,
-            HeroProfile: MapHeroProfile(heroProfile),
+            ProgressProfile: MapProgressProfile(progressProfile),
             Quest: quest);
     }
 
-    private static HeroProfileResponse MapHeroProfile(HeroProfile heroProfile)
+    private static ProgressProfileResponse MapProgressProfile(ProgressProfile progressProfile)
     {
-        HeroProgress progress = HeroProgressCalculator.Calculate(heroProfile.TotalXp);
+        LevelProgress progress = ProgressCalculator.Calculate(progressProfile.TotalXp);
 
-        return new HeroProfileResponse(
-            Id: heroProfile.Id,
-            HeroName: heroProfile.HeroName,
+        return new ProgressProfileResponse(
+            Id: progressProfile.Id,
+            DisplayName: progressProfile.DisplayName,
             Level: progress.Level,
             TotalXp: progress.TotalXp,
             XpInCurrentLevel: progress.XpInCurrentLevel,
             XpRequiredForNextLevel: progress.XpRequiredForNextLevel,
             XpToNextLevel: progress.XpToNextLevel,
-            CurrentStreak: heroProfile.CurrentStreak,
-            CreatedAtUtc: heroProfile.CreatedAtUtc);
+            CurrentStreak: progressProfile.CurrentStreak,
+            CreatedAtUtc: progressProfile.CreatedAtUtc);
     }
 
     private static string Clean(string value) => value.Trim();

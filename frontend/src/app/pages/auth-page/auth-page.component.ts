@@ -52,7 +52,10 @@ export class AuthPageComponent implements OnInit {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
     displayName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]],
-    heroName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(80)]]
+    progressDisplayName: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(80)]
+    ]
   });
 
   ngOnInit(): void {

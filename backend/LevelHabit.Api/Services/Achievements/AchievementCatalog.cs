@@ -6,11 +6,11 @@ public static class AchievementCatalog
     public const string GettingStarted = "getting-started";
     public const string Dedicated = "dedicated";
     public const string LevelUp = "level-up";
-    public const string HeroRising = "hero-rising";
+    public const string ProgressRising = "progress-rising";
     public const string OnFire = "on-fire";
     public const string Unstoppable = "unstoppable";
     public const string HardMode = "hard-mode";
-    public const string BalancedHero = "balanced-hero";
+    public const string BalancedProgress = "balanced-progress";
 
     public static readonly IReadOnlyList<AchievementDefinition> All =
     [
@@ -38,14 +38,14 @@ public static class AchievementCatalog
         new(
             LevelUp,
             "Level Up",
-            "Reach hero level 2.",
+            "Reach level 2.",
             AchievementRules.Level,
             Target: 2,
             SortOrder: 40),
         new(
-            HeroRising,
-            "Hero Rising",
-            "Reach hero level 5.",
+            ProgressRising,
+            "Progress Rising",
+            "Reach level 5.",
             AchievementRules.Level,
             Target: 5,
             SortOrder: 50),
@@ -71,8 +71,8 @@ public static class AchievementCatalog
             Target: 1,
             SortOrder: 80),
         new(
-            BalancedHero,
-            "Balanced Hero",
+            BalancedProgress,
+            "Balanced Progress",
             "Complete quests in at least 3 different categories.",
             AchievementRules.CompletedCategories,
             Target: 3,

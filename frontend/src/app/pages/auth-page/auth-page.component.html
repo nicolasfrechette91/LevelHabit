@@ -248,32 +248,32 @@
             </div>
 
             <div class="form-field">
-              <label class="form-label fw-bold" for="hero-name">Progress profile name</label>
+              <label class="form-label fw-bold" for="progress-display-name">Progress display name</label>
               <div class="input-shell">
                 <span class="field-icon" aria-hidden="true"><svg><use href="#auth-icon-leaf"/></svg></span>
                 <input
-                  id="hero-name"
+                  id="progress-display-name"
                   class="form-control form-control-lg"
-                  data-testid="register-hero-name-input"
-                  [class.is-invalid]="shouldShowRegisterError(registerForm.controls.heroName)"
-                  [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.heroName) ? 'true' : null"
-                  [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.heroName) ? 'hero-name-error' : null"
+                  data-testid="register-progress-display-name-input"
+                  [class.is-invalid]="shouldShowRegisterError(registerForm.controls.progressDisplayName)"
+                  [attr.aria-invalid]="shouldShowRegisterError(registerForm.controls.progressDisplayName) ? 'true' : null"
+                  [attr.aria-describedby]="shouldShowRegisterError(registerForm.controls.progressDisplayName) ? 'progress-display-name-error' : null"
                   type="text"
-                  formControlName="heroName"
+                  formControlName="progressDisplayName"
                   required
                   minlength="2"
                   maxlength="80"
                 >
               </div>
 
-              @if (shouldShowRegisterError(registerForm.controls.heroName)) {
-                <div id="hero-name-error" class="invalid-feedback">
-                  @if (registerForm.controls.heroName.hasError('required')) {
-                    Progress profile name is required.
-                  } @else if (registerForm.controls.heroName.hasError('minlength')) {
-                    Progress profile name must be at least 2 characters.
-                  } @else if (registerForm.controls.heroName.hasError('maxlength')) {
-                    Progress profile name must be 80 characters or fewer.
+              @if (shouldShowRegisterError(registerForm.controls.progressDisplayName)) {
+                <div id="progress-display-name-error" class="invalid-feedback">
+                  @if (registerForm.controls.progressDisplayName.hasError('required')) {
+                    Progress display name is required.
+                  } @else if (registerForm.controls.progressDisplayName.hasError('minlength')) {
+                    Progress display name must be at least 2 characters.
+                  } @else if (registerForm.controls.progressDisplayName.hasError('maxlength')) {
+                    Progress display name must be 80 characters or fewer.
                   }
                 </div>
               }

@@ -115,18 +115,18 @@ public sealed class AchievementService(
         Guid userId,
         CancellationToken cancellationToken)
     {
-        int? heroLevel = await dbContext.HeroProfiles
+        int? profileLevel = await dbContext.ProgressProfiles
             .AsNoTracking()
             .Where(profile => profile.UserId == userId)
             .Select(profile => (int?)profile.Level)
             .SingleOrDefaultAsync(cancellationToken);
 
-        if (!heroLevel.HasValue)
+        if (!profileLevel.HasValue)
         {
             throw new ApiException(
                 StatusCodes.Status404NotFound,
-                "Hero profile not found",
-                "The current user's hero profile could not be found.");
+                "Progress profile not found",
+                "The current user's progress profile could not be found.");
         }
 
         List<CompletionActivity> completions = await (
@@ -166,7 +166,7 @@ public sealed class AchievementService(
 
         return new AchievementProgressSnapshot(
             TotalCompletions: completions.Count,
-            HeroLevel: heroLevel.Value,
+            ProfileLevel: profileLevel.Value,
             BestQuestStreak: bestQuestStreak,
             HasHardCompletion: hasHardCompletion,
             CompletedCategories: completedCategories);
@@ -209,7 +209,7 @@ public sealed class AchievementService(
         return achievement.Rule switch
         {
             AchievementRules.TotalCompletions => progress.TotalCompletions,
-            AchievementRules.Level => progress.HeroLevel,
+            AchievementRules.Level => progress.ProfileLevel,
             AchievementRules.BestQuestStreak => progress.BestQuestStreak,
             AchievementRules.HardCompletion => progress.HasHardCompletion ? 1 : 0,
             AchievementRules.CompletedCategories => progress.CompletedCategories,
@@ -268,7 +268,7 @@ public sealed class AchievementService(
 
     private sealed record AchievementProgressSnapshot(
         int TotalCompletions,
-        int HeroLevel,
+        int ProfileLevel,
         int BestQuestStreak,
         bool HasHardCompletion,
         int CompletedCategories);

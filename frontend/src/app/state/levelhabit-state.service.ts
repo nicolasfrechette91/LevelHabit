@@ -110,27 +110,27 @@ export class LevelHabitStateService {
     return this.completedQuests().reduce((total, quest) => total + quest.xp, 0);
   });
 
-  readonly heroProfile = computed(() => this.auth.heroProfile());
+  readonly progressProfile = computed(() => this.auth.progressProfile());
 
   readonly totalXp = computed(() =>
-    this.heroProfile()?.totalXp
+    this.progressProfile()?.totalXp
       ?? (this.auth.authRequired ? 0 : BASE_XP + this.earnedXp())
   );
 
   readonly level = computed(() =>
-    this.heroProfile()?.level
+    this.progressProfile()?.level
       ?? (this.auth.authRequired
         ? 1
         : this.totalXp() >= NEXT_LEVEL_XP ? 8 : 7)
   );
 
   readonly levelTitle = computed(() =>
-    this.heroProfile()?.heroName
-      ?? (this.auth.authRequired ? 'Hero' : this.state().selectedTitle)
+    this.progressProfile()?.displayName
+      ?? (this.auth.authRequired ? 'Progress' : this.state().selectedTitle)
   );
 
   readonly nextLevelLabel = computed(() =>
-    this.heroProfile()
+    this.progressProfile()
       ? `Level ${this.level() + 1}`
       : this.auth.authRequired
         ? 'Level 2'
@@ -138,14 +138,14 @@ export class LevelHabitStateService {
   );
 
   readonly xpToNextLevel = computed(() =>
-    this.heroProfile()?.xpToNextLevel
+    this.progressProfile()?.xpToNextLevel
       ?? (this.auth.authRequired
         ? 100
         : Math.max(0, NEXT_LEVEL_XP - this.totalXp()))
   );
 
   readonly levelProgress = computed(() => {
-    const profile = this.heroProfile();
+    const profile = this.progressProfile();
 
     if (profile) {
       if (profile.xpRequiredForNextLevel <= 0) {
@@ -174,7 +174,7 @@ export class LevelHabitStateService {
   });
 
   readonly xpInCurrentLevel = computed(() => {
-    const profile = this.heroProfile();
+    const profile = this.progressProfile();
 
     if (profile) {
       return profile.xpInCurrentLevel;
@@ -188,12 +188,12 @@ export class LevelHabitStateService {
   });
 
   readonly xpRequiredForNextLevel = computed(() =>
-    this.heroProfile()?.xpRequiredForNextLevel
+    this.progressProfile()?.xpRequiredForNextLevel
       ?? (this.auth.authRequired ? 100 : NEXT_LEVEL_XP - CURRENT_LEVEL_XP)
   );
 
   readonly currentStreak = computed(() => {
-    const profile = this.heroProfile();
+    const profile = this.progressProfile();
 
     if (profile) {
       return profile.currentStreak;
@@ -302,7 +302,7 @@ export class LevelHabitStateService {
       },
       {
         id: 'balanced-build',
-        title: 'Balanced Hero',
+        title: 'Balanced Progress',
         summary: 'Complete quests across 3 life areas.',
         progress: Math.min(completedCategories, 3),
         target: 3,
@@ -312,7 +312,7 @@ export class LevelHabitStateService {
       {
         id: 'level-break',
         title: 'Level Up',
-        summary: 'Reach hero level 2.',
+        summary: 'Reach level 2.',
         progress: Math.min(this.level(), 2),
         target: 2,
         progressText: `Level ${Math.min(this.level(), 2)}/2`,
@@ -618,7 +618,7 @@ export class LevelHabitStateService {
     return this.questApi.complete(id).pipe(
       tap((completion) => {
         if (this.isCurrentApiUser(apiUserId)) {
-          this.auth.updateHeroProfile(completion.heroProfile);
+          this.auth.updateProgressProfile(completion.progressProfile);
         }
       }),
       tap(() => {

@@ -7,7 +7,7 @@ using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Email;
-using LevelHabit.Api.Services.Heroes;
+using LevelHabit.Api.Services.Progress;
 using LevelHabit.Api.Services.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -52,9 +52,9 @@ public sealed class AuthService(
         string email = Clean(request.Email);
         string normalizedEmail = NormalizeEmail(email);
         string displayName = Clean(request.DisplayName);
-        string heroName = Clean(request.HeroName);
+        string progressDisplayName = Clean(request.ProgressDisplayName);
 
-        ValidateRegistration(email, request.Password, displayName, heroName);
+        ValidateRegistration(email, request.Password, displayName, progressDisplayName);
 
         bool emailIsTaken = await dbContext.Users
             .AnyAsync(user => user.NormalizedEmail == normalizedEmail, cancellationToken);
@@ -80,10 +80,10 @@ public sealed class AuthService(
 
         user.PasswordHash = passwordHashService.HashPassword(user, request.Password);
 
-        HeroProfile heroProfile = new()
+        ProgressProfile progressProfile = new()
         {
             User = user,
-            HeroName = heroName,
+            DisplayName = progressDisplayName,
             Level = 1,
             TotalXp = 0,
             CurrentStreak = 0,
@@ -92,7 +92,7 @@ public sealed class AuthService(
         };
 
         dbContext.Users.Add(user);
-        dbContext.HeroProfiles.Add(heroProfile);
+        dbContext.ProgressProfiles.Add(progressProfile);
         string verificationCode = emailVerificationCodeService.GenerateCode();
         SetEmailVerificationCode(user, normalizedEmail, verificationCode, now);
 
@@ -117,12 +117,12 @@ public sealed class AuthService(
         string normalizedEmail = NormalizeEmail(Clean(request.Email));
 
         User? user = await dbContext.Users
-            .Include(candidate => candidate.HeroProfile)
+            .Include(candidate => candidate.ProgressProfile)
             .SingleOrDefaultAsync(
                 candidate => candidate.NormalizedEmail == normalizedEmail,
                 cancellationToken);
 
-        if (user?.HeroProfile is null)
+        if (user?.ProgressProfile is null)
         {
             throw InvalidCredentials();
         }
@@ -148,7 +148,7 @@ public sealed class AuthService(
             throw EmailNotConfirmed();
         }
 
-        IssuedAuthSession session = IssueAuthSession(user, user.HeroProfile);
+        IssuedAuthSession session = IssueAuthSession(user, user.ProgressProfile);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return session.Response;
@@ -163,9 +163,9 @@ public sealed class AuthService(
             cancellationToken);
 
         User user = refreshToken.User!;
-        HeroProfile heroProfile = user.HeroProfile!;
+        ProgressProfile progressProfile = user.ProgressProfile!;
         DateTimeOffset now = timeProvider.GetUtcNow();
-        IssuedAuthSession session = IssueAuthSession(user, heroProfile);
+        IssuedAuthSession session = IssueAuthSession(user, progressProfile);
 
         refreshToken.RevokedAtUtc = now;
         refreshToken.RevokedReason = RefreshTokenReplacedReason;
@@ -410,10 +410,10 @@ public sealed class AuthService(
 
         User? user = await dbContext.Users
             .AsNoTracking()
-            .Include(candidate => candidate.HeroProfile)
+            .Include(candidate => candidate.ProgressProfile)
             .SingleOrDefaultAsync(candidate => candidate.Id == userId, cancellationToken);
 
-        if (user?.HeroProfile is null)
+        if (user?.ProgressProfile is null)
         {
             throw new ApiException(
                 StatusCodes.Status404NotFound,
@@ -428,7 +428,7 @@ public sealed class AuthService(
 
         return new MeResponse(
             User: MapUser(user),
-            HeroProfile: MapHeroProfile(user.HeroProfile));
+            ProgressProfile: MapProgressProfile(user.ProgressProfile));
     }
 
     private async Task<RefreshToken> GetUsableRefreshTokenAsync(
@@ -443,7 +443,7 @@ public sealed class AuthService(
         string tokenHash = refreshTokenService.HashToken(plaintextRefreshToken);
         RefreshToken? refreshToken = await dbContext.RefreshTokens
             .Include(candidate => candidate.User)
-            .ThenInclude(user => user!.HeroProfile)
+            .ThenInclude(user => user!.ProgressProfile)
             .SingleOrDefaultAsync(
                 candidate => candidate.TokenHash == tokenHash,
                 cancellationToken);
@@ -451,7 +451,7 @@ public sealed class AuthService(
         DateTimeOffset now = timeProvider.GetUtcNow();
 
         if (
-            refreshToken?.User?.HeroProfile is null
+            refreshToken?.User?.ProgressProfile is null
             || !refreshToken.User.EmailConfirmed
             || refreshToken.RevokedAtUtc is not null
             || refreshToken.ExpiresAtUtc <= now)
@@ -516,7 +516,7 @@ public sealed class AuthService(
         }
     }
 
-    private IssuedAuthSession IssueAuthSession(User user, HeroProfile heroProfile)
+    private IssuedAuthSession IssueAuthSession(User user, ProgressProfile progressProfile)
     {
         JwtToken token = jwtTokenService.CreateToken(user);
         CreatedRefreshToken refreshToken = refreshTokenService.CreateToken(user);
@@ -528,7 +528,7 @@ public sealed class AuthService(
             RefreshToken: refreshToken.PlaintextToken,
             RefreshTokenExpiresAtUtc: refreshToken.Entity.ExpiresAtUtc,
             User: MapUser(user),
-            HeroProfile: MapHeroProfile(heroProfile));
+            ProgressProfile: MapProgressProfile(progressProfile));
 
         return new IssuedAuthSession(response, refreshToken.Entity);
     }
@@ -680,20 +680,20 @@ public sealed class AuthService(
             CreatedAtUtc: user.CreatedAtUtc);
     }
 
-    private static HeroProfileResponse MapHeroProfile(HeroProfile heroProfile)
+    private static ProgressProfileResponse MapProgressProfile(ProgressProfile progressProfile)
     {
-        HeroProgress progress = HeroProgressCalculator.Calculate(heroProfile.TotalXp);
+        LevelProgress progress = ProgressCalculator.Calculate(progressProfile.TotalXp);
 
-        return new HeroProfileResponse(
-            Id: heroProfile.Id,
-            HeroName: heroProfile.HeroName,
+        return new ProgressProfileResponse(
+            Id: progressProfile.Id,
+            DisplayName: progressProfile.DisplayName,
             Level: progress.Level,
-            TotalXp: heroProfile.TotalXp,
+            TotalXp: progressProfile.TotalXp,
             XpInCurrentLevel: progress.XpInCurrentLevel,
             XpRequiredForNextLevel: progress.XpRequiredForNextLevel,
             XpToNextLevel: progress.XpToNextLevel,
-            CurrentStreak: heroProfile.CurrentStreak,
-            CreatedAtUtc: heroProfile.CreatedAtUtc);
+            CurrentStreak: progressProfile.CurrentStreak,
+            CreatedAtUtc: progressProfile.CreatedAtUtc);
     }
 
     private static string Clean(string value) => value.Trim();
@@ -715,7 +715,7 @@ public sealed class AuthService(
         string email,
         string password,
         string displayName,
-        string heroName)
+        string progressDisplayName)
     {
         Dictionary<string, string[]> errors = [];
 
@@ -734,9 +734,10 @@ public sealed class AuthService(
             errors[nameof(RegisterRequest.DisplayName)] = ["Display name must be at least 2 characters long."];
         }
 
-        if (string.IsNullOrWhiteSpace(heroName) || heroName.Length < 2)
+        if (string.IsNullOrWhiteSpace(progressDisplayName) || progressDisplayName.Length < 2)
         {
-            errors[nameof(RegisterRequest.HeroName)] = ["Hero name must be at least 2 characters long."];
+            errors[nameof(RegisterRequest.ProgressDisplayName)] =
+                ["Progress display name must be at least 2 characters long."];
         }
 
         if (errors.Count > 0)

@@ -6,4 +6,4 @@ public sealed record AuthResponse(
     string RefreshToken,
     DateTimeOffset RefreshTokenExpiresAtUtc,
     UserResponse User,
-    HeroProfileResponse HeroProfile);
+    ProgressProfileResponse ProgressProfile);

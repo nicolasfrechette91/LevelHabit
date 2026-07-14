@@ -1,6 +1,6 @@
 @use "variables" as *;
 
-.page-hero {
+.page-intro {
   background:
     linear-gradient(135deg, rgba(#1e6050, 0.94), rgba(#212d5b, 0.92)),
     #1e6050;
@@ -13,7 +13,7 @@
   }
 }
 
-.hero-copy {
+.intro-copy {
   h1 {
     font-size: clamp(2.35rem, 6vw, 4.75rem);
     font-weight: 950;
@@ -21,12 +21,12 @@
   }
 }
 
-.hero-summary {
+.intro-summary {
   color: rgba($lh-white, 0.78);
   max-width: 42rem;
 }
 
-.hero-status {
+.stat-box {
   background: rgba($lh-white, 0.12);
   border: 1px solid rgba($lh-white, 0.18);
   color: $lh-white;

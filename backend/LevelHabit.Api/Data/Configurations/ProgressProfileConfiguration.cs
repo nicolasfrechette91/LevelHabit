@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace LevelHabit.Api.Data.Configurations;
 
-public sealed class HeroProfileConfiguration : IEntityTypeConfiguration<HeroProfile>
+public sealed class ProgressProfileConfiguration : IEntityTypeConfiguration<ProgressProfile>
 {
-    public void Configure(EntityTypeBuilder<HeroProfile> builder)
+    public void Configure(EntityTypeBuilder<ProgressProfile> builder)
     {
-        builder.ToTable("hero_profiles");
+        builder.ToTable("progress_profiles");
 
         builder.HasKey(profile => profile.Id);
 
@@ -19,9 +19,9 @@ public sealed class HeroProfileConfiguration : IEntityTypeConfiguration<HeroProf
             .HasColumnName("user_id")
             .IsRequired();
 
-        builder.Property(profile => profile.HeroName)
-            .HasColumnName("hero_name")
-            .HasMaxLength(HeroProfile.HeroNameMaxLength)
+        builder.Property(profile => profile.DisplayName)
+            .HasColumnName("display_name")
+            .HasMaxLength(ProgressProfile.DisplayNameMaxLength)
             .IsRequired();
 
         builder.Property(profile => profile.Level)
@@ -45,8 +45,8 @@ public sealed class HeroProfileConfiguration : IEntityTypeConfiguration<HeroProf
             .IsRequired();
 
         builder.HasOne(profile => profile.User)
-            .WithOne(user => user.HeroProfile)
-            .HasForeignKey<HeroProfile>(profile => profile.UserId)
+            .WithOne(user => user.ProgressProfile)
+            .HasForeignKey<ProgressProfile>(profile => profile.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(profile => profile.UserId)

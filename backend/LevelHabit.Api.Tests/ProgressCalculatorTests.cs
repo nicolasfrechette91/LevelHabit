@@ -1,8 +1,8 @@
-using LevelHabit.Api.Services.Heroes;
+using LevelHabit.Api.Services.Progress;
 
 namespace LevelHabit.Api.Tests;
 
-public sealed class HeroProgressCalculatorTests
+public sealed class ProgressCalculatorTests
 {
     [Theory]
     [InlineData(0, 1, 0, 100, 100)]
@@ -17,7 +17,7 @@ public sealed class HeroProgressCalculatorTests
         int expectedXpRequiredForNextLevel,
         int expectedXpToNextLevel)
     {
-        HeroProgress progress = HeroProgressCalculator.Calculate(totalXp);
+        LevelProgress progress = ProgressCalculator.Calculate(totalXp);
 
         Assert.Equal(expectedLevel, progress.Level);
         Assert.Equal(expectedXpInCurrentLevel, progress.XpInCurrentLevel);

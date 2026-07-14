@@ -4,7 +4,7 @@ export type TestUser = Readonly<{
   email: string;
   password: string;
   displayName: string;
-  heroName: string;
+  progressDisplayName: string;
 }>;
 
 export type QuestDraft = Readonly<{
@@ -51,7 +51,7 @@ export function createTestUser(runId: string, label: string): TestUser {
     email: `levelhabit-e2e+${runId}-${safeLabel}@example.test`,
     password: 'LevelHabitE2E123!',
     displayName: `E2E ${label}`,
-    heroName: `Hero ${label}`
+    progressDisplayName: `Progress ${label}`
   };
 }
 
@@ -62,11 +62,11 @@ export async function registerUser(page: Page, user: TestUser): Promise<void> {
   await page.getByTestId('register-email-input').fill(user.email);
   await page.getByTestId('register-password-input').fill(user.password);
   await page.getByTestId('register-display-name-input').fill(user.displayName);
-  await page.getByTestId('register-hero-name-input').fill(user.heroName);
+  await page.getByTestId('register-progress-display-name-input').fill(user.progressDisplayName);
   await page.getByTestId('register-submit-button').click();
 
   await expect(page.getByTestId('page-dashboard')).toBeVisible();
-  await expect(page.getByText(user.heroName)).toBeVisible();
+  await expect(page.getByText(user.progressDisplayName)).toBeVisible();
   await expectAuthenticatedHeader(page);
 }
 
@@ -79,7 +79,7 @@ export async function loginUser(page: Page, user: TestUser): Promise<void> {
   await page.getByTestId('login-submit-button').click();
 
   await expect(page.getByTestId('page-dashboard')).toBeVisible();
-  await expect(page.getByText(user.heroName)).toBeVisible();
+  await expect(page.getByText(user.progressDisplayName)).toBeVisible();
   await expectAuthenticatedHeader(page);
 }
 
@@ -149,7 +149,7 @@ async function expectAuthenticatedHeader(page: Page): Promise<void> {
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();
   await expect(page.getByTestId('nav-dashboard')).toBeVisible();
   await expect(page.getByTestId('nav-quests')).toBeVisible();
-  await expect(page.getByTestId('nav-hero')).toBeVisible();
+  await expect(page.getByTestId('nav-progress')).toBeVisible();
   await expect(page.getByTestId('nav-achievements')).toBeVisible();
   await expect(page.getByTestId('nav-analytics')).toBeVisible();
   await expect(page.getByTestId('logout-button')).toBeVisible();

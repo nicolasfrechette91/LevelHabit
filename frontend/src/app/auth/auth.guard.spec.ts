@@ -18,9 +18,9 @@ const ME_RESPONSE: MeResponse = {
     displayName: 'Player One',
     createdAtUtc: '2026-06-17T20:00:00Z'
   },
-  heroProfile: {
+  progressProfile: {
     id: '883089e0-6d74-4564-814d-1a3c5fe1fcff',
-    heroName: 'Morning Warden',
+    displayName: 'Morning Warden',
     level: 1,
     totalXp: 0,
     xpInCurrentLevel: 0,

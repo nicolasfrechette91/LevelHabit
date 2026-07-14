@@ -1,8 +1,8 @@
 namespace LevelHabit.Api.Contracts.Auth;
 
-public sealed record HeroProfileResponse(
+public sealed record ProgressProfileResponse(
     Guid Id,
-    string HeroName,
+    string DisplayName,
     int Level,
     int TotalXp,
     int XpInCurrentLevel,

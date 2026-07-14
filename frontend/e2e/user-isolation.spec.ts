@@ -46,7 +46,7 @@ test.describe('user data isolation', () => {
     await expect(page.getByText('No persisted activity yet')).toBeVisible();
     await expect(page.getByTestId('analytics-quest-library')).toContainText('0 quests');
     await expect(page.getByTestId('analytics-completions')).toContainText('0');
-    await expect(page.getByTestId('analytics-hero-growth')).toContainText('0 XP');
+    await expect(page.getByTestId('analytics-progress-growth')).toContainText('0 XP');
     await expect(page.getByTestId('analytics-achievements')).toContainText('0/9');
 
     await page.getByTestId('nav-achievements').click();

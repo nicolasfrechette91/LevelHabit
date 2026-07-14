@@ -19,9 +19,9 @@ const AUTH_RESPONSE: AuthResponse = {
     displayName: 'Player One',
     createdAtUtc: '2026-06-17T20:00:00Z'
   },
-  heroProfile: {
+  progressProfile: {
     id: '883089e0-6d74-4564-814d-1a3c5fe1fcff',
-    heroName: 'Morning Warden',
+    displayName: 'Morning Warden',
     level: 1,
     totalXp: 0,
     xpInCurrentLevel: 0,
@@ -34,7 +34,7 @@ const AUTH_RESPONSE: AuthResponse = {
 
 const ME_RESPONSE: MeResponse = {
   user: AUTH_RESPONSE.user,
-  heroProfile: AUTH_RESPONSE.heroProfile
+  progressProfile: AUTH_RESPONSE.progressProfile
 };
 
 const REGISTER_RESPONSE: RegisterResponse = {
@@ -73,13 +73,15 @@ describe('AuthService', () => {
     expect(response.accessToken).toBe(AUTH_RESPONSE.accessToken);
     expect(service.isAuthenticated()).toBe(true);
     expect(service.user()?.email).toBe(AUTH_RESPONSE.user.email);
-    expect(service.heroProfile()?.heroName).toBe(AUTH_RESPONSE.heroProfile.heroName);
+    expect(service.progressProfile()?.displayName).toBe(
+      AUTH_RESPONSE.progressProfile.displayName
+    );
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toContain(AUTH_RESPONSE.accessToken);
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toContain(AUTH_RESPONSE.refreshToken);
     http.verify();
   });
 
-  it('registers with display and hero profile names without storing a session', async () => {
+  it('registers with display and progress profile names without storing a session', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
 
@@ -88,7 +90,7 @@ describe('AuthService', () => {
         email: 'player@example.com',
         password: 'CorrectHorse123!',
         displayName: 'Player One',
-        heroName: 'Morning Warden'
+        progressDisplayName: 'Morning Warden'
       })
     );
 
@@ -96,13 +98,13 @@ describe('AuthService', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toMatchObject({
       displayName: 'Player One',
-      heroName: 'Morning Warden'
+      progressDisplayName: 'Morning Warden'
     });
     request.flush(REGISTER_RESPONSE);
 
     await expect(responsePromise).resolves.toEqual(REGISTER_RESPONSE);
 
-    expect(service.heroProfile()).toBeNull();
+    expect(service.progressProfile()).toBeNull();
     expect(service.accessToken()).toBeNull();
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     http.verify();
@@ -248,7 +250,7 @@ describe('AuthService', () => {
     await responsePromise;
 
     expect(service.user()?.displayName).toBe('Player One');
-    expect(service.heroProfile()?.heroName).toBe('Morning Warden');
+    expect(service.progressProfile()?.displayName).toBe('Morning Warden');
     http.verify();
   });
 

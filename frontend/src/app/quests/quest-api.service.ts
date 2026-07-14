@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
-import type { HeroProfile } from '../auth/auth.models';
+import type { ProgressProfile } from '../auth/auth.models';
 import type {
   PersistedQuestCategory,
   PersistedQuestDifficulty,
@@ -39,7 +39,7 @@ export type QuestCompletionResponse = Readonly<{
   completedAtUtc: string;
   xpAwarded: number;
   wasAlreadyCompleted: boolean;
-  heroProfile: HeroProfile;
+  progressProfile: ProgressProfile;
   quest: QuestResponse;
 }>;
 

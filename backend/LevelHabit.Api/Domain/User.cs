@@ -33,7 +33,7 @@ public sealed class User
 
     public DateTimeOffset UpdatedAtUtc { get; set; }
 
-    public HeroProfile? HeroProfile { get; set; }
+    public ProgressProfile? ProgressProfile { get; set; }
 
     public ICollection<Quest> Quests { get; set; } = [];
 

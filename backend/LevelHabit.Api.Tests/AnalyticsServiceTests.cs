@@ -5,7 +5,7 @@ using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Analytics;
-using LevelHabit.Api.Services.Heroes;
+using LevelHabit.Api.Services.Progress;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -295,7 +295,7 @@ public sealed class AnalyticsServiceTests
         {
             Guid userId = Guid.NewGuid();
             DateTimeOffset now = Time.GetUtcNow();
-            HeroProgress progress = HeroProgressCalculator.Calculate(totalXp);
+            LevelProgress progress = ProgressCalculator.Calculate(totalXp);
 
             DbContext.Users.Add(new User
             {
@@ -308,10 +308,10 @@ public sealed class AnalyticsServiceTests
                 UpdatedAtUtc = now
             });
 
-            DbContext.HeroProfiles.Add(new HeroProfile
+            DbContext.ProgressProfiles.Add(new ProgressProfile
             {
                 UserId = userId,
-                HeroName = "Test Hero",
+                DisplayName = "Test Profile",
                 Level = progress.Level,
                 TotalXp = progress.TotalXp,
                 CurrentStreak = 0,

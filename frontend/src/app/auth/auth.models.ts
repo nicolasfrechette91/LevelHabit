@@ -5,9 +5,9 @@ export type AuthUser = Readonly<{
   createdAtUtc: string;
 }>;
 
-export type HeroProfile = Readonly<{
+export type ProgressProfile = Readonly<{
   id: string;
-  heroName: string;
+  displayName: string;
   level: number;
   totalXp: number;
   xpInCurrentLevel: number;
@@ -23,12 +23,12 @@ export type AuthResponse = Readonly<{
   refreshToken: string;
   refreshTokenExpiresAtUtc: string;
   user: AuthUser;
-  heroProfile: HeroProfile;
+  progressProfile: ProgressProfile;
 }>;
 
 export type MeResponse = Readonly<{
   user: AuthUser;
-  heroProfile: HeroProfile;
+  progressProfile: ProgressProfile;
 }>;
 
 export type AuthMessageResponse = Readonly<{
@@ -55,7 +55,7 @@ export type LogoutRequest = RefreshRequest;
 export type RegisterRequest = LoginRequest &
   Readonly<{
     displayName: string;
-    heroName: string;
+    progressDisplayName: string;
   }>;
 
 export type ForgotPasswordRequest = Readonly<{

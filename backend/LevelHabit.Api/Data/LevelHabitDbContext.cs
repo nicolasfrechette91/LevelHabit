@@ -9,7 +9,7 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 {
     public DbSet<User> Users => Set<User>();
 
-    public DbSet<HeroProfile> HeroProfiles => Set<HeroProfile>();
+    public DbSet<ProgressProfile> ProgressProfiles => Set<ProgressProfile>();
 
     public DbSet<Quest> Quests => Set<Quest>();
 
@@ -28,7 +28,7 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
-        modelBuilder.ApplyConfiguration(new HeroProfileConfiguration());
+        modelBuilder.ApplyConfiguration(new ProgressProfileConfiguration());
         modelBuilder.ApplyConfiguration(new QuestConfiguration());
         modelBuilder.ApplyConfiguration(new QuestCompletionConfiguration());
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());

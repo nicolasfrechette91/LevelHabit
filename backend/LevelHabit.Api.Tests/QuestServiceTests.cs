@@ -85,7 +85,7 @@ public sealed class QuestServiceTests
 
         Assert.Empty(secondUserQuests);
 
-        HeroProfile secondUserProfile = await harness.DbContext.HeroProfiles
+        ProgressProfile secondUserProfile = await harness.DbContext.ProgressProfiles
             .SingleAsync(profile => profile.UserId == secondUserId);
         Assert.Equal(0, secondUserProfile.TotalXp);
     }
@@ -346,18 +346,18 @@ public sealed class QuestServiceTests
             CancellationToken.None);
 
         Assert.Equal(expectedXp, completion.XpAwarded);
-        Assert.Equal(expectedXp, completion.HeroProfile.TotalXp);
-        Assert.Equal(1, completion.HeroProfile.Level);
-        Assert.Equal(expectedXp, completion.HeroProfile.XpInCurrentLevel);
-        Assert.Equal(100 - expectedXp, completion.HeroProfile.XpToNextLevel);
+        Assert.Equal(expectedXp, completion.ProgressProfile.TotalXp);
+        Assert.Equal(1, completion.ProgressProfile.Level);
+        Assert.Equal(expectedXp, completion.ProgressProfile.XpInCurrentLevel);
+        Assert.Equal(100 - expectedXp, completion.ProgressProfile.XpToNextLevel);
 
-        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        ProgressProfile storedProfile = await harness.DbContext.ProgressProfiles.SingleAsync();
         Assert.Equal(expectedXp, storedProfile.TotalXp);
         Assert.Equal(1, storedProfile.Level);
     }
 
     [Fact]
-    public async Task CompleteTodayAsync_updates_the_authenticated_users_hero_profile()
+    public async Task CompleteTodayAsync_updates_the_authenticated_users_progress_profile()
     {
         using QuestServiceHarness harness = QuestServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
@@ -371,11 +371,11 @@ public sealed class QuestServiceTests
             created.Id,
             CancellationToken.None);
 
-        Assert.Equal(35, completion.HeroProfile.TotalXp);
-        Assert.Equal(35, completion.HeroProfile.XpInCurrentLevel);
-        Assert.Equal(65, completion.HeroProfile.XpToNextLevel);
+        Assert.Equal(35, completion.ProgressProfile.TotalXp);
+        Assert.Equal(35, completion.ProgressProfile.XpInCurrentLevel);
+        Assert.Equal(65, completion.ProgressProfile.XpToNextLevel);
 
-        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        ProgressProfile storedProfile = await harness.DbContext.ProgressProfiles.SingleAsync();
         Assert.Equal(35, storedProfile.TotalXp);
         Assert.Equal(1, storedProfile.Level);
     }
@@ -385,7 +385,7 @@ public sealed class QuestServiceTests
     {
         using QuestServiceHarness harness = QuestServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
-        await harness.SetHeroXpAsync(userId, totalXp: 90);
+        await harness.SetProgressXpAsync(userId, totalXp: 90);
         QuestResponse created = await harness.CreateQuestAsync(
             userId,
             "Level break",
@@ -396,13 +396,13 @@ public sealed class QuestServiceTests
             created.Id,
             CancellationToken.None);
 
-        Assert.Equal(100, completion.HeroProfile.TotalXp);
-        Assert.Equal(2, completion.HeroProfile.Level);
-        Assert.Equal(0, completion.HeroProfile.XpInCurrentLevel);
-        Assert.Equal(200, completion.HeroProfile.XpRequiredForNextLevel);
-        Assert.Equal(200, completion.HeroProfile.XpToNextLevel);
+        Assert.Equal(100, completion.ProgressProfile.TotalXp);
+        Assert.Equal(2, completion.ProgressProfile.Level);
+        Assert.Equal(0, completion.ProgressProfile.XpInCurrentLevel);
+        Assert.Equal(200, completion.ProgressProfile.XpRequiredForNextLevel);
+        Assert.Equal(200, completion.ProgressProfile.XpToNextLevel);
 
-        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        ProgressProfile storedProfile = await harness.DbContext.ProgressProfiles.SingleAsync();
         Assert.Equal(2, storedProfile.Level);
     }
 
@@ -433,7 +433,7 @@ public sealed class QuestServiceTests
         Assert.Equal(1, duplicateCompletion.Quest.BestStreak);
         Assert.Equal(1, await harness.DbContext.QuestCompletions.CountAsync());
 
-        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        ProgressProfile storedProfile = await harness.DbContext.ProgressProfiles.SingleAsync();
         Assert.Equal(10, storedProfile.TotalXp);
         Assert.Equal(1, storedProfile.Level);
     }
@@ -483,7 +483,7 @@ public sealed class QuestServiceTests
         Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
         Assert.Empty(harness.DbContext.QuestCompletions);
 
-        HeroProfile secondUserProfile = await harness.DbContext.HeroProfiles
+        ProgressProfile secondUserProfile = await harness.DbContext.ProgressProfiles
             .SingleAsync(profile => profile.UserId == secondUserId);
         Assert.Equal(0, secondUserProfile.TotalXp);
     }
@@ -509,7 +509,7 @@ public sealed class QuestServiceTests
         Assert.Equal(StatusCodes.Status404NotFound, exception.StatusCode);
         Assert.Empty(harness.DbContext.QuestCompletions);
 
-        HeroProfile storedProfile = await harness.DbContext.HeroProfiles.SingleAsync();
+        ProgressProfile storedProfile = await harness.DbContext.ProgressProfiles.SingleAsync();
         Assert.Equal(0, storedProfile.TotalXp);
     }
 
@@ -635,10 +635,10 @@ public sealed class QuestServiceTests
                 UpdatedAtUtc = now
             });
 
-            DbContext.HeroProfiles.Add(new HeroProfile
+            DbContext.ProgressProfiles.Add(new ProgressProfile
             {
                 UserId = userId,
-                HeroName = "Test Hero",
+                DisplayName = "Test Profile",
                 Level = 1,
                 TotalXp = 0,
                 CurrentStreak = 0,
@@ -651,14 +651,14 @@ public sealed class QuestServiceTests
             return userId;
         }
 
-        public Task SetHeroXpAsync(Guid userId, int totalXp)
+        public Task SetProgressXpAsync(Guid userId, int totalXp)
         {
-            HeroProfile heroProfile = DbContext.HeroProfiles.Single(
+            ProgressProfile progressProfile = DbContext.ProgressProfiles.Single(
                 profile => profile.UserId == userId);
 
-            heroProfile.TotalXp = totalXp;
-            heroProfile.Level = 1;
-            heroProfile.UpdatedAtUtc = Time.GetUtcNow();
+            progressProfile.TotalXp = totalXp;
+            progressProfile.Level = 1;
+            progressProfile.UpdatedAtUtc = Time.GetUtcNow();
 
             return DbContext.SaveChangesAsync();
         }

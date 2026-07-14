@@ -76,8 +76,8 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
   completedAtUtc: '2026-06-18T13:00:00Z',
   xpAwarded: 20,
   wasAlreadyCompleted: false,
-  heroProfile: {
-    ...AUTH_ME_RESPONSE.heroProfile,
+  progressProfile: {
+    ...AUTH_ME_RESPONSE.progressProfile,
     level: 2,
     totalXp: 120,
     xpInCurrentLevel: 20,
@@ -90,8 +90,8 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
 const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
   ...QUEST_COMPLETION_RESPONSE,
   wasAlreadyCompleted: true,
-  heroProfile: {
-    ...AUTH_ME_RESPONSE.heroProfile,
+  progressProfile: {
+    ...AUTH_ME_RESPONSE.progressProfile,
     level: 1,
     totalXp: 20,
     xpInCurrentLevel: 20,
@@ -238,7 +238,7 @@ describe('Prototype routes', () => {
   it.each([
     ['/dashboard', 'Quest queue'],
     ['/quests', 'shown'],
-    ['/hero', 'Player profile'],
+    ['/progress', 'Personal progress'],
     ['/achievements', 'Unlocked'],
     ['/analytics', 'XP output']
   ])('renders %s without errors', async (path, expectedContent) => {
@@ -253,13 +253,13 @@ describe('Dashboard view', () => {
     resetPrototypeStorage();
   });
 
-  it('displays authenticated hero/profile data and the mock quest queue', async () => {
+  it('displays authenticated progress profile data and the mock quest queue', async () => {
     const { nativeElement, state } = await renderPrototypeRoute('/dashboard');
     const pageText = textContent(nativeElement);
 
-    expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.heroProfile.level}`);
-    expect(pageText).toContain(AUTH_ME_RESPONSE.heroProfile.heroName);
-    expect(state.levelTitle()).toBe(AUTH_ME_RESPONSE.heroProfile.heroName);
+    expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.progressProfile.level}`);
+    expect(pageText).toContain(AUTH_ME_RESPONSE.progressProfile.displayName);
+    expect(state.levelTitle()).toBe(AUTH_ME_RESPONSE.progressProfile.displayName);
     expect(pageText).toContain(`${state.completedCount()}/${state.questCount()}`);
 
     for (const quest of PROTOTYPE_QUESTS.filter(
@@ -283,7 +283,7 @@ describe('Dashboard view', () => {
     const pageText = textContent(nativeElement);
 
     expect(state.quests().find((candidate) => candidate.id === quest!.id)?.completed).toBe(true);
-    expect(state.totalXp()).toBe(AUTH_ME_RESPONSE.heroProfile.totalXp);
+    expect(state.totalXp()).toBe(AUTH_ME_RESPONSE.progressProfile.totalXp);
     expect(pageText).toContain(`${state.completedCount()}/${state.questCount()}`);
   });
 });
@@ -293,14 +293,14 @@ describe('Profile view', () => {
     resetPrototypeStorage();
   });
 
-  it('displays authenticated user and hero profile data', async () => {
-    const { nativeElement } = await renderPrototypeRoute('/hero');
+  it('displays authenticated user and progress profile data', async () => {
+    const { nativeElement } = await renderPrototypeRoute('/progress');
     const pageText = textContent(nativeElement);
 
     expect(pageText).toContain(AUTH_ME_RESPONSE.user.displayName);
     expect(pageText).toContain(AUTH_ME_RESPONSE.user.email);
-    expect(pageText).toContain(AUTH_ME_RESPONSE.heroProfile.heroName);
-    expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.heroProfile.level}`);
+    expect(pageText).toContain(AUTH_ME_RESPONSE.progressProfile.displayName);
+    expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.progressProfile.level}`);
   });
 });
 
@@ -464,7 +464,7 @@ describe('Analytics API view', () => {
       '[data-testid="analytics-level-progress"]'
     );
 
-    expect(textContent(nativeElement)).toContain('Hero progress');
+    expect(textContent(nativeElement)).toContain('Progress');
     expect(textContent(nativeElement)).toContain('Level 3');
     expect(progress).toBeInstanceOf(HTMLProgressElement);
     expect((progress as HTMLProgressElement).value).toBe(7);
@@ -596,7 +596,7 @@ describe('Quests API view', () => {
     expect(getButtonByText(nativeElement, /^Done today$/).disabled).toBe(true);
   });
 
-  it('updates hero XP and level when completion returns updated profile data', async () => {
+  it('updates progress XP and level when completion returns updated profile data', async () => {
     const { nativeElement, harness } = await renderApiQuestRoute();
 
     getButtonByText(nativeElement, /^Complete today$/).click();
@@ -895,14 +895,14 @@ function createApiAuthService(): Pick<
   | 'canUsePrototypeRoutes'
   | 'ensureCurrentUser'
   | 'hasToken'
-  | 'heroProfile'
+  | 'progressProfile'
   | 'isAuthenticated'
   | 'logout'
-  | 'updateHeroProfile'
+  | 'updateProgressProfile'
   | 'user'
 > {
   const user = signal(AUTH_ME_RESPONSE.user);
-  const heroProfile = signal(AUTH_ME_RESPONSE.heroProfile);
+  const progressProfile = signal(AUTH_ME_RESPONSE.progressProfile);
   const isAuthenticated = signal(true);
   const canUsePrototypeRoutes = signal(true);
 
@@ -910,11 +910,11 @@ function createApiAuthService(): Pick<
     authRequired: true,
     canUsePrototypeRoutes: canUsePrototypeRoutes.asReadonly(),
     user: user.asReadonly(),
-    heroProfile: heroProfile.asReadonly(),
+    progressProfile: progressProfile.asReadonly(),
     isAuthenticated: isAuthenticated.asReadonly(),
     hasToken: () => true,
     ensureCurrentUser: (): Observable<MeResponse> => of(AUTH_ME_RESPONSE),
-    updateHeroProfile: (nextHeroProfile) => heroProfile.set(nextHeroProfile),
+    updateProgressProfile: (nextProgressProfile) => progressProfile.set(nextProgressProfile),
     logout: () => undefined
   };
 }

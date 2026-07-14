@@ -2,14 +2,14 @@
   class="prototype-page container-xl py-4 pb-5"
   [attr.data-testid]="'page-' + view()"
 >
-  <header class="page-hero row g-4 align-items-stretch rounded-3 mb-4 p-3 p-md-4">
+  <header class="page-intro row g-4 align-items-stretch rounded-3 mb-4 p-3 p-md-4">
     <div class="col-lg-8">
-      <div class="hero-copy h-100 d-flex flex-column justify-content-center">
+      <div class="intro-copy h-100 d-flex flex-column justify-content-center">
         <p class="eyebrow">{{ copy().eyebrow }}</p>
         <h1 class="display-2 fw-bold mb-0">{{ copy().title }}</h1>
-        <p class="hero-summary lead mb-0 mt-3">{{ copy().summary }}</p>
+        <p class="intro-summary lead mb-0 mt-3">{{ copy().summary }}</p>
         @if (!game.usesQuestApi()) {
-          <div class="hero-actions d-flex flex-wrap gap-2 mt-4">
+          <div class="intro-actions d-flex flex-wrap gap-2 mt-4">
             <button type="button" class="btn btn-lh-gold btn-lg fw-bold" (click)="game.completeAll()">
               Complete all
             </button>
@@ -21,41 +21,41 @@
       </div>
     </div>
 
-    <aside class="col-lg-4" aria-label="Hero progress">
-      <div class="hero-status h-100 rounded-3 p-3 d-flex flex-column gap-3">
+    <aside class="col-lg-4" aria-label="Progress summary">
+      <div class="stat-box h-100 rounded-3 p-3 d-flex flex-column gap-3">
         <div>
           <span class="status-label">{{ playerDisplayName() }}</span>
-          <strong>{{ heroDisplayName() }}</strong>
+          <strong>{{ progressDisplayName() }}</strong>
           @if (profileUser()?.email; as email) {
             <small class="lh-muted d-block">{{ email }}</small>
           }
         </div>
         <div>
           <span class="status-label">Level {{ profileLevel() }}</span>
-          <strong>{{ profileHero() ? 'Hero profile' : game.levelTitle() }}</strong>
+          <strong>{{ progressProfile() ? 'Progress profile' : game.levelTitle() }}</strong>
         </div>
         <progress
-          class="progress lh-progress hero-progress"
-          data-testid="hero-level-progress"
+          class="progress lh-progress level-progress"
+          data-testid="progress-level-progress"
           [value]="profileLevelProgress()"
           max="100"
           aria-label="Level progress"
         ></progress>
         <div class="d-flex justify-content-between gap-3 small progress-copy">
-          <span data-testid="hero-xp-progress">{{ profileXpInCurrentLevel() | number }}/{{ profileXpRequiredForNextLevel() | number }} XP</span>
+          <span data-testid="progress-xp-progress">{{ profileXpInCurrentLevel() | number }}/{{ profileXpRequiredForNextLevel() | number }} XP</span>
           <span>{{ profileXpToNextLevel() | number }} to next</span>
         </div>
         <div class="row g-2 text-center status-grid">
           <div class="col-4">
-            <strong data-testid="hero-total-xp">{{ profileTotalXp() | number }}</strong>
+            <strong data-testid="progress-total-xp">{{ profileTotalXp() | number }}</strong>
             <span>XP</span>
           </div>
           <div class="col-4">
-            <strong data-testid="hero-current-streak">{{ profileCurrentStreak() }}</strong>
+            <strong data-testid="progress-current-streak">{{ profileCurrentStreak() }}</strong>
             <span>day streak</span>
           </div>
           <div class="col-4">
-            <strong data-testid="hero-today-count">{{ game.completedCount() }}/{{ game.questCount() }}</strong>
+            <strong data-testid="progress-today-count">{{ game.completedCount() }}/{{ game.questCount() }}</strong>
             <span>today</span>
           </div>
         </div>
@@ -418,23 +418,23 @@
       </section>
     }
 
-    @case ('hero') {
-      <section class="row g-3" aria-label="Hero profile">
+    @case ('progress') {
+      <section class="row g-3" aria-label="Progress profile">
         <div class="col-lg-5">
           <article class="card lh-card profile-panel h-100">
             <div class="card-body p-3 p-md-4">
               <div class="avatar-frame mb-3" aria-hidden="true">
                 <span>{{ profileInitials() }}</span>
               </div>
-              <p class="eyebrow">Player profile</p>
-              <h2 class="h4 fw-bold mb-1">Level {{ profileLevel() }} {{ heroDisplayName() }}</h2>
+              <p class="eyebrow">Personal progress</p>
+              <h2 class="h4 fw-bold mb-1">Level {{ profileLevel() }} {{ progressDisplayName() }}</h2>
               <p class="lh-muted mb-3">
                 {{ playerDisplayName() }}
                 @if (profileUser()?.email; as email) {
                   <span>&middot; {{ email }}</span>
                 }
               </p>
-              <progress class="progress lh-progress" [value]="profileLevelProgress()" max="100" aria-label="Hero level progress"></progress>
+              <progress class="progress lh-progress" [value]="profileLevelProgress()" max="100" aria-label="Level progress"></progress>
               <div class="d-flex justify-content-between gap-3 small lh-muted mt-2">
                 <span>{{ profileXpInCurrentLevel() | number }}/{{ profileXpRequiredForNextLevel() | number }} XP</span>
                 <span>{{ profileXpToNextLevel() | number }} to next level</span>
@@ -481,7 +481,7 @@
         </div>
 
         <div class="col-12">
-          <section class="card lh-card title-panel" aria-label="Hero titles">
+          <section class="card lh-card title-panel" aria-label="Progress titles">
             <div class="card-body p-3 p-md-4">
               <div class="mb-3">
                 <p class="eyebrow">Titles</p>
@@ -615,9 +615,9 @@
                   </article>
                 </div>
                 <div class="col-sm-6 col-xl-3">
-                  <article class="card lh-card stat-card h-100" data-testid="analytics-hero-growth">
+                  <article class="card lh-card stat-card h-100" data-testid="analytics-progress-growth">
                     <div class="card-body p-3">
-                      <span class="lh-muted">Hero growth</span>
+                      <span class="lh-muted">Progress growth</span>
                       <strong>{{ summary.totalXp | number }} XP</strong>
                       <small class="lh-muted">Level {{ summary.currentLevel }} &middot; {{ summary.xpToNextLevel | number }} XP to next</small>
                     </div>
@@ -711,7 +711,7 @@
                       <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                         <div>
                           <p class="eyebrow">Level</p>
-                          <h2 class="h4 fw-bold mb-0">Hero progress</h2>
+                          <h2 class="h4 fw-bold mb-0">Progress</h2>
                         </div>
                         <span class="badge rounded-pill badge-lh-soft fs-6">Level {{ summary.currentLevel }}</span>
                       </div>

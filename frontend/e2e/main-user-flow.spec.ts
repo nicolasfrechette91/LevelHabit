@@ -40,9 +40,9 @@ test.describe('main authenticated user journey', () => {
     const completedCard = await completeQuest(page, questTitle);
     await expect(completedCard).toContainText('+35 XP awarded');
     await expect(completedCard).toContainText('1-day streak');
-    await expect(page.getByTestId('hero-total-xp')).toHaveText('35');
-    await expect(page.getByTestId('hero-xp-progress')).toContainText('35/100 XP');
-    await expect(page.getByTestId('hero-today-count')).toHaveText('1/1');
+    await expect(page.getByTestId('progress-total-xp')).toHaveText('35');
+    await expect(page.getByTestId('progress-xp-progress')).toContainText('35/100 XP');
+    await expect(page.getByTestId('progress-today-count')).toHaveText('1/1');
 
     await page.getByTestId('nav-achievements').click();
     await expect(page.getByTestId('page-achievements')).toBeVisible();
@@ -61,7 +61,7 @@ test.describe('main authenticated user journey', () => {
     await openAnalytics(page);
     await expect(page.getByTestId('analytics-quest-library')).toContainText('1 quest');
     await expect(page.getByTestId('analytics-completions')).toContainText('1');
-    await expect(page.getByTestId('analytics-hero-growth')).toContainText('35 XP');
+    await expect(page.getByTestId('analytics-progress-growth')).toContainText('35 XP');
     await expect(page.getByTestId('analytics-achievements')).toContainText('2/9');
     await expect(page.getByTestId('analytics-current-streak-max')).toContainText('1d');
     await expect(page.getByTestId('analytics-recent-completion')).toContainText(questTitle);
@@ -73,6 +73,6 @@ test.describe('main authenticated user journey', () => {
     await openQuests(page);
     await expect(questCard(page, questTitle)).toContainText('Done today');
     await expect(questCard(page, questTitle)).toContainText('1-day streak');
-    await expect(page.getByTestId('hero-total-xp')).toHaveText('35');
+    await expect(page.getByTestId('progress-total-xp')).toHaveText('35');
   });
 });

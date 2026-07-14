@@ -1,14 +1,14 @@
 namespace LevelHabit.Api.Domain;
 
-public sealed class HeroProfile
+public sealed class ProgressProfile
 {
-    public const int HeroNameMaxLength = 80;
+    public const int DisplayNameMaxLength = 80;
 
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public Guid UserId { get; set; }
 
-    public string HeroName { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
 
     public int Level { get; set; } = 1;
 

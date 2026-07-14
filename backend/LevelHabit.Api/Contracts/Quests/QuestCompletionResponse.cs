@@ -10,5 +10,5 @@ public sealed record QuestCompletionResponse(
     DateTimeOffset CompletedAtUtc,
     int XpAwarded,
     bool WasAlreadyCompleted,
-    HeroProfileResponse HeroProfile,
+    ProgressProfileResponse ProgressProfile,
     QuestResponse Quest);

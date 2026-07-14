@@ -19,5 +19,5 @@ public sealed record RegisterRequest(
     string DisplayName,
 
     [Required]
-    [StringLength(HeroProfile.HeroNameMaxLength, MinimumLength = 2)]
-    string HeroName);
+    [StringLength(ProgressProfile.DisplayNameMaxLength, MinimumLength = 2)]
+    string ProgressDisplayName);

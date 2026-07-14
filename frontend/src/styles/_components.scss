@@ -25,15 +25,15 @@
   white-space: normal;
 }
 
-.hero-copy,
-.hero-status,
+.intro-copy,
+.stat-box,
 .quest-card,
 .achievement-card,
 .stat-card {
   overflow-wrap: anywhere;
 }
 
-.hero-actions .btn,
+.intro-actions .btn,
 .quest-form-actions .btn,
 .quest-actions .btn,
 .title-button {
@@ -124,7 +124,7 @@ progress.lh-progress {
     border-radius: $lh-radius-pill;
   }
 
-  &.hero-progress {
+  &.level-progress {
     --lh-progress-track: rgba(255, 255, 255, 0.18);
   }
 
@@ -258,20 +258,20 @@ progress.lh-progress {
     padding-top: 1rem !important;
   }
 
-  .page-hero {
+  .page-intro {
     --bs-gutter-y: 1rem;
   }
 
-  .hero-copy h1 {
+  .intro-copy h1 {
     font-size: 2.2rem;
   }
 
-  .hero-summary,
+  .intro-summary,
   .stat-card small {
     font-size: 0.95rem;
   }
 
-  .hero-status strong {
+  .stat-box strong {
     font-size: 1.25rem;
   }
 
@@ -280,7 +280,7 @@ progress.lh-progress {
     flex-wrap: wrap;
   }
 
-  .hero-actions .btn,
+  .intro-actions .btn,
   .quest-form-actions .btn {
     width: 100%;
   }

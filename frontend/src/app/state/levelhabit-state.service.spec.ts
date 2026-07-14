@@ -12,7 +12,7 @@ import {
   AnalyticsApiService,
   type AnalyticsSummaryResponse
 } from '../analytics/analytics-api.service';
-import type { AuthUser, HeroProfile } from '../auth/auth.models';
+import type { AuthUser, ProgressProfile } from '../auth/auth.models';
 import { AuthService } from '../auth/auth.service';
 import { QuestApiService, type QuestResponse } from '../quests/quest-api.service';
 import {
@@ -36,9 +36,9 @@ const USER_B: AuthUser = {
   createdAtUtc: '2026-06-18T12:00:00Z'
 };
 
-const HERO_A: HeroProfile = {
+const PROGRESS_PROFILE_A: ProgressProfile = {
   id: '33333333-3333-4333-8333-333333333333',
-  heroName: 'Hydration Knight',
+  displayName: 'Hydration Knight',
   level: 2,
   totalXp: 120,
   xpInCurrentLevel: 20,
@@ -48,9 +48,9 @@ const HERO_A: HeroProfile = {
   createdAtUtc: '2026-06-18T12:00:00Z'
 };
 
-const HERO_B: HeroProfile = {
+const PROGRESS_PROFILE_B: ProgressProfile = {
   id: '44444444-4444-4444-8444-444444444444',
-  heroName: 'Fresh Start',
+  displayName: 'Fresh Start',
   level: 1,
   totalXp: 0,
   xpInCurrentLevel: 0,
@@ -97,9 +97,9 @@ const USER_A_ANALYTICS = createAnalyticsSummary({
   totalQuests: 1,
   activeQuests: 1,
   totalCompletions: 1,
-  totalXp: HERO_A.totalXp,
-  currentLevel: HERO_A.level,
-  currentStreakMax: HERO_A.currentStreak,
+  totalXp: PROGRESS_PROFILE_A.totalXp,
+  currentLevel: PROGRESS_PROFILE_A.level,
+  currentStreakMax: PROGRESS_PROFILE_A.currentStreak,
   achievementsUnlocked: 1,
   completionsByDay: createDailyMetrics({ '2026-06-18': 1 }),
   xpByDay: createDailyMetrics({ '2026-06-18': USER_A_QUEST.xpReward }),
@@ -168,7 +168,7 @@ describe('LevelHabitStateService', () => {
   it('clears authenticated user-specific state on logout', () => {
     const { achievementApi, analyticsApi, auth, questApi, state } =
       setupAuthenticatedState();
-    auth.loginAs(USER_A, HERO_A);
+    auth.loginAs(USER_A, PROGRESS_PROFILE_A);
     TestBed.tick();
 
     questApi.setResponses(USER_A.id, [USER_A_QUEST]);
@@ -181,9 +181,9 @@ describe('LevelHabitStateService', () => {
 
     expect(state.quests().map((quest) => quest.title)).toEqual(['Drink Water']);
     expect(state.unlockedAchievements()).toHaveLength(1);
-    expect(state.analyticsSummary()?.totalXp).toBe(HERO_A.totalXp);
-    expect(state.totalXp()).toBe(HERO_A.totalXp);
-    expect(state.currentStreak()).toBe(HERO_A.currentStreak);
+    expect(state.analyticsSummary()?.totalXp).toBe(PROGRESS_PROFILE_A.totalXp);
+    expect(state.totalXp()).toBe(PROGRESS_PROFILE_A.totalXp);
+    expect(state.currentStreak()).toBe(PROGRESS_PROFILE_A.currentStreak);
 
     auth.logout();
     TestBed.tick();
@@ -208,13 +208,13 @@ describe('LevelHabitStateService', () => {
     questApi.setResponses(USER_A.id, [USER_A_QUEST]);
     questApi.setResponses(USER_B.id, [USER_B_QUEST]);
 
-    auth.loginAs(USER_A, HERO_A);
+    auth.loginAs(USER_A, PROGRESS_PROFILE_A);
     TestBed.tick();
     state.loadQuests();
 
     expect(state.quests().map((quest) => quest.title)).toEqual(['Drink Water']);
 
-    auth.loginAs(USER_B, HERO_B);
+    auth.loginAs(USER_B, PROGRESS_PROFILE_B);
     TestBed.tick();
 
     expect(state.quests()).toEqual([]);
@@ -235,7 +235,7 @@ describe('LevelHabitStateService', () => {
     analyticsApi.setResponse(USER_A.id, USER_A_ANALYTICS);
     analyticsApi.setResponse(USER_B.id, USER_B_ANALYTICS);
 
-    auth.loginAs(USER_A, HERO_A);
+    auth.loginAs(USER_A, PROGRESS_PROFILE_A);
     TestBed.tick();
     state.loadAchievements();
     state.loadAnalytics();
@@ -245,7 +245,7 @@ describe('LevelHabitStateService', () => {
       'Drink Water'
     );
 
-    auth.loginAs(USER_B, HERO_B);
+    auth.loginAs(USER_B, PROGRESS_PROFILE_B);
     TestBed.tick();
 
     expect(state.achievements()).toEqual([]);
@@ -374,29 +374,29 @@ function setupAuthenticatedState(): {
 
 function createPrototypeAuthService(): Pick<
   AuthService,
-  'authRequired' | 'heroProfile' | 'isAuthenticated' | 'updateHeroProfile' | 'user'
+  'authRequired' | 'progressProfile' | 'isAuthenticated' | 'updateProgressProfile' | 'user'
 > {
   const user = signal<AuthUser | null>(null);
-  const heroProfile = signal<HeroProfile | null>(null);
+  const progressProfile = signal<ProgressProfile | null>(null);
   const isAuthenticated = signal(false);
 
   return {
     authRequired: false,
     user: user.asReadonly(),
-    heroProfile: heroProfile.asReadonly(),
+    progressProfile: progressProfile.asReadonly(),
     isAuthenticated: isAuthenticated.asReadonly(),
-    updateHeroProfile: (nextHeroProfile) => heroProfile.set(nextHeroProfile)
+    updateProgressProfile: (nextProgressProfile) => progressProfile.set(nextProgressProfile)
   };
 }
 
 class MutableAuthServiceStub {
   readonly authRequired = true;
   private readonly userSignal = signal<AuthUser | null>(null);
-  private readonly heroProfileSignal = signal<HeroProfile | null>(null);
+  private readonly progressProfileSignal = signal<ProgressProfile | null>(null);
   private readonly isAuthenticatedSignal = signal(false);
 
   readonly user = this.userSignal.asReadonly();
-  readonly heroProfile = this.heroProfileSignal.asReadonly();
+  readonly progressProfile = this.progressProfileSignal.asReadonly();
   readonly isAuthenticated = this.isAuthenticatedSignal.asReadonly();
   readonly canUsePrototypeRoutes = this.isAuthenticatedSignal.asReadonly();
 
@@ -408,20 +408,20 @@ class MutableAuthServiceStub {
     return this.userSignal()?.id ?? null;
   }
 
-  loginAs(user: AuthUser, heroProfile: HeroProfile): void {
+  loginAs(user: AuthUser, progressProfile: ProgressProfile): void {
     this.isAuthenticatedSignal.set(true);
     this.userSignal.set(user);
-    this.heroProfileSignal.set(heroProfile);
+    this.progressProfileSignal.set(progressProfile);
   }
 
   logout(): void {
     this.isAuthenticatedSignal.set(false);
     this.userSignal.set(null);
-    this.heroProfileSignal.set(null);
+    this.progressProfileSignal.set(null);
   }
 
-  updateHeroProfile(heroProfile: HeroProfile): void {
-    this.heroProfileSignal.set(heroProfile);
+  updateProgressProfile(progressProfile: ProgressProfile): void {
+    this.progressProfileSignal.set(progressProfile);
   }
 }
 

@@ -5,7 +5,7 @@ using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Achievements;
-using LevelHabit.Api.Services.Heroes;
+using LevelHabit.Api.Services.Progress;
 using LevelHabit.Api.Services.Quests;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,8 +28,8 @@ public sealed class AnalyticsService(
         DateOnly monthStartUtc = new(todayUtc.Year, todayUtc.Month, 1);
         DateOnly trendStartUtc = todayUtc.AddDays(-(TrendWindowDays - 1));
 
-        HeroProfile heroProfile = await FindHeroProfileAsync(userId, cancellationToken);
-        HeroProgress heroProgress = HeroProgressCalculator.Calculate(heroProfile.TotalXp);
+        ProgressProfile progressProfile = await FindProgressProfileAsync(userId, cancellationToken);
+        LevelProgress levelProgress = ProgressCalculator.Calculate(progressProfile.TotalXp);
         List<QuestSummary> quests = await LoadQuestsAsync(userId, cancellationToken);
         List<CompletionSummary> completions =
             await LoadCompletionsAsync(userId, cancellationToken);
@@ -63,10 +63,10 @@ public sealed class AnalyticsService(
             CompletionsThisMonth: completions.Count(completion =>
                 completion.CompletionDateUtc >= monthStartUtc
                 && completion.CompletionDateUtc <= todayUtc),
-            TotalXp: heroProgress.TotalXp,
-            CurrentLevel: heroProgress.Level,
-            XpToNextLevel: heroProgress.XpToNextLevel,
-            CurrentLevelProgressPercent: CalculateProgressPercent(heroProgress),
+            TotalXp: levelProgress.TotalXp,
+            CurrentLevel: levelProgress.Level,
+            XpToNextLevel: levelProgress.XpToNextLevel,
+            CurrentLevelProgressPercent: CalculateProgressPercent(levelProgress),
             CurrentStreakMax: streaks
                 .Select(streak => streak.CurrentStreak)
                 .DefaultIfEmpty(0)
@@ -108,20 +108,20 @@ public sealed class AnalyticsService(
                 .ToList());
     }
 
-    private async Task<HeroProfile> FindHeroProfileAsync(
+    private async Task<ProgressProfile> FindProgressProfileAsync(
         Guid userId,
         CancellationToken cancellationToken)
     {
-        HeroProfile? heroProfile = await dbContext.HeroProfiles
+        ProgressProfile? progressProfile = await dbContext.ProgressProfiles
             .AsNoTracking()
             .SingleOrDefaultAsync(
                 profile => profile.UserId == userId,
                 cancellationToken);
 
-        return heroProfile ?? throw new ApiException(
+        return progressProfile ?? throw new ApiException(
             StatusCodes.Status404NotFound,
-            "Hero profile not found",
-            "The current user's hero profile could not be found.");
+            "Progress profile not found",
+            "The current user's progress profile could not be found.");
     }
 
     private async Task<List<QuestSummary>> LoadQuestsAsync(
@@ -217,16 +217,16 @@ public sealed class AnalyticsService(
             .ToList();
     }
 
-    private static int CalculateProgressPercent(HeroProgress heroProgress)
+    private static int CalculateProgressPercent(LevelProgress levelProgress)
     {
-        if (heroProgress.XpRequiredForNextLevel <= 0)
+        if (levelProgress.XpRequiredForNextLevel <= 0)
         {
             return 100;
         }
 
         int percent = (int)Math.Round(
-            (double)heroProgress.XpInCurrentLevel
-            / heroProgress.XpRequiredForNextLevel
+            (double)levelProgress.XpInCurrentLevel
+            / levelProgress.XpRequiredForNextLevel
             * 100,
             MidpointRounding.AwayFromZero);
 

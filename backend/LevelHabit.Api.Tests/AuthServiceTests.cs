@@ -21,7 +21,7 @@ namespace LevelHabit.Api.Tests;
 public sealed class AuthServiceTests
 {
     [Fact]
-    public async Task RegisterAsync_creates_unconfirmed_user_hero_profile_and_verification_code()
+    public async Task RegisterAsync_creates_unconfirmed_user_progress_profile_and_verification_code()
     {
         using AuthServiceHarness harness = AuthServiceHarness.Create();
         DateTimeOffset now = harness.TimeProvider.GetUtcNow();
@@ -31,7 +31,7 @@ public sealed class AuthServiceTests
                 Email: " player@example.com ",
                 Password: "CorrectHorse123!",
                 DisplayName: "Player One",
-                HeroName: "Morning Warden"),
+                ProgressDisplayName: "Morning Warden"),
             CancellationToken.None);
 
         Assert.Equal("player@example.com", response.Email);
@@ -44,12 +44,12 @@ public sealed class AuthServiceTests
             property => property.Name.Contains("Token", StringComparison.Ordinal));
 
         Assert.Equal(1, await harness.DbContext.Users.CountAsync());
-        Assert.Equal(1, await harness.DbContext.HeroProfiles.CountAsync());
+        Assert.Equal(1, await harness.DbContext.ProgressProfiles.CountAsync());
         Assert.Empty(await harness.DbContext.RefreshTokens.ToListAsync());
         Assert.Empty(await harness.DbContext.AuthTokens.ToListAsync());
 
         User user = await harness.DbContext.Users
-            .Include(candidate => candidate.HeroProfile)
+            .Include(candidate => candidate.ProgressProfile)
             .SingleAsync();
 
         Assert.Equal("player@example.com", user.Email);
@@ -67,8 +67,8 @@ public sealed class AuthServiceTests
             user.EmailVerificationCodeExpiresAtUtc);
         Assert.Equal(now, user.EmailVerificationCodeLastSentAtUtc);
         Assert.Equal(0, user.EmailVerificationFailedAttempts);
-        Assert.NotNull(user.HeroProfile);
-        Assert.Equal("Morning Warden", user.HeroProfile.HeroName);
+        Assert.NotNull(user.ProgressProfile);
+        Assert.Equal("Morning Warden", user.ProgressProfile.DisplayName);
 
         EmailVerificationEmail email = Assert.Single(
             harness.EmailSender.EmailVerificationEmails);
@@ -108,7 +108,7 @@ public sealed class AuthServiceTests
             CancellationToken.None);
 
         Assert.Equal("player@example.com", login.User.Email);
-        Assert.Equal("Morning Warden", login.HeroProfile.HeroName);
+        Assert.Equal("Morning Warden", login.ProgressProfile.DisplayName);
         Assert.False(string.IsNullOrWhiteSpace(login.AccessToken));
         Assert.False(string.IsNullOrWhiteSpace(login.RefreshToken));
         ClaimsPrincipal principal = harness.ValidateAccessToken(login.AccessToken);
@@ -624,7 +624,7 @@ public sealed class AuthServiceTests
         using AuthServiceHarness harness = AuthServiceHarness.Create();
         await harness.RegisterAndConfirmDefaultAsync();
         User user = await harness.DbContext.Users
-            .Include(candidate => candidate.HeroProfile)
+            .Include(candidate => candidate.ProgressProfile)
             .SingleAsync();
 
         ClaimsPrincipal principal = new(new ClaimsIdentity(
@@ -636,8 +636,8 @@ public sealed class AuthServiceTests
             CancellationToken.None);
 
         Assert.Equal(user.Id, me.User.Id);
-        Assert.Equal(user.HeroProfile!.Id, me.HeroProfile.Id);
-        Assert.Equal("Morning Warden", me.HeroProfile.HeroName);
+        Assert.Equal(user.ProgressProfile!.Id, me.ProgressProfile.Id);
+        Assert.Equal("Morning Warden", me.ProgressProfile.DisplayName);
     }
 
     [Fact]
@@ -654,7 +654,7 @@ public sealed class AuthServiceTests
 
         Assert.Equal(login.User.Id, me.User.Id);
         Assert.Equal("player@example.com", me.User.Email);
-        Assert.Equal("Morning Warden", me.HeroProfile.HeroName);
+        Assert.Equal("Morning Warden", me.ProgressProfile.DisplayName);
     }
 
     private sealed class AuthServiceHarness : IDisposable
@@ -760,7 +760,7 @@ public sealed class AuthServiceTests
                     Email: "player@example.com",
                     Password: "CorrectHorse123!",
                     DisplayName: "Player One",
-                    HeroName: "Morning Warden"),
+                    ProgressDisplayName: "Morning Warden"),
                 CancellationToken.None);
         }
 

@@ -1,17 +1,17 @@
-namespace LevelHabit.Api.Services.Heroes;
+namespace LevelHabit.Api.Services.Progress;
 
-public sealed record HeroProgress(
+public sealed record LevelProgress(
     int Level,
     int TotalXp,
     int XpInCurrentLevel,
     int XpRequiredForNextLevel,
     int XpToNextLevel);
 
-public static class HeroProgressCalculator
+public static class ProgressCalculator
 {
     public const int StartingLevel = 1;
 
-    public static HeroProgress Calculate(int totalXp)
+    public static LevelProgress Calculate(int totalXp)
     {
         int sanitizedTotalXp = Math.Max(0, totalXp);
         int level = StartingLevel;
@@ -25,7 +25,7 @@ public static class HeroProgressCalculator
 
         int xpRequiredForNextLevel = GetXpRequiredForNextLevel(level);
 
-        return new HeroProgress(
+        return new LevelProgress(
             Level: level,
             TotalXp: sanitizedTotalXp,
             XpInCurrentLevel: remainingXp,

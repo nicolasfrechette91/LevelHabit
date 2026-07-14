@@ -1,4 +1,9 @@
-export type PrototypeView = 'dashboard' | 'quests' | 'hero' | 'achievements' | 'analytics';
+export type PrototypeView =
+  | 'dashboard'
+  | 'quests'
+  | 'progress'
+  | 'achievements'
+  | 'analytics';
 
 export type PrototypeViewCopy = Readonly<{
   eyebrow: string;
@@ -15,7 +20,7 @@ export type PrototypeRouteConfig = Readonly<{
 export const PROTOTYPE_ROUTE_CONFIGS = [
   { path: 'dashboard', navLabel: 'Today', title: 'Dashboard' },
   { path: 'quests', navLabel: 'Quests', title: 'Quests' },
-  { path: 'hero', navLabel: 'Hero', title: 'Hero' },
+  { path: 'progress', navLabel: 'Progress', title: 'Progress' },
   { path: 'achievements', navLabel: 'Achievements', title: 'Achievements' },
   { path: 'analytics', navLabel: 'Analytics', title: 'Analytics' }
 ] satisfies readonly PrototypeRouteConfig[];
@@ -31,10 +36,10 @@ export const PROTOTYPE_VIEW_COPY = {
     title: 'Active habits',
     summary: 'Daily routines framed as repeatable quests with cadence, difficulty, and XP.'
   },
-  hero: {
-    eyebrow: 'Hero',
-    title: 'Profile progression',
-    summary: 'A personal profile that levels up as habits become visible progress.'
+  progress: {
+    eyebrow: 'Progress',
+    title: 'Your progress',
+    summary: 'Build consistency, track your growth, and turn daily habits into lasting progress.'
   },
   achievements: {
     eyebrow: 'Achievements',

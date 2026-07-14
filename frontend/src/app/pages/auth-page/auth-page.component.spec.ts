@@ -27,9 +27,9 @@ const AUTH_RESPONSE: AuthResponse = {
     displayName: 'Player One',
     createdAtUtc: '2026-06-17T20:00:00Z'
   },
-  heroProfile: {
+  progressProfile: {
     id: '883089e0-6d74-4564-814d-1a3c5fe1fcff',
-    heroName: 'Morning Warden',
+    displayName: 'Morning Warden',
     level: 1,
     totalXp: 0,
     xpInCurrentLevel: 0,
@@ -136,8 +136,8 @@ describe('AuthPageComponent', () => {
     expect(nativeElement.querySelector('#display-name-error')?.textContent).toContain(
       'Display name is required.'
     );
-    expect(nativeElement.querySelector('#hero-name-error')?.textContent).toContain(
-      'Progress profile name is required.'
+    expect(nativeElement.querySelector('#progress-display-name-error')?.textContent).toContain(
+      'Progress display name is required.'
     );
   });
 
@@ -161,14 +161,14 @@ describe('AuthPageComponent', () => {
     setInputValue(fixture, '#register-email', 'player@example.com');
     setInputValue(fixture, '#register-password', 'CorrectHorse123!');
     setInputValue(fixture, '#display-name', 'Player One');
-    setInputValue(fixture, '#hero-name', 'Morning Warden');
+    setInputValue(fixture, '#progress-display-name', 'Morning Warden');
     submitForm(fixture);
 
     expect(auth.register).toHaveBeenCalledWith({
       email: 'player@example.com',
       password: 'CorrectHorse123!',
       displayName: 'Player One',
-      heroName: 'Morning Warden'
+      progressDisplayName: 'Morning Warden'
     });
     expect(auth.rememberVerificationCodeSent).toHaveBeenCalledWith(
       'player@example.com'

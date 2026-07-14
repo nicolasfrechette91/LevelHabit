@@ -88,26 +88,26 @@ export class PrototypePageComponent implements OnInit {
 
   protected readonly profileUser = computed(() => this.auth.user());
 
-  protected readonly profileHero = computed(() => this.auth.heroProfile());
+  protected readonly progressProfile = computed(() => this.auth.progressProfile());
 
   protected readonly playerDisplayName = computed(
     () => this.profileUser()?.displayName ?? 'Prototype player'
   );
 
-  protected readonly heroDisplayName = computed(
-    () => this.profileHero()?.heroName ?? this.game.levelTitle()
+  protected readonly progressDisplayName = computed(
+    () => this.progressProfile()?.displayName ?? this.game.levelTitle()
   );
 
   protected readonly profileLevel = computed(
-    () => this.profileHero()?.level ?? this.game.level()
+    () => this.progressProfile()?.level ?? this.game.level()
   );
 
   protected readonly profileTotalXp = computed(
-    () => this.profileHero()?.totalXp ?? this.game.totalXp()
+    () => this.progressProfile()?.totalXp ?? this.game.totalXp()
   );
 
   protected readonly profileCurrentStreak = computed(
-    () => this.profileHero()?.currentStreak ?? this.game.currentStreak()
+    () => this.progressProfile()?.currentStreak ?? this.game.currentStreak()
   );
 
   protected readonly profileLevelProgress = computed(() => this.game.levelProgress());
@@ -125,7 +125,7 @@ export class PrototypePageComponent implements OnInit {
   );
 
   protected readonly profileInitials = computed(() => {
-    const name = this.heroDisplayName();
+    const name = this.progressDisplayName();
     const initials = name
       .split(/\s+/)
       .filter(Boolean)
