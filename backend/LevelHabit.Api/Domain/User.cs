@@ -44,4 +44,8 @@ public sealed class User
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
 
     public ICollection<AuthToken> AuthTokens { get; set; } = [];
+
+    public ICollection<QuestReminder> QuestReminders { get; set; } = [];
+
+    public ICollection<Notification> Notifications { get; set; } = [];
 }

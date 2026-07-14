@@ -25,6 +25,10 @@
             </a>
           }
 
+          @defer (when auth.isAuthenticated()) {
+            <app-notification-center />
+          }
+
           <button
             type="button"
             class="nav-link logout-button rounded-3 px-3 py-2"

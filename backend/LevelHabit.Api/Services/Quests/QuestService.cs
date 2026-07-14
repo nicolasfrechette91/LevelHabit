@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using LevelHabit.Api.Contracts.Auth;
 using LevelHabit.Api.Contracts.Quests;
@@ -7,6 +6,7 @@ using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Progress;
+using LevelHabit.Api.Services.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -277,8 +277,22 @@ public sealed class QuestService(
             return;
         }
 
+        DateTimeOffset now = timeProvider.GetUtcNow();
+
         quest.IsArchived = true;
-        quest.UpdatedAtUtc = timeProvider.GetUtcNow();
+        quest.UpdatedAtUtc = now;
+
+        QuestReminder? reminder = await dbContext.QuestReminders
+            .SingleOrDefaultAsync(
+                candidate => candidate.UserId == userId && candidate.QuestId == quest.Id,
+                cancellationToken);
+
+        if (reminder is not null)
+        {
+            reminder.IsEnabled = false;
+            reminder.NextTriggerAtUtc = null;
+            reminder.UpdatedAtUtc = now;
+        }
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
@@ -594,18 +608,7 @@ public sealed class QuestService(
 
     private static Guid GetCurrentUserId(ClaimsPrincipal principal)
     {
-        string? userIdValue = principal.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-        if (!Guid.TryParse(userIdValue, out Guid userId))
-        {
-            throw new ApiException(
-                StatusCodes.Status401Unauthorized,
-                "Unauthorized",
-                "The current access token is missing a valid user identifier.");
-        }
-
-        return userId;
+        return AuthenticatedUser.GetUserId(principal);
     }
 
     private DateOnly GetTodayUtc()

@@ -260,6 +260,96 @@
                     formControlName="description"
                   ></textarea>
                 </div>
+
+                <div class="col-12">
+                  <section class="reminder-section" aria-label="Quest reminder">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                      <div>
+                        <p class="eyebrow">Reminder</p>
+                        <h3 class="h6 fw-bold mb-1">Quest reminder</h3>
+                        <p class="lh-muted mb-0" data-testid="reminder-summary">
+                          {{ reminderSummaryText() }}
+                        </p>
+                      </div>
+                      <div class="form-check form-switch reminder-switch">
+                        <input
+                          id="quest-reminder-enabled"
+                          type="checkbox"
+                          class="form-check-input"
+                          data-testid="reminder-enabled-input"
+                          formControlName="reminderEnabled"
+                        >
+                        <label class="form-check-label fw-bold" for="quest-reminder-enabled">
+                          Enable reminder
+                        </label>
+                      </div>
+                    </div>
+
+                    @if (reminderLoading()) {
+                      <p class="small lh-muted mt-3 mb-0">Loading reminder...</p>
+                    }
+
+                    @if (questForm.controls.reminderEnabled.value) {
+                      <div class="row g-3 mt-1">
+                        <div class="col-sm-6 col-lg-3">
+                          <label class="form-label fw-bold" for="quest-reminder-time">Time</label>
+                          <input
+                            id="quest-reminder-time"
+                            type="time"
+                            class="form-control"
+                            data-testid="reminder-time-input"
+                            formControlName="reminderTime"
+                          >
+                          @if (questForm.controls.reminderTime.touched && questForm.controls.reminderTime.invalid) {
+                            <div class="form-text text-danger">Enter a valid reminder time.</div>
+                          }
+                        </div>
+
+                        <div class="col-sm-6 col-lg-5">
+                          <label class="form-label fw-bold" for="quest-reminder-timezone">Timezone</label>
+                          <select
+                            id="quest-reminder-timezone"
+                            class="form-select"
+                            data-testid="reminder-timezone-select"
+                            formControlName="reminderTimeZoneId"
+                          >
+                            @for (timeZone of timeZoneOptions; track timeZone) {
+                              <option [value]="timeZone">{{ timeZone }}</option>
+                            }
+                          </select>
+                          @if (questForm.controls.reminderTimeZoneId.touched && questForm.controls.reminderTimeZoneId.invalid) {
+                            <div class="form-text text-danger">Choose a valid timezone.</div>
+                          }
+                        </div>
+
+                        <fieldset class="col-12">
+                          <legend class="form-label fw-bold mb-2">Days</legend>
+                          <div class="reminder-days" data-testid="reminder-days">
+                            @for (day of reminderDays; track day) {
+                              <label class="reminder-day-option">
+                                <input
+                                  type="checkbox"
+                                  [checked]="reminderDaySelected(day)"
+                                  (change)="toggleReminderDay(day, $event)"
+                                >
+                                <span>{{ day.slice(0, 3) }}</span>
+                              </label>
+                            }
+                          </div>
+                          @if (questForm.controls.reminderDaysOfWeek.touched && questForm.controls.reminderDaysOfWeek.invalid) {
+                            <div class="form-text text-danger">Select at least one reminder day.</div>
+                          }
+                        </fieldset>
+                      </div>
+                    }
+
+                    @if (reminderError(); as reminderMessage) {
+                      <div class="alert alert-warning border-0 mt-3 mb-0" role="alert">
+                        {{ reminderMessage }}
+                      </div>
+                    }
+                  </section>
+                </div>
               </div>
 
               <div class="quest-form-actions d-flex flex-wrap align-items-center gap-2 mt-3">
@@ -267,11 +357,11 @@
                   type="submit"
                   class="btn btn-lh-primary fw-bold"
                   data-testid="quest-submit-button"
-                  [disabled]="game.questActionInFlight()"
+                  [disabled]="game.questActionInFlight() || reminderSaving()"
                 >
                   {{ editingQuestId() ? 'Save changes' : 'Create quest' }}
                 </button>
-                @if (game.questActionInFlight()) {
+                @if (game.questActionInFlight() || reminderSaving()) {
                   <span class="small lh-muted">Saving...</span>
                 }
               </div>
@@ -359,6 +449,9 @@
                   </div>
                   <h2 class="h5 fw-bold mb-0">{{ quest.title }}</h2>
                   <p class="lh-muted mb-0">{{ quest.summary }}</p>
+                  @if (quest.isArchived) {
+                    <p class="small lh-muted mb-0">Reminders are disabled while this quest is archived.</p>
+                  }
                   <div class="d-flex flex-wrap gap-2 mt-auto pt-2">
                     <span class="badge rounded-pill text-bg-light">{{ quest.cadence }}</span>
                     @if (game.usesQuestApi()) {
@@ -501,6 +594,43 @@
                     </button>
                   </div>
                 }
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col-12">
+          <section class="card lh-card notifications-settings-panel" aria-label="Notification settings">
+            <div class="card-body p-3 p-md-4">
+              <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                <div>
+                  <p class="eyebrow">Notifications</p>
+                  <h2 class="h4 fw-bold mb-1">Browser notifications</h2>
+                  <p class="lh-muted mb-2">
+                    In-app reminders are always stored in LevelHabit. Browser notifications only appear while LevelHabit is open in this version.
+                  </p>
+                  <p class="fw-bold mb-0" data-testid="browser-notification-status">
+                    Status: {{ browserNotifications.permissionStatusLabel() }}
+                  </p>
+                </div>
+                <div class="notification-settings-action">
+                  @if (browserNotifications.permissionStatus() === 'unsupported') {
+                    <p class="lh-muted mb-0">Browser notifications are not supported in this browser.</p>
+                  } @else if (browserNotifications.permissionStatus() === 'denied') {
+                    <p class="lh-muted mb-0">Browser permission is denied. Update your browser settings to enable it.</p>
+                  } @else if (browserNotifications.browserNotificationsEnabled()) {
+                    <span class="badge rounded-pill text-bg-success">Enabled while open</span>
+                  } @else if (browserNotifications.canEnableBrowserNotifications()) {
+                    <button
+                      type="button"
+                      class="btn btn-lh-primary fw-bold"
+                      data-testid="enable-browser-notifications-button"
+                      (click)="enableBrowserNotifications()"
+                    >
+                      Enable browser notifications
+                    </button>
+                  }
+                </div>
               </div>
             </div>
           </section>

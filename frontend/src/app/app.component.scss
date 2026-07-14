@@ -60,6 +60,10 @@
 .site-nav {
   align-items: center;
   display: flex;
+
+  app-notification-center {
+    display: inline-flex;
+  }
 }
 
 .auth-nav {
@@ -130,7 +134,8 @@
     width: 100%;
 
     .nav-link,
-    .logout-button {
+    .logout-button,
+    app-notification-center {
       flex: 1 1 calc(50% - 0.25rem);
       justify-content: center;
       padding-inline: 0.5rem !important;

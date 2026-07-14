@@ -50,6 +50,71 @@
   min-height: 2.75rem;
 }
 
+.reminder-section {
+  border: 1px solid var(--lh-border);
+  border-radius: $lh-radius-sm;
+  padding: 1rem;
+}
+
+.reminder-switch {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+  min-height: 2.5rem;
+
+  .form-check-input {
+    margin: 0;
+  }
+}
+
+.reminder-days {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.reminder-day-option {
+  cursor: pointer;
+  min-width: 0;
+  position: relative;
+
+  input {
+    opacity: 0;
+    position: absolute;
+  }
+
+  span {
+    align-items: center;
+    border: 1px solid rgba($lh-emerald, 0.24);
+    border-radius: $lh-radius-sm;
+    color: var(--lh-muted);
+    display: flex;
+    font-size: 0.86rem;
+    font-weight: 900;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.35rem;
+    text-align: center;
+  }
+
+  input:checked + span {
+    background: var(--lh-emerald);
+    border-color: var(--lh-emerald);
+    color: $lh-white;
+  }
+
+  input:focus-visible + span {
+    outline: 0.18rem solid rgba($lh-warning, 0.7);
+    outline-offset: 0.12rem;
+  }
+}
+
+.notification-settings-action {
+  align-items: flex-start;
+  display: flex;
+  justify-content: flex-start;
+}
+
 .vault-link {
   align-items: center;
   display: inline-flex;
@@ -297,6 +362,10 @@ progress.lh-progress {
 
   .quest-actions .btn {
     width: 100%;
+  }
+
+  .reminder-days {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .stat-card strong {

@@ -12,6 +12,7 @@ import {
 import { filter, map, startWith } from 'rxjs';
 
 import { AuthService } from './auth/auth.service';
+import { NotificationCenterComponent } from './notifications/notification-center.component';
 import {
   PROTOTYPE_ROUTE_CONFIGS,
   type PrototypeView
@@ -25,7 +26,13 @@ type NavItem = {
 
 @Component({
   selector: 'app-root',
-  imports: [NgOptimizedImage, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [
+    NgOptimizedImage,
+    NotificationCenterComponent,
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })

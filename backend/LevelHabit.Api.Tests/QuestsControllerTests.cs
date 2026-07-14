@@ -13,4 +13,20 @@ public sealed class QuestsControllerTests
             typeof(QuestsController).GetCustomAttributes<AuthorizeAttribute>(),
             attribute => attribute.Policy is null);
     }
+
+    [Fact]
+    public void Quest_reminders_controller_requires_authorization()
+    {
+        Assert.Contains(
+            typeof(QuestRemindersController).GetCustomAttributes<AuthorizeAttribute>(),
+            attribute => attribute.Policy is null);
+    }
+
+    [Fact]
+    public void Notifications_controller_requires_authorization()
+    {
+        Assert.Contains(
+            typeof(NotificationsController).GetCustomAttributes<AuthorizeAttribute>(),
+            attribute => attribute.Policy is null);
+    }
 }

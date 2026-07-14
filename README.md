@@ -1,8 +1,8 @@
-# LevelHabit
+# Level Habit
 
-LevelHabit is a production-deployed gamified habit tracker. Users create daily
+Level Habit is a production-deployed gamified habit tracker. Users create daily
 quests, complete them for XP, build streaks, unlock achievements, and level up
-a personal hero profile.
+a personal progress profile.
 
 - Live demo: [LevelHabit on GitHub Pages](https://nicolasfrechette91.github.io/LevelHabit/)
 - API health check: [Render API health endpoint](https://level-habit-api.onrender.com/api/health)
@@ -26,7 +26,9 @@ the analytics view.
   JWT access tokens, refresh-token rotation, password reset, protected API
   endpoints, and authenticated frontend routes.
 - User-scoped quests with create, update, archive, and complete-today flows.
-- XP rewards, hero level progression, streak calculations, and achievement
+- Quest reminders, in-app notifications, a notification center, and optional
+  browser notifications while the app is open.
+- XP rewards, level progression, streak calculations, and achievement
   unlocks based on completion history.
 - Analytics summary data for recent completions, XP, streaks, and activity.
 - Production backend health warmup from the frontend to reduce Render cold-start
@@ -36,14 +38,14 @@ the analytics view.
 ## Technical Highlights
 
 - Production full-stack deployment across GitHub Pages, Render, and Supabase.
-- User-scoped data isolation for quests, completions, achievements, hero
-  profiles, and analytics.
+- User-scoped data isolation for quests, completions, achievements, progress
+  profiles, analytics, reminders, and notifications.
 - JWT authentication with access tokens, rotating refresh tokens, server-side
   token revocation, one-time auth tokens, route guards, and token-bearing HTTP
   requests.
 - EF Core migrations for PostgreSQL schema changes in local and production
   environments.
-- Gamified progression loop covering XP rewards, hero levels, streaks,
+- Gamified progression loop covering XP rewards, levels, streaks,
   achievements, and analytics.
 - Automated backend and frontend tests.
 - CI/CD workflow for validation, GitHub Pages deployment, and Render deploy
@@ -88,6 +90,46 @@ CORS for known frontend origins, and uses EF Core migrations to manage the
 PostgreSQL schema. Supabase provides the production database, while Docker
 Compose provides local PostgreSQL.
 
+## Reminders And Notifications
+
+Quest reminders are stored per authenticated user and quest. Each quest can have
+at most one reminder configuration with an enabled flag, one local `HH:mm`
+reminder time, an IANA timezone id such as `America/Toronto`, and selected days
+of the week. The database stores the local wall-clock time separately from the
+IANA timezone id, plus a UTC `NextTriggerAtUtc` value for efficient processing.
+This keeps daylight-saving-time behavior correct without storing only a UTC
+offset.
+
+Reminder days are stored as a weekday bitmask. Invalid local times during a
+spring daylight-saving transition are moved forward to the next valid local
+minute. Ambiguous fall daylight-saving times consistently use the offset that
+produces the later UTC occurrence.
+
+The backend runs a scoped `BackgroundService` once per minute while the Render
+API service is running. It finds due enabled reminders, locks due rows with
+PostgreSQL `FOR UPDATE SKIP LOCKED`, confirms the quest still belongs to the
+user and is not archived, creates an in-app notification, and advances the next
+future trigger. Reminder notifications use a deterministic deduplication key:
+`quest-reminder:{reminderId}:{scheduledUtcTimestamp}`. A unique database index
+prevents duplicates for the same scheduled reminder occurrence.
+
+Archived quests do not create future notifications. Archiving a quest disables
+its reminder and clears its next trigger. Restoring a quest does not
+automatically re-enable the previous reminder.
+
+In-app notifications are stored in Level Habit and shown in the authenticated
+header notification center. Browser notifications are optional and require the
+user to click `Enable browser notifications`. They use the browser
+Notifications API only while Level Habit is open. This version does not implement
+service workers, background web push, email, SMS, Firebase, SignalR, Hangfire,
+Quartz, Redis, snoozing, or multiple reminder times per quest.
+
+Render limitation: reminders are processed only while the backend service is
+awake and running. If Render sleeps or the service is stopped, due reminders are
+not processed until the API runs again. When processing resumes, Level Habit
+creates an in-app notification for the due occurrence it sees and schedules the
+next future occurrence.
+
 ## Case Study
 
 The full write-up is available in [docs/case-study.md](docs/case-study.md). It
@@ -106,7 +148,7 @@ Expected screenshot paths:
 | View | Path |
 | --- | --- |
 | Login or register | `docs/screenshots/login.png` |
-| Dashboard with hero progress | `docs/screenshots/dashboard.png` |
+| Dashboard with progress | `docs/screenshots/dashboard.png` |
 | Quests with a completed quest | `docs/screenshots/quests.png` |
 | Achievements with at least one unlock | `docs/screenshots/achievements.png` |
 | Analytics with real activity data | `docs/screenshots/analytics.png` |
@@ -304,7 +346,7 @@ developer secret stores.
 
 ## Production Error Tracking
 
-LevelHabit uses Sentry for optional production error tracking in both the
+Level Habit uses Sentry for optional production error tracking in both the
 ASP.NET Core API and Angular frontend. The app still starts and runs when no
 DSN is configured.
 
@@ -379,8 +421,10 @@ dotnet ef database update
 
 Production reminder: Supabase needs every EF migration in
 `backend/LevelHabit.Api/Migrations`, including authentication, refresh tokens,
-hero profiles, quests, quest completions, completion XP, achievements,
-six-digit email verification, and analytics-related tables.
+progress profiles, quests, quest completions, completion XP, achievements,
+six-digit email verification, analytics-related tables, quest reminders, and
+notifications. The reminders/notifications migration is
+`20260714024351_AddQuestRemindersAndNotifications`.
 
 ## Testing Commands
 
@@ -457,14 +501,17 @@ After Render deploys the backend and Supabase has the current migrations:
 - Browser token persistence uses `localStorage` for the current GitHub
   Pages/Render architecture; a same-site deployment could move refresh tokens
   to httpOnly cookies later.
-- Notifications and reminders are not implemented.
+- Reminder limitations in this version: one reminder time per quest, selected
+  weekday schedules only, no snoozing, no email/SMS/push providers, and browser
+  notifications only while Level Habit is open.
 - Charts are intentionally lightweight for the MVP analytics dashboard.
 - Render cold starts can affect the first backend request after inactivity.
 - Real portfolio screenshots still need to be captured and committed.
 
 ## Future Roadmap
 
-- Notifications and reminders.
+- Richer reminder recurrence options after the first notification center
+  version settles.
 - Richer analytics charts and trend comparisons.
 - Continued mobile layout and touch ergonomics polish.
 - Broader end-to-end test coverage.

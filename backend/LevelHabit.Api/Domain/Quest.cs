@@ -31,4 +31,8 @@ public sealed class Quest
     public User? User { get; set; }
 
     public ICollection<QuestCompletion> Completions { get; set; } = [];
+
+    public QuestReminder? Reminder { get; set; }
+
+    public ICollection<Notification> Notifications { get; set; } = [];
 }

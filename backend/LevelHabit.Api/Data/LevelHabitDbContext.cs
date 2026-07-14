@@ -23,6 +23,10 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
     public DbSet<AuthToken> AuthTokens => Set<AuthToken>();
 
+    public DbSet<QuestReminder> QuestReminders => Set<QuestReminder>();
+
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -35,5 +39,7 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
         modelBuilder.ApplyConfiguration(new UserAchievementConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
         modelBuilder.ApplyConfiguration(new AuthTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new QuestReminderConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationConfiguration());
     }
 }

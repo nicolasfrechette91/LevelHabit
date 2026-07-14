@@ -24,6 +24,12 @@ import {
   type QuestUpsertRequest
 } from '../../quests/quest-api.service';
 import {
+  REMINDER_DAYS,
+  QuestReminderApiService,
+  type QuestReminderResponse,
+  type UpsertQuestReminderRequest
+} from '../../reminders/quest-reminder-api.service';
+import {
   DEFAULT_COMPLETED_IDS,
   PROTOTYPE_QUESTS
 } from '../../state/levelhabit-prototype-data';
@@ -107,6 +113,32 @@ const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
 };
 
 const CREATED_API_QUEST_ID = '12e799df-aeca-4bd1-a548-f69f3fabd7d';
+
+const DISABLED_REMINDER_RESPONSE: QuestReminderResponse = {
+  id: null,
+  questId: API_QUEST.id,
+  isEnabled: false,
+  time: null,
+  timeZoneId: null,
+  daysOfWeek: [],
+  lastTriggeredAtUtc: null,
+  nextTriggerAtUtc: null,
+  createdAtUtc: null,
+  updatedAtUtc: null
+};
+
+const ENABLED_REMINDER_RESPONSE: QuestReminderResponse = {
+  id: '2f398cae-2401-4d85-a8f9-491030e2bf6f',
+  questId: API_QUEST.id,
+  isEnabled: true,
+  time: '08:30',
+  timeZoneId: 'America/Toronto',
+  daysOfWeek: ['Monday', 'Wednesday', 'Friday'],
+  lastTriggeredAtUtc: null,
+  nextTriggerAtUtc: '2026-06-19T12:30:00Z',
+  createdAtUtc: '2026-06-18T12:00:00Z',
+  updatedAtUtc: '2026-06-18T12:00:00Z'
+};
 
 const API_ACHIEVEMENTS: AchievementResponse[] = [
   {
@@ -552,6 +584,89 @@ describe('Quests API view', () => {
     expect(textContent(nativeElement)).toContain('Study sprint');
   });
 
+  it('shows reminder fields when reminders are enabled', async () => {
+    const { nativeElement, harness } = await renderApiQuestRoute();
+
+    expect(nativeElement.querySelector('[data-testid="reminder-time-input"]')).toBeNull();
+
+    const enabledInput = nativeElement.querySelector(
+      '[data-testid="reminder-enabled-input"]'
+    );
+
+    expect(enabledInput).toBeInstanceOf(HTMLInputElement);
+
+    (enabledInput as HTMLInputElement).click();
+    harness.detectChanges();
+
+    expect(nativeElement.querySelector('[data-testid="reminder-time-input"]')).not.toBeNull();
+    expect(textContent(nativeElement)).toContain('Every day at 8:30 AM');
+  });
+
+  it('validates reminder days when reminders are enabled', async () => {
+    const { nativeElement, harness } = await renderApiQuestRoute();
+    const enabledInput = nativeElement.querySelector(
+      '[data-testid="reminder-enabled-input"]'
+    ) as HTMLInputElement;
+
+    enabledInput.click();
+    harness.detectChanges();
+
+    for (const checkbox of Array.from(
+      nativeElement.querySelectorAll('[data-testid="reminder-days"] input')
+    )) {
+      (checkbox as HTMLInputElement).click();
+    }
+
+    submitQuestForm(harness, nativeElement);
+
+    expect(textContent(nativeElement)).toContain('Select at least one reminder day.');
+  });
+
+  it('saves a reminder after creating a quest', async () => {
+    const api = new QuestApiServiceStub([]);
+    const reminderApi = new QuestReminderApiServiceStub();
+    const { nativeElement, harness } = await renderApiQuestRoute(
+      api,
+      new AchievementApiServiceStub(),
+      reminderApi
+    );
+
+    setFormField(harness, nativeElement, '#quest-title', 'Study sprint');
+    setFormField(harness, nativeElement, '#quest-description', 'Read one chapter.');
+
+    const enabledInput = nativeElement.querySelector(
+      '[data-testid="reminder-enabled-input"]'
+    ) as HTMLInputElement;
+    enabledInput.click();
+    harness.detectChanges();
+
+    submitQuestForm(harness, nativeElement);
+
+    expect(reminderApi.upsert).toHaveBeenCalledWith(CREATED_API_QUEST_ID, {
+      isEnabled: true,
+      time: '08:30',
+      timeZoneId: expect.any(String),
+      daysOfWeek: [...REMINDER_DAYS]
+    });
+  });
+
+  it('loads an existing reminder when editing a quest', async () => {
+    const reminderApi = new QuestReminderApiServiceStub(ENABLED_REMINDER_RESPONSE);
+    const { nativeElement, harness } = await renderApiQuestRoute(
+      new QuestApiServiceStub(),
+      new AchievementApiServiceStub(),
+      reminderApi
+    );
+
+    getButtonByText(nativeElement, /^Edit$/).click();
+    harness.detectChanges();
+
+    expect(reminderApi.get).toHaveBeenCalledWith(API_QUEST.id);
+    expect(textContent(nativeElement)).toContain(
+      'Monday, Wednesday and Friday at 8:30 AM'
+    );
+  });
+
   it('updates quests through the API', async () => {
     const { api, nativeElement, harness } = await renderApiQuestRoute();
 
@@ -779,6 +894,10 @@ async function renderApiAchievementRoute(
       {
         provide: AnalyticsApiService,
         useValue: new AnalyticsApiServiceStub()
+      },
+      {
+        provide: QuestReminderApiService,
+        useValue: new QuestReminderApiServiceStub()
       }
     ]
   });
@@ -823,6 +942,10 @@ async function renderApiAnalyticsRoute(
       {
         provide: AnalyticsApiService,
         useValue: analyticsApi
+      },
+      {
+        provide: QuestReminderApiService,
+        useValue: new QuestReminderApiServiceStub()
       }
     ]
   });
@@ -844,12 +967,14 @@ async function renderApiAnalyticsRoute(
 
 async function renderApiQuestRoute(
   api: QuestApiServiceStub = new QuestApiServiceStub(),
-  achievementApi: AchievementApiServiceStub = new AchievementApiServiceStub()
+  achievementApi: AchievementApiServiceStub = new AchievementApiServiceStub(),
+  reminderApi: QuestReminderApiServiceStub = new QuestReminderApiServiceStub()
 ): Promise<{
   achievementApi: AchievementApiServiceStub;
   api: QuestApiServiceStub;
   harness: RouterTestingHarness;
   nativeElement: HTMLElement;
+  reminderApi: QuestReminderApiServiceStub;
 }> {
   TestBed.configureTestingModule({
     providers: [
@@ -869,6 +994,10 @@ async function renderApiQuestRoute(
       {
         provide: AnalyticsApiService,
         useValue: new AnalyticsApiServiceStub()
+      },
+      {
+        provide: QuestReminderApiService,
+        useValue: reminderApi
       }
     ]
   });
@@ -885,8 +1014,44 @@ async function renderApiQuestRoute(
     achievementApi,
     api,
     harness,
-    nativeElement
+    nativeElement,
+    reminderApi
   };
+}
+
+class QuestReminderApiServiceStub
+  implements Pick<QuestReminderApiService, 'get' | 'upsert' | 'delete'>
+{
+  constructor(
+    private readonly response: QuestReminderResponse = DISABLED_REMINDER_RESPONSE
+  ) {}
+
+  readonly get = vi.fn((questId: string): Observable<QuestReminderResponse> =>
+    of({
+      ...this.response,
+      questId
+    })
+  );
+
+  readonly upsert = vi.fn((
+    questId: string,
+    request: UpsertQuestReminderRequest
+  ): Observable<QuestReminderResponse> =>
+    of({
+      id: '2f398cae-2401-4d85-a8f9-491030e2bf6f',
+      questId,
+      isEnabled: request.isEnabled,
+      time: request.time,
+      timeZoneId: request.timeZoneId,
+      daysOfWeek: request.daysOfWeek ?? [],
+      lastTriggeredAtUtc: null,
+      nextTriggerAtUtc: request.isEnabled ? '2026-06-19T12:30:00Z' : null,
+      createdAtUtc: '2026-06-18T12:00:00Z',
+      updatedAtUtc: '2026-06-18T12:00:00Z'
+    })
+  );
+
+  readonly delete = vi.fn((_questId: string): Observable<void> => of(void 0));
 }
 
 function createApiAuthService(): Pick<
