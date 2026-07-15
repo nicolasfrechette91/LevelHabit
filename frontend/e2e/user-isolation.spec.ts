@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
 
 import {
-  completeQuest,
-  createQuest,
+  completeHabit,
+  createHabit,
   createTestUser,
-  expectNoQuestCard,
+  expectNoHabitCard,
   logout,
   openAnalytics,
-  openQuests,
+  openHabits,
   registerUser,
   uniqueRunId,
   waitForApiHealth
@@ -18,33 +18,33 @@ test.describe('user data isolation', () => {
     await waitForApiHealth(request);
   });
 
-  test('keeps quests, analytics, and achievements scoped to the signed-in user', async ({
+  test('keeps habits, analytics, and achievements scoped to the signed-in user', async ({
     page
   }) => {
     const runId = uniqueRunId('isolation');
     const userA = createTestUser(runId, 'User A');
     const userB = createTestUser(runId, 'User B');
-    const userAQuestTitle = `E2E User A Quest ${runId}`;
+    const userAHabitTitle = `E2E User A Habit ${runId}`;
 
     await registerUser(page, userA);
-    await openQuests(page);
-    await createQuest(page, {
-      title: userAQuestTitle,
-      description: 'A quest that must stay private to User A.',
+    await openHabits(page);
+    await createHabit(page, {
+      title: userAHabitTitle,
+      description: 'A habit that must stay private to User A.',
       category: 'Health',
       difficulty: 'Hard',
       frequency: 'Daily'
     });
-    await completeQuest(page, userAQuestTitle);
+    await completeHabit(page, userAHabitTitle);
     await logout(page);
 
     await registerUser(page, userB);
-    await openQuests(page);
-    await expectNoQuestCard(page, userAQuestTitle);
+    await openHabits(page);
+    await expectNoHabitCard(page, userAHabitTitle);
 
     await openAnalytics(page);
     await expect(page.getByText('No persisted activity yet')).toBeVisible();
-    await expect(page.getByTestId('analytics-quest-library')).toContainText('0 quests');
+    await expect(page.getByTestId('analytics-habit-library')).toContainText('0 habits');
     await expect(page.getByTestId('analytics-completions')).toContainText('0');
     await expect(page.getByTestId('analytics-progress-growth')).toContainText('0 XP');
     await expect(page.getByTestId('analytics-achievements')).toContainText('0/9');
@@ -56,6 +56,6 @@ test.describe('user data isolation', () => {
       hasText: 'First Step'
     });
     await expect(firstStep).toContainText('Locked');
-    await expect(firstStep).toContainText('0/1 quest completions');
+    await expect(firstStep).toContainText('0/1 habit completions');
   });
 });

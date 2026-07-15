@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test';
 
 import {
-  completeQuest,
-  createQuest,
+  completeHabit,
+  createHabit,
   createTestUser,
   loginUser,
   logout,
   openAnalytics,
-  openQuests,
-  questCard,
+  openHabits,
+  habitCard,
   registerUser,
   uniqueRunId,
   waitForApiHealth
@@ -19,25 +19,25 @@ test.describe('main authenticated user journey', () => {
     await waitForApiHealth(request);
   });
 
-  test('registers, completes a quest, verifies progress, and persists after login', async ({
+  test('registers, completes a habit, verifies progress, and persists after login', async ({
     page
   }) => {
     const runId = uniqueRunId('main');
     const user = createTestUser(runId, 'Main');
-    const questTitle = `E2E Hard Quest ${runId}`;
+    const habitTitle = `E2E Hard Habit ${runId}`;
 
     await registerUser(page, user);
 
-    await openQuests(page);
-    await createQuest(page, {
-      title: questTitle,
+    await openHabits(page);
+    await createHabit(page, {
+      title: habitTitle,
       description: 'Complete a deterministic browser-driven habit.',
       category: 'Coding',
       difficulty: 'Hard',
       frequency: 'Daily'
     });
 
-    const completedCard = await completeQuest(page, questTitle);
+    const completedCard = await completeHabit(page, habitTitle);
     await expect(completedCard).toContainText('+35 XP awarded');
     await expect(completedCard).toContainText('1-day streak');
     await expect(page.getByTestId('progress-total-xp')).toHaveText('35');
@@ -51,7 +51,7 @@ test.describe('main authenticated user journey', () => {
       hasText: 'First Step'
     });
     await expect(firstStep).toContainText('Unlocked');
-    await expect(firstStep).toContainText('1/1 quest completions');
+    await expect(firstStep).toContainText('1/1 habit completions');
 
     const hardMode = page.getByTestId('achievement-card').filter({
       hasText: 'Hard Mode'
@@ -59,20 +59,20 @@ test.describe('main authenticated user journey', () => {
     await expect(hardMode).toContainText('Unlocked');
 
     await openAnalytics(page);
-    await expect(page.getByTestId('analytics-quest-library')).toContainText('1 quest');
+    await expect(page.getByTestId('analytics-habit-library')).toContainText('1 habit');
     await expect(page.getByTestId('analytics-completions')).toContainText('1');
     await expect(page.getByTestId('analytics-progress-growth')).toContainText('35 XP');
     await expect(page.getByTestId('analytics-achievements')).toContainText('2/9');
     await expect(page.getByTestId('analytics-current-streak-max')).toContainText('1d');
-    await expect(page.getByTestId('analytics-recent-completion')).toContainText(questTitle);
+    await expect(page.getByTestId('analytics-recent-completion')).toContainText(habitTitle);
     await expect(page.getByTestId('analytics-recent-completion')).toContainText('+35 XP');
 
     await logout(page);
     await loginUser(page, user);
 
-    await openQuests(page);
-    await expect(questCard(page, questTitle)).toContainText('Done today');
-    await expect(questCard(page, questTitle)).toContainText('1-day streak');
+    await openHabits(page);
+    await expect(habitCard(page, habitTitle)).toContainText('Done today');
+    await expect(habitCard(page, habitTitle)).toContainText('1-day streak');
     await expect(page.getByTestId('progress-total-xp')).toHaveText('35');
   });
 });

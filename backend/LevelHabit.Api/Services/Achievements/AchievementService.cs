@@ -4,7 +4,7 @@ using LevelHabit.Api.Contracts.Achievements;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
-using LevelHabit.Api.Services.Quests;
+using LevelHabit.Api.Services.Habits;
 using Microsoft.EntityFrameworkCore;
 
 namespace LevelHabit.Api.Services.Achievements;
@@ -130,22 +130,22 @@ public sealed class AchievementService(
         }
 
         List<CompletionActivity> completions = await (
-            from completion in dbContext.QuestCompletions.AsNoTracking()
-            join quest in dbContext.Quests.AsNoTracking()
-                on completion.QuestId equals quest.Id
-            where completion.UserId == userId && quest.UserId == userId
+            from completion in dbContext.HabitCompletions.AsNoTracking()
+            join habit in dbContext.Habits.AsNoTracking()
+                on completion.HabitId equals habit.Id
+            where completion.UserId == userId && habit.UserId == userId
             select new CompletionActivity(
-                completion.QuestId,
+                completion.HabitId,
                 completion.CompletionDateUtc,
                 completion.CompletedAtUtc,
-                quest.Category,
-                quest.Difficulty))
+                habit.Category,
+                habit.Difficulty))
             .ToListAsync(cancellationToken);
 
-        int bestQuestStreak = completions
-            .GroupBy(completion => completion.QuestId)
-            .Select(group => QuestStreakCalculator.Calculate(
-                group.Select(completion => new QuestCompletionStreakEntry(
+        int bestHabitStreak = completions
+            .GroupBy(completion => completion.HabitId)
+            .Select(group => HabitStreakCalculator.Calculate(
+                group.Select(completion => new HabitCompletionStreakEntry(
                     completion.CompletionDateUtc,
                     completion.CompletedAtUtc)),
                 GetTodayUtc()).BestStreak)
@@ -167,7 +167,7 @@ public sealed class AchievementService(
         return new AchievementProgressSnapshot(
             TotalCompletions: completions.Count,
             ProfileLevel: profileLevel.Value,
-            BestQuestStreak: bestQuestStreak,
+            BestHabitStreak: bestHabitStreak,
             HasHardCompletion: hasHardCompletion,
             CompletedCategories: completedCategories);
     }
@@ -210,7 +210,7 @@ public sealed class AchievementService(
         {
             AchievementRules.TotalCompletions => progress.TotalCompletions,
             AchievementRules.Level => progress.ProfileLevel,
-            AchievementRules.BestQuestStreak => progress.BestQuestStreak,
+            AchievementRules.BestHabitStreak => progress.BestHabitStreak,
             AchievementRules.HardCompletion => progress.HasHardCompletion ? 1 : 0,
             AchievementRules.CompletedCategories => progress.CompletedCategories,
             _ => 0
@@ -225,13 +225,13 @@ public sealed class AchievementService(
         return achievement.Rule switch
         {
             AchievementRules.TotalCompletions =>
-                $"{progress}/{target} quest completions",
+                $"{progress}/{target} habit completions",
             AchievementRules.Level =>
                 $"Level {progress}/{target}",
-            AchievementRules.BestQuestStreak =>
+            AchievementRules.BestHabitStreak =>
                 $"{progress}/{target} day streak",
             AchievementRules.HardCompletion =>
-                $"{progress}/{target} hard quest",
+                $"{progress}/{target} hard habit",
             AchievementRules.CompletedCategories =>
                 $"{progress}/{target} categories",
             _ => $"{progress}/{target}"
@@ -260,7 +260,7 @@ public sealed class AchievementService(
     }
 
     private sealed record CompletionActivity(
-        Guid QuestId,
+        Guid HabitId,
         DateOnly CompletionDateUtc,
         DateTimeOffset CompletedAtUtc,
         string Category,
@@ -269,7 +269,7 @@ public sealed class AchievementService(
     private sealed record AchievementProgressSnapshot(
         int TotalCompletions,
         int ProfileLevel,
-        int BestQuestStreak,
+        int BestHabitStreak,
         bool HasHardCompletion,
         int CompletedCategories);
 }

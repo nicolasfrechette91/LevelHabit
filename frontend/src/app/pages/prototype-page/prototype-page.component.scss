@@ -47,7 +47,7 @@
   min-width: 0;
 }
 
-.quest-list,
+.habit-list,
 .mini-achievements {
   .list-group-item {
     background: transparent;
@@ -59,7 +59,7 @@
   }
 }
 
-.quest-check {
+.habit-check {
   background: $lh-white;
   border: 2px solid rgba($lh-emerald, 0.36);
   border-radius: 50%;
@@ -74,8 +74,8 @@
   }
 }
 
-.quest-row.done {
-  .quest-check {
+.habit-row.done {
+  .habit-check {
     background: var(--lh-emerald);
     border-color: var(--lh-emerald);
 
@@ -120,7 +120,7 @@
   }
 }
 
-.quest-card {
+.habit-card {
   border-top: 5px solid var(--lh-emerald);
   min-height: 18rem;
 

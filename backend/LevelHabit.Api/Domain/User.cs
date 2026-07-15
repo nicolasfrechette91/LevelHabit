@@ -35,9 +35,9 @@ public sealed class User
 
     public ProgressProfile? ProgressProfile { get; set; }
 
-    public ICollection<Quest> Quests { get; set; } = [];
+    public ICollection<Habit> Habits { get; set; } = [];
 
-    public ICollection<QuestCompletion> QuestCompletions { get; set; } = [];
+    public ICollection<HabitCompletion> HabitCompletions { get; set; } = [];
 
     public ICollection<UserAchievement> UserAchievements { get; set; } = [];
 
@@ -45,7 +45,7 @@ public sealed class User
 
     public ICollection<AuthToken> AuthTokens { get; set; } = [];
 
-    public ICollection<QuestReminder> QuestReminders { get; set; } = [];
+    public ICollection<HabitReminder> HabitReminders { get; set; } = [];
 
     public ICollection<Notification> Notifications { get; set; } = [];
 }

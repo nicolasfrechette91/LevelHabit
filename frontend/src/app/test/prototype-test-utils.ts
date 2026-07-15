@@ -115,13 +115,13 @@ export function getButtonByText(container: ParentNode, label: RegExp): HTMLButto
   return button;
 }
 
-export function getQuestToggle(container: ParentNode, questTitle: string): HTMLButtonElement {
+export function getHabitToggle(container: ParentNode, habitTitle: string): HTMLButtonElement {
   const button = container.querySelector(
-    `button[aria-label*="${questTitle}"]`
+    `button[aria-label*="${habitTitle}"]`
   );
 
   if (!(button instanceof HTMLButtonElement)) {
-    throw new Error(`Could not find quest toggle for "${questTitle}".`);
+    throw new Error(`Could not find habit toggle for "${habitTitle}".`);
   }
 
   return button;

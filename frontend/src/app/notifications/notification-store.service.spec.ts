@@ -25,14 +25,14 @@ const USER: AuthUser = {
 const NOTIFICATION: NotificationResponse = {
   id: '7f6ec74d-7581-4a3c-93d4-9aa7f4f6e945',
   userId: USER.id,
-  questId: 'f3d9d772-8e0d-47f7-970b-56f757f85f4d',
-  type: 'QuestReminder',
-  title: 'Quest reminder',
+  habitId: 'f3d9d772-8e0d-47f7-970b-56f757f85f4d',
+  type: 'HabitReminder',
+  title: 'Habit reminder',
   message: 'Morning training is ready.',
   isRead: false,
   createdAtUtc: '2026-06-18T12:00:00Z',
   readAtUtc: null,
-  referenceUrl: '/quests'
+  referenceUrl: '/habits'
 };
 
 describe('NotificationStoreService', () => {

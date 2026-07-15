@@ -29,8 +29,8 @@ that is never shown in screenshots.
 
 Recommended sample state:
 
-- At least three active quests across different categories.
-- One quest completed today.
+- At least three active habits across different categories.
+- One habit completed today.
 - A hero profile with visible XP and level progress.
 - At least one unlocked achievement.
 - Enough completion history for analytics cards or charts to show meaningful
@@ -44,10 +44,10 @@ Recommended sample state:
 | --- | --- | --- |
 | Login or register | Clean unauthenticated entry point | `docs/screenshots/login.png` |
 | Dashboard | Hero progress, XP, streak, and next actions | `docs/screenshots/dashboard.png` |
-| Quests | Active quests with at least one completed today | `docs/screenshots/quests.png` |
+| Habits | Active habits with at least one completed today | `docs/screenshots/habits.png` |
 | Achievements | Achievement grid with at least one unlocked item | `docs/screenshots/achievements.png` |
 | Analytics | Real completion and XP activity data | `docs/screenshots/analytics.png` |
-| Mobile dashboard | Responsive dashboard or quests view | `docs/screenshots/mobile-dashboard.png` |
+| Mobile dashboard | Responsive dashboard or habits view | `docs/screenshots/mobile-dashboard.png` |
 
 ## Naming Convention
 
@@ -61,7 +61,7 @@ Expected paths:
 ```text
 docs/screenshots/login.png
 docs/screenshots/dashboard.png
-docs/screenshots/quests.png
+docs/screenshots/habits.png
 docs/screenshots/achievements.png
 docs/screenshots/analytics.png
 docs/screenshots/mobile-dashboard.png
@@ -74,7 +74,7 @@ Before committing screenshots:
 1. Confirm no private email address, password, JWT, refresh token, API key,
    connection string, GitHub secret, deploy hook, or browser autofill value is
    visible.
-2. Confirm the account and quest data are intentionally safe to show publicly.
+2. Confirm the account and habit data are intentionally safe to show publicly.
 3. Confirm the browser address bar does not include sensitive query parameters.
 4. Confirm screenshots came from the production deployment, not local mockups.
 5. Confirm the README uses the final committed file paths.

@@ -1,12 +1,12 @@
 using System.Security.Claims;
 using LevelHabit.Api.Contracts.Achievements;
-using LevelHabit.Api.Contracts.Quests;
+using LevelHabit.Api.Contracts.Habits;
 using LevelHabit.Api.Data;
 using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Progress;
-using LevelHabit.Api.Services.Quests;
+using LevelHabit.Api.Services.Habits;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,15 +15,15 @@ namespace LevelHabit.Api.Tests;
 public sealed class AchievementServiceTests
 {
     [Fact]
-    public async Task Quest_completion_unlocks_first_step()
+    public async Task Habit_completion_unlocks_first_step()
     {
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
-        QuestResponse quest = await harness.CreateQuestAsync(userId, "First quest");
+        HabitResponse habit = await harness.CreateHabitAsync(userId, "First habit");
 
-        await harness.QuestService.CompleteTodayAsync(
+        await harness.HabitService.CompleteTodayAsync(
             harness.CreatePrincipal(userId),
-            quest.Id,
+            habit.Id,
             CancellationToken.None);
 
         IReadOnlyList<AchievementResponse> achievements =
@@ -52,13 +52,13 @@ public sealed class AchievementServiceTests
 
         for (int index = 0; index < completionCount; index++)
         {
-            QuestResponse quest = await harness.CreateQuestAsync(
+            HabitResponse habit = await harness.CreateHabitAsync(
                 userId,
-                $"Quest {index}");
+                $"Habit {index}");
 
-            await harness.QuestService.CompleteTodayAsync(
+            await harness.HabitService.CompleteTodayAsync(
                 harness.CreatePrincipal(userId),
-                quest.Id,
+                habit.Id,
                 CancellationToken.None);
         }
 
@@ -81,14 +81,14 @@ public sealed class AchievementServiceTests
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
         await harness.SetProgressXpAsync(userId, totalXp: 990);
-        QuestResponse quest = await harness.CreateQuestAsync(
+        HabitResponse habit = await harness.CreateHabitAsync(
             userId,
             "Progress Rising",
             difficulty: "Easy");
 
-        await harness.QuestService.CompleteTodayAsync(
+        await harness.HabitService.CompleteTodayAsync(
             harness.CreatePrincipal(userId),
-            quest.Id,
+            habit.Id,
             CancellationToken.None);
 
         IReadOnlyList<AchievementResponse> achievements =
@@ -114,16 +114,16 @@ public sealed class AchievementServiceTests
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         harness.Time.SetUtcNow(new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero));
         Guid userId = await harness.AddUserAsync("player@example.com");
-        QuestResponse quest = await harness.CreateQuestAsync(userId, "Daily practice");
+        HabitResponse habit = await harness.CreateHabitAsync(userId, "Daily practice");
 
         for (int day = 0; day < streakLength; day++)
         {
             harness.Time.SetUtcNow(
                 new DateTimeOffset(2026, 6, 1 + day, 12, 0, 0, TimeSpan.Zero));
 
-            await harness.QuestService.CompleteTodayAsync(
+            await harness.HabitService.CompleteTodayAsync(
                 harness.CreatePrincipal(userId),
-                quest.Id,
+                habit.Id,
                 CancellationToken.None);
         }
 
@@ -141,18 +141,18 @@ public sealed class AchievementServiceTests
     }
 
     [Fact]
-    public async Task Completing_hard_quest_unlocks_hard_mode()
+    public async Task Completing_hard_habit_unlocks_hard_mode()
     {
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
-        QuestResponse quest = await harness.CreateQuestAsync(
+        HabitResponse habit = await harness.CreateHabitAsync(
             userId,
             "Boss training",
             difficulty: "Hard");
 
-        await harness.QuestService.CompleteTodayAsync(
+        await harness.HabitService.CompleteTodayAsync(
             harness.CreatePrincipal(userId),
-            quest.Id,
+            habit.Id,
             CancellationToken.None);
 
         IReadOnlyList<AchievementResponse> achievements =
@@ -173,14 +173,14 @@ public sealed class AchievementServiceTests
 
         foreach (string category in new[] { "Health", "Learning", "Coding" })
         {
-            QuestResponse quest = await harness.CreateQuestAsync(
+            HabitResponse habit = await harness.CreateHabitAsync(
                 userId,
-                $"{category} quest",
+                $"{category} habit",
                 category: category);
 
-            await harness.QuestService.CompleteTodayAsync(
+            await harness.HabitService.CompleteTodayAsync(
                 harness.CreatePrincipal(userId),
-                quest.Id,
+                habit.Id,
                 CancellationToken.None);
         }
 
@@ -202,11 +202,11 @@ public sealed class AchievementServiceTests
     {
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com");
-        QuestResponse quest = await harness.CreateQuestAsync(userId, "Only once");
+        HabitResponse habit = await harness.CreateHabitAsync(userId, "Only once");
 
-        await harness.QuestService.CompleteTodayAsync(
+        await harness.HabitService.CompleteTodayAsync(
             harness.CreatePrincipal(userId),
-            quest.Id,
+            habit.Id,
             CancellationToken.None);
 
         await harness.Service.ListAsync(
@@ -221,9 +221,9 @@ public sealed class AchievementServiceTests
             harness.Time.GetUtcNow(),
             CancellationToken.None);
 
-        await harness.QuestService.CompleteTodayAsync(
+        await harness.HabitService.CompleteTodayAsync(
             harness.CreatePrincipal(userId),
-            quest.Id,
+            habit.Id,
             CancellationToken.None);
 
         Assert.Equal(
@@ -238,11 +238,11 @@ public sealed class AchievementServiceTests
         using AchievementServiceHarness harness = AchievementServiceHarness.Create();
         Guid firstUserId = await harness.AddUserAsync("first@example.com");
         Guid secondUserId = await harness.AddUserAsync("second@example.com");
-        QuestResponse quest = await harness.CreateQuestAsync(firstUserId, "Private win");
+        HabitResponse habit = await harness.CreateHabitAsync(firstUserId, "Private win");
 
-        await harness.QuestService.CompleteTodayAsync(
+        await harness.HabitService.CompleteTodayAsync(
             harness.CreatePrincipal(firstUserId),
-            quest.Id,
+            habit.Id,
             CancellationToken.None);
 
         IReadOnlyList<AchievementResponse> secondUserAchievements =
@@ -287,12 +287,12 @@ public sealed class AchievementServiceTests
         private AchievementServiceHarness(
             LevelHabitDbContext dbContext,
             IAchievementService service,
-            IQuestService questService,
+            IHabitService habitService,
             TestTimeProvider time)
         {
             DbContext = dbContext;
             Service = service;
-            QuestService = questService;
+            HabitService = habitService;
             Time = time;
         }
 
@@ -300,7 +300,7 @@ public sealed class AchievementServiceTests
 
         public IAchievementService Service { get; }
 
-        public IQuestService QuestService { get; }
+        public IHabitService HabitService { get; }
 
         public TestTimeProvider Time { get; }
 
@@ -315,12 +315,12 @@ public sealed class AchievementServiceTests
             TestTimeProvider time = new(
                 new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero));
             AchievementService achievementService = new(dbContext, time);
-            QuestService questService = new(dbContext, time, achievementService);
+            HabitService habitService = new(dbContext, time, achievementService);
 
             return new AchievementServiceHarness(
                 dbContext,
                 achievementService,
-                questService,
+                habitService,
                 time);
         }
 
@@ -376,17 +376,17 @@ public sealed class AchievementServiceTests
             await DbContext.SaveChangesAsync();
         }
 
-        public Task<QuestResponse> CreateQuestAsync(
+        public Task<HabitResponse> CreateHabitAsync(
             Guid userId,
             string title,
             string category = "Health",
             string difficulty = "Easy")
         {
-            return QuestService.CreateAsync(
+            return HabitService.CreateAsync(
                 CreatePrincipal(userId),
-                new CreateQuestRequest(
+                new CreateHabitRequest(
                     Title: title,
-                    Description: "Test quest",
+                    Description: "Test habit",
                     Category: category,
                     Difficulty: difficulty,
                     Frequency: "Daily"),

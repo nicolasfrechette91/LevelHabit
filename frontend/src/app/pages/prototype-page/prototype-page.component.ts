@@ -34,22 +34,22 @@ import type {
 } from '../../analytics/analytics-api.service';
 import { AuthService } from '../../auth/auth.service';
 import { BrowserNotificationService } from '../../notifications/browser-notification.service';
-import type { QuestUpsertRequest } from '../../quests/quest-api.service';
+import type { HabitUpsertRequest } from '../../habits/habit-api.service';
 import {
   REMINDER_DAYS,
-  QuestReminderApiService,
-  type QuestReminderResponse,
+  HabitReminderApiService,
+  type HabitReminderResponse,
   type ReminderDay,
-  type UpsertQuestReminderRequest
-} from '../../reminders/quest-reminder-api.service';
+  type UpsertHabitReminderRequest
+} from '../../reminders/habit-reminder-api.service';
 import {
   PERSISTED_QUEST_CATEGORIES,
   PERSISTED_QUEST_DIFFICULTIES,
   PERSISTED_QUEST_FREQUENCIES,
-  type PersistedQuestCategory,
-  type PersistedQuestDifficulty,
-  type PersistedQuestFrequency,
-  type Quest
+  type PersistedHabitCategory,
+  type PersistedHabitDifficulty,
+  type PersistedHabitFrequency,
+  type Habit
 } from '../../state/levelhabit.models';
 import { LevelHabitStateService } from '../../state/levelhabit-state.service';
 import {
@@ -58,7 +58,7 @@ import {
   type PrototypeView
 } from './prototype-view.model';
 
-type QuestFilter = 'active' | 'all' | 'archived';
+type HabitFilter = 'active' | 'all' | 'archived';
 
 const FALLBACK_TIME_ZONE_ID = 'UTC';
 const DEFAULT_REMINDER_TIME = '08:30';
@@ -90,38 +90,38 @@ export class PrototypePageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(NonNullableFormBuilder);
-  private readonly reminderApi = inject(QuestReminderApiService);
+  private readonly reminderApi = inject(HabitReminderApiService);
   private readonly browserTimeZoneId = this.resolveBrowserTimeZoneId();
   private readonly routeData = toSignal(this.route.data, {
     initialValue: this.route.snapshot.data
   });
 
-  protected readonly questFilter = signal<QuestFilter>('active');
-  protected readonly editingQuestId = signal<string | null>(null);
+  protected readonly habitFilter = signal<HabitFilter>('active');
+  protected readonly editingHabitId = signal<string | null>(null);
   protected readonly reminderLoading = signal(false);
   protected readonly reminderSaving = signal(false);
   protected readonly reminderError = signal<string | null>(null);
   private readonly editingReminderExists = signal(false);
-  protected readonly questCategories = PERSISTED_QUEST_CATEGORIES;
-  protected readonly questDifficulties = PERSISTED_QUEST_DIFFICULTIES;
-  protected readonly questFrequencies = PERSISTED_QUEST_FREQUENCIES;
+  protected readonly habitCategories = PERSISTED_QUEST_CATEGORIES;
+  protected readonly habitDifficulties = PERSISTED_QUEST_DIFFICULTIES;
+  protected readonly habitFrequencies = PERSISTED_QUEST_FREQUENCIES;
   protected readonly reminderDays = REMINDER_DAYS;
   protected readonly timeZoneOptions = this.resolveTimeZoneOptions();
-  protected readonly questForm = this.formBuilder.group({
+  protected readonly habitForm = this.formBuilder.group({
     title: this.formBuilder.control('', [
       Validators.required,
       Validators.maxLength(140)
     ]),
     description: this.formBuilder.control('', [Validators.maxLength(1000)]),
-    category: this.formBuilder.control<PersistedQuestCategory>(
+    category: this.formBuilder.control<PersistedHabitCategory>(
       PERSISTED_QUEST_CATEGORIES[0],
       [Validators.required]
     ),
-    difficulty: this.formBuilder.control<PersistedQuestDifficulty>(
+    difficulty: this.formBuilder.control<PersistedHabitDifficulty>(
       PERSISTED_QUEST_DIFFICULTIES[0],
       [Validators.required]
     ),
-    frequency: this.formBuilder.control<PersistedQuestFrequency>(
+    frequency: this.formBuilder.control<PersistedHabitFrequency>(
       PERSISTED_QUEST_FREQUENCIES[0],
       [Validators.required]
     ),
@@ -192,26 +192,26 @@ export class PrototypePageComponent implements OnInit {
     return initials || 'LH';
   });
 
-  protected readonly filteredQuests = computed(() => {
-    const quests = this.game.quests();
+  protected readonly filteredHabits = computed(() => {
+    const habits = this.game.habits();
 
-    switch (this.questFilter()) {
+    switch (this.habitFilter()) {
       case 'active':
-        return quests.filter((quest) =>
-          !quest.isArchived && (this.game.usesQuestApi() || !quest.completed)
+        return habits.filter((habit) =>
+          !habit.isArchived && (this.game.usesHabitApi() || !habit.completed)
         );
       case 'archived':
-        return quests.filter((quest) => quest.isArchived);
+        return habits.filter((habit) => habit.isArchived);
       default:
-        return quests;
+        return habits;
     }
   });
 
-  protected readonly topQuest = computed<Quest | null>(() => {
-    const activeQuest = this.game.activeQuests()[0];
-    const fallbackQuest = this.game.quests()[0];
+  protected readonly topHabit = computed<Habit | null>(() => {
+    const activeHabit = this.game.activeHabits()[0];
+    const fallbackHabit = this.game.habits()[0];
 
-    return activeQuest ?? fallbackQuest ?? null;
+    return activeHabit ?? fallbackHabit ?? null;
   });
 
   protected readonly achievementPreview = computed(() =>
@@ -266,10 +266,10 @@ export class PrototypePageComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    this.game.loadQuests();
+    this.game.loadHabits();
     this.game.loadAchievements();
-    this.updateReminderValidators(this.questForm.controls.reminderEnabled.value);
-    this.questForm.controls.reminderEnabled.valueChanges
+    this.updateReminderValidators(this.habitForm.controls.reminderEnabled.value);
+    this.habitForm.controls.reminderEnabled.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((enabled) => this.updateReminderValidators(enabled));
 
@@ -324,57 +324,57 @@ export class PrototypePageComponent implements OnInit {
     return buckets.reduce((total, bucket) => total + bucket.value, 0);
   }
 
-  protected toggleQuest(quest: Quest): void {
-    this.game.toggleQuest(quest.id);
+  protected toggleHabit(habit: Habit): void {
+    this.game.toggleHabit(habit.id);
   }
 
-  protected completeQuest(quest: Quest): void {
+  protected completeHabit(habit: Habit): void {
     if (
-      !this.game.usesQuestApi()
-      || quest.isArchived
-      || quest.completed
-      || this.game.isQuestCompletionInFlight(quest.id)
+      !this.game.usesHabitApi()
+      || habit.isArchived
+      || habit.completed
+      || this.game.isHabitCompletionInFlight(habit.id)
     ) {
       return;
     }
 
     this.game
-      .completeQuest(quest.id)
+      .completeHabit(habit.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         error: () => undefined
       });
   }
 
-  protected setFilter(filter: QuestFilter): void {
-    this.questFilter.set(filter);
+  protected setFilter(filter: HabitFilter): void {
+    this.habitFilter.set(filter);
   }
 
-  protected saveQuest(): void {
-    if (!this.game.usesQuestApi()) {
+  protected saveHabit(): void {
+    if (!this.game.usesHabitApi()) {
       return;
     }
 
-    if (this.questForm.invalid) {
-      this.questForm.markAllAsTouched();
+    if (this.habitForm.invalid) {
+      this.habitForm.markAllAsTouched();
       return;
     }
 
-    const request = this.readQuestForm();
-    const editingQuestId = this.editingQuestId();
-    const isCreatingQuest = editingQuestId === null;
-    const saveQuest = editingQuestId
-      ? this.game.updateQuest(editingQuestId, request)
-      : this.game.createQuest(request);
+    const request = this.readHabitForm();
+    const editingHabitId = this.editingHabitId();
+    const isCreatingHabit = editingHabitId === null;
+    const saveHabit = editingHabitId
+      ? this.game.updateHabit(editingHabitId, request)
+      : this.game.createHabit(request);
 
-    saveQuest
+    saveHabit
       .pipe(
-        switchMap((savedQuest) =>
-          this.saveReminderForQuest(savedQuest.id).pipe(
-            map(() => savedQuest),
+        switchMap((savedHabit) =>
+          this.saveReminderForHabit(savedHabit.id).pipe(
+            map(() => savedHabit),
             catchError((error: unknown) => {
-              if (isCreatingQuest) {
-                this.editingQuestId.set(savedQuest.id);
+              if (isCreatingHabit) {
+                this.editingHabitId.set(savedHabit.id);
               }
 
               this.reminderError.set(this.describeReminderError(error));
@@ -386,57 +386,57 @@ export class PrototypePageComponent implements OnInit {
       )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.resetQuestForm(),
+        next: () => this.resetHabitForm(),
         error: () => undefined
       });
   }
 
-  protected startEdit(quest: Quest): void {
-    if (!this.game.usesQuestApi() || quest.isArchived) {
+  protected startEdit(habit: Habit): void {
+    if (!this.game.usesHabitApi() || habit.isArchived) {
       return;
     }
 
-    this.editingQuestId.set(quest.id);
-    this.questForm.setValue({
-      title: quest.title,
-      description: quest.summary === 'No description yet.' ? '' : quest.summary,
-      category: quest.category as PersistedQuestCategory,
-      difficulty: quest.difficulty as PersistedQuestDifficulty,
-      frequency: quest.cadence as PersistedQuestFrequency,
+    this.editingHabitId.set(habit.id);
+    this.habitForm.setValue({
+      title: habit.title,
+      description: habit.summary === 'No description yet.' ? '' : habit.summary,
+      category: habit.category as PersistedHabitCategory,
+      difficulty: habit.difficulty as PersistedHabitDifficulty,
+      frequency: habit.cadence as PersistedHabitFrequency,
       reminderEnabled: false,
       reminderTime: DEFAULT_REMINDER_TIME,
       reminderTimeZoneId: this.browserTimeZoneId,
       reminderDaysOfWeek: [...REMINDER_DAYS]
     });
     this.editingReminderExists.set(false);
-    this.loadReminderForQuest(quest.id);
+    this.loadReminderForHabit(habit.id);
   }
 
-  protected archiveQuest(quest: Quest): void {
-    if (!this.game.usesQuestApi() || quest.isArchived) {
+  protected archiveHabit(habit: Habit): void {
+    if (!this.game.usesHabitApi() || habit.isArchived) {
       return;
     }
 
     this.game
-      .archiveQuest(quest.id)
+      .archiveHabit(habit.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          if (this.editingQuestId() === quest.id) {
-            this.resetQuestForm();
+          if (this.editingHabitId() === habit.id) {
+            this.resetHabitForm();
           }
         },
         error: () => undefined
       });
   }
 
-  protected resetQuestForm(): void {
-    this.editingQuestId.set(null);
+  protected resetHabitForm(): void {
+    this.editingHabitId.set(null);
     this.editingReminderExists.set(false);
     this.reminderLoading.set(false);
     this.reminderSaving.set(false);
     this.reminderError.set(null);
-    this.questForm.reset({
+    this.habitForm.reset({
       title: '',
       description: '',
       category: PERSISTED_QUEST_CATEGORIES[0],
@@ -450,7 +450,7 @@ export class PrototypePageComponent implements OnInit {
   }
 
   protected reminderDaySelected(day: ReminderDay): boolean {
-    return this.questForm.controls.reminderDaysOfWeek.value.includes(day);
+    return this.habitForm.controls.reminderDaysOfWeek.value.includes(day);
   }
 
   protected toggleReminderDay(day: ReminderDay, event: Event): void {
@@ -460,7 +460,7 @@ export class PrototypePageComponent implements OnInit {
       return;
     }
 
-    const selectedDays = new Set(this.questForm.controls.reminderDaysOfWeek.value);
+    const selectedDays = new Set(this.habitForm.controls.reminderDaysOfWeek.value);
 
     if (target.checked) {
       selectedDays.add(day);
@@ -468,14 +468,14 @@ export class PrototypePageComponent implements OnInit {
       selectedDays.delete(day);
     }
 
-    this.questForm.controls.reminderDaysOfWeek.setValue(
+    this.habitForm.controls.reminderDaysOfWeek.setValue(
       this.reminderDays.filter((candidate) => selectedDays.has(candidate))
     );
-    this.questForm.controls.reminderDaysOfWeek.markAsTouched();
+    this.habitForm.controls.reminderDaysOfWeek.markAsTouched();
   }
 
   protected reminderSummaryText(): string {
-    const value = this.questForm.getRawValue();
+    const value = this.habitForm.getRawValue();
 
     if (!value.reminderEnabled) {
       return 'Reminders disabled';
@@ -492,20 +492,20 @@ export class PrototypePageComponent implements OnInit {
     this.browserNotifications.enableBrowserNotifications();
   }
 
-  private readQuestForm(): QuestUpsertRequest {
-    const value = this.questForm.getRawValue();
+  private readHabitForm(): HabitUpsertRequest {
+    const value = this.habitForm.getRawValue();
 
     return {
       title: value.title.trim(),
       description: value.description.trim(),
-      category: value.category as PersistedQuestCategory,
-      difficulty: value.difficulty as PersistedQuestDifficulty,
-      frequency: value.frequency as PersistedQuestFrequency
+      category: value.category as PersistedHabitCategory,
+      difficulty: value.difficulty as PersistedHabitDifficulty,
+      frequency: value.frequency as PersistedHabitFrequency
     };
   }
 
-  private saveReminderForQuest(questId: string): Observable<QuestReminderResponse | null> {
-    const value = this.questForm.getRawValue();
+  private saveReminderForHabit(habitId: string): Observable<HabitReminderResponse | null> {
+    const value = this.habitForm.getRawValue();
 
     if (!value.reminderEnabled && !this.editingReminderExists()) {
       return of(null);
@@ -516,14 +516,14 @@ export class PrototypePageComponent implements OnInit {
     this.reminderSaving.set(true);
     this.reminderError.set(null);
 
-    return this.reminderApi.upsert(questId, request).pipe(
+    return this.reminderApi.upsert(habitId, request).pipe(
       tap((response) => this.editingReminderExists.set(response.id !== null)),
       finalize(() => this.reminderSaving.set(false))
     );
   }
 
-  private readReminderRequest(): UpsertQuestReminderRequest {
-    const value = this.questForm.getRawValue();
+  private readReminderRequest(): UpsertHabitReminderRequest {
+    const value = this.habitForm.getRawValue();
 
     return {
       isEnabled: value.reminderEnabled,
@@ -533,15 +533,15 @@ export class PrototypePageComponent implements OnInit {
     };
   }
 
-  private loadReminderForQuest(questId: string): void {
+  private loadReminderForHabit(habitId: string): void {
     this.reminderLoading.set(true);
     this.reminderError.set(null);
 
     this.reminderApi
-      .get(questId)
+      .get(habitId)
       .pipe(
         finalize(() => {
-          if (this.editingQuestId() === questId) {
+          if (this.editingHabitId() === habitId) {
             this.reminderLoading.set(false);
           }
         }),
@@ -549,23 +549,23 @@ export class PrototypePageComponent implements OnInit {
       )
       .subscribe({
         next: (reminder) => {
-          if (this.editingQuestId() !== questId) {
+          if (this.editingHabitId() !== habitId) {
             return;
           }
 
           this.applyReminder(reminder);
         },
         error: (error: unknown) => {
-          if (this.editingQuestId() === questId) {
+          if (this.editingHabitId() === habitId) {
             this.reminderError.set(this.describeReminderError(error));
           }
         }
       });
   }
 
-  private applyReminder(reminder: QuestReminderResponse): void {
+  private applyReminder(reminder: HabitReminderResponse): void {
     this.editingReminderExists.set(reminder.id !== null);
-    this.questForm.patchValue({
+    this.habitForm.patchValue({
       reminderEnabled: reminder.isEnabled,
       reminderTime: reminder.time ?? DEFAULT_REMINDER_TIME,
       reminderTimeZoneId: reminder.timeZoneId ?? this.browserTimeZoneId,
@@ -578,9 +578,9 @@ export class PrototypePageComponent implements OnInit {
   }
 
   private updateReminderValidators(enabled: boolean): void {
-    const timeControl = this.questForm.controls.reminderTime;
-    const timeZoneControl = this.questForm.controls.reminderTimeZoneId;
-    const daysControl = this.questForm.controls.reminderDaysOfWeek;
+    const timeControl = this.habitForm.controls.reminderTime;
+    const timeZoneControl = this.habitForm.controls.reminderTimeZoneId;
+    const daysControl = this.habitForm.controls.reminderDaysOfWeek;
 
     timeControl.setValidators(enabled
       ? [
@@ -670,7 +670,7 @@ export class PrototypePageComponent implements OnInit {
     }
 
     if (error.status === 0) {
-      return 'The backend is unavailable. Your quest values are still here.';
+      return 'The backend is unavailable. Your habit values are still here.';
     }
 
     const problem = this.isRecord(error.error) ? error.error : null;

@@ -13,13 +13,13 @@ import {
 const ACHIEVEMENT_RESPONSE: AchievementResponse = {
   key: 'first-step',
   title: 'First Step',
-  description: 'Complete your first quest.',
+  description: 'Complete your first habit.',
   rule: 'total-completions',
   isUnlocked: true,
   unlockedAtUtc: '2026-06-18T12:00:00Z',
   progress: 1,
   target: 1,
-  progressText: '1/1 quest completions'
+  progressText: '1/1 habit completions'
 };
 
 describe('AchievementApiService', () => {

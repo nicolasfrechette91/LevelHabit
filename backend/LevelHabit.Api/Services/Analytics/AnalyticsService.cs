@@ -6,7 +6,7 @@ using LevelHabit.Api.Domain;
 using LevelHabit.Api.Middleware;
 using LevelHabit.Api.Services.Achievements;
 using LevelHabit.Api.Services.Progress;
-using LevelHabit.Api.Services.Quests;
+using LevelHabit.Api.Services.Habits;
 using Microsoft.EntityFrameworkCore;
 
 namespace LevelHabit.Api.Services.Analytics;
@@ -30,10 +30,10 @@ public sealed class AnalyticsService(
 
         ProgressProfile progressProfile = await FindProgressProfileAsync(userId, cancellationToken);
         LevelProgress levelProgress = ProgressCalculator.Calculate(progressProfile.TotalXp);
-        List<QuestSummary> quests = await LoadQuestsAsync(userId, cancellationToken);
+        List<HabitSummary> habits = await LoadHabitsAsync(userId, cancellationToken);
         List<CompletionSummary> completions =
             await LoadCompletionsAsync(userId, cancellationToken);
-        List<QuestStreak> streaks = CalculateQuestStreaks(completions, todayUtc);
+        List<HabitStreak> streaks = CalculateHabitStreaks(completions, todayUtc);
 
         int achievementsTotal = await dbContext.Achievements
             .AsNoTracking()
@@ -51,9 +51,9 @@ public sealed class AnalyticsService(
                 cancellationToken);
 
         return new AnalyticsSummaryResponse(
-            TotalQuests: quests.Count,
-            ActiveQuests: quests.Count(quest => !quest.IsArchived),
-            ArchivedQuests: quests.Count(quest => quest.IsArchived),
+            TotalHabits: habits.Count,
+            ActiveHabits: habits.Count(habit => !habit.IsArchived),
+            ArchivedHabits: habits.Count(habit => habit.IsArchived),
             TotalCompletions: completions.Count,
             CompletionsToday: completions.Count(completion =>
                 completion.CompletionDateUtc == todayUtc),
@@ -94,12 +94,12 @@ public sealed class AnalyticsService(
                 completions.Select(completion => completion.Difficulty)),
             RecentCompletions: completions
                 .OrderByDescending(completion => completion.CompletedAtUtc)
-                .ThenBy(completion => completion.QuestTitle)
+                .ThenBy(completion => completion.HabitTitle)
                 .Take(RecentCompletionLimit)
                 .Select(completion => new AnalyticsRecentCompletionResponse(
                     Id: completion.Id,
-                    QuestId: completion.QuestId,
-                    QuestTitle: completion.QuestTitle,
+                    HabitId: completion.HabitId,
+                    HabitTitle: completion.HabitTitle,
                     Category: completion.Category,
                     Difficulty: completion.Difficulty,
                     CompletionDateUtc: completion.CompletionDateUtc,
@@ -124,15 +124,15 @@ public sealed class AnalyticsService(
             "The current user's progress profile could not be found.");
     }
 
-    private async Task<List<QuestSummary>> LoadQuestsAsync(
+    private async Task<List<HabitSummary>> LoadHabitsAsync(
         Guid userId,
         CancellationToken cancellationToken)
     {
-        return await dbContext.Quests
+        return await dbContext.Habits
             .AsNoTracking()
-            .Where(quest => quest.UserId == userId)
-            .Select(quest => new QuestSummary(
-                quest.IsArchived))
+            .Where(habit => habit.UserId == userId)
+            .Select(habit => new HabitSummary(
+                habit.IsArchived))
             .ToListAsync(cancellationToken);
     }
 
@@ -141,30 +141,30 @@ public sealed class AnalyticsService(
         CancellationToken cancellationToken)
     {
         return await (
-            from completion in dbContext.QuestCompletions.AsNoTracking()
-            join quest in dbContext.Quests.AsNoTracking()
-                on completion.QuestId equals quest.Id
-            where completion.UserId == userId && quest.UserId == userId
+            from completion in dbContext.HabitCompletions.AsNoTracking()
+            join habit in dbContext.Habits.AsNoTracking()
+                on completion.HabitId equals habit.Id
+            where completion.UserId == userId && habit.UserId == userId
             select new CompletionSummary(
                 completion.Id,
-                completion.QuestId,
-                quest.Title,
-                quest.Category,
-                quest.Difficulty,
+                completion.HabitId,
+                habit.Title,
+                habit.Category,
+                habit.Difficulty,
                 completion.CompletionDateUtc,
                 completion.CompletedAtUtc,
                 completion.XpAwarded))
             .ToListAsync(cancellationToken);
     }
 
-    private static List<QuestStreak> CalculateQuestStreaks(
+    private static List<HabitStreak> CalculateHabitStreaks(
         IReadOnlyList<CompletionSummary> completions,
         DateOnly todayUtc)
     {
         return completions
-            .GroupBy(completion => completion.QuestId)
-            .Select(group => QuestStreakCalculator.Calculate(
-                group.Select(completion => new QuestCompletionStreakEntry(
+            .GroupBy(completion => completion.HabitId)
+            .Select(group => HabitStreakCalculator.Calculate(
+                group.Select(completion => new HabitCompletionStreakEntry(
                     completion.CompletionDateUtc,
                     completion.CompletedAtUtc)),
                 todayUtc))
@@ -262,12 +262,12 @@ public sealed class AnalyticsService(
         return userId;
     }
 
-    private sealed record QuestSummary(bool IsArchived);
+    private sealed record HabitSummary(bool IsArchived);
 
     private sealed record CompletionSummary(
         Guid Id,
-        Guid QuestId,
-        string QuestTitle,
+        Guid HabitId,
+        string HabitTitle,
         string Category,
         string Difficulty,
         DateOnly CompletionDateUtc,

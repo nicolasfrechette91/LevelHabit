@@ -11,9 +11,9 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
     public DbSet<ProgressProfile> ProgressProfiles => Set<ProgressProfile>();
 
-    public DbSet<Quest> Quests => Set<Quest>();
+    public DbSet<Habit> Habits => Set<Habit>();
 
-    public DbSet<QuestCompletion> QuestCompletions => Set<QuestCompletion>();
+    public DbSet<HabitCompletion> HabitCompletions => Set<HabitCompletion>();
 
     public DbSet<Achievement> Achievements => Set<Achievement>();
 
@@ -23,7 +23,7 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
     public DbSet<AuthToken> AuthTokens => Set<AuthToken>();
 
-    public DbSet<QuestReminder> QuestReminders => Set<QuestReminder>();
+    public DbSet<HabitReminder> HabitReminders => Set<HabitReminder>();
 
     public DbSet<Notification> Notifications => Set<Notification>();
 
@@ -33,13 +33,13 @@ public sealed class LevelHabitDbContext(DbContextOptions<LevelHabitDbContext> op
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new ProgressProfileConfiguration());
-        modelBuilder.ApplyConfiguration(new QuestConfiguration());
-        modelBuilder.ApplyConfiguration(new QuestCompletionConfiguration());
+        modelBuilder.ApplyConfiguration(new HabitConfiguration());
+        modelBuilder.ApplyConfiguration(new HabitCompletionConfiguration());
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());
         modelBuilder.ApplyConfiguration(new UserAchievementConfiguration());
         modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
         modelBuilder.ApplyConfiguration(new AuthTokenConfiguration());
-        modelBuilder.ApplyConfiguration(new QuestReminderConfiguration());
+        modelBuilder.ApplyConfiguration(new HabitReminderConfiguration());
         modelBuilder.ApplyConfiguration(new NotificationConfiguration());
     }
 }

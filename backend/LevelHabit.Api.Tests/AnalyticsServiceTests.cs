@@ -18,17 +18,17 @@ public sealed class AnalyticsServiceTests
     {
         using AnalyticsServiceHarness harness = AnalyticsServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com", totalXp: 320);
-        Guid healthQuestId = await harness.AddQuestAsync(
+        Guid healthHabitId = await harness.AddHabitAsync(
             userId,
             "Morning training",
             category: "Health",
             difficulty: "Easy");
-        Guid codingQuestId = await harness.AddQuestAsync(
+        Guid codingHabitId = await harness.AddHabitAsync(
             userId,
             "Ship practice",
             category: "Coding",
             difficulty: "Hard");
-        Guid choresQuestId = await harness.AddQuestAsync(
+        Guid choresHabitId = await harness.AddHabitAsync(
             userId,
             "Room reset",
             category: "Chores",
@@ -36,37 +36,37 @@ public sealed class AnalyticsServiceTests
             isArchived: true);
         await harness.AddCompletionAsync(
             userId,
-            healthQuestId,
+            healthHabitId,
             new DateOnly(2026, 6, 17),
             hour: 8,
             xpAwarded: 10);
         await harness.AddCompletionAsync(
             userId,
-            healthQuestId,
+            healthHabitId,
             new DateOnly(2026, 6, 18),
             hour: 8,
             xpAwarded: 10);
         await harness.AddCompletionAsync(
             userId,
-            healthQuestId,
+            healthHabitId,
             new DateOnly(2026, 6, 19),
             hour: 8,
             xpAwarded: 10);
         await harness.AddCompletionAsync(
             userId,
-            codingQuestId,
+            codingHabitId,
             new DateOnly(2026, 6, 15),
             hour: 9,
             xpAwarded: 35);
         await harness.AddCompletionAsync(
             userId,
-            codingQuestId,
+            codingHabitId,
             new DateOnly(2026, 6, 1),
             hour: 9,
             xpAwarded: 35);
         await harness.AddCompletionAsync(
             userId,
-            choresQuestId,
+            choresHabitId,
             new DateOnly(2026, 5, 31),
             hour: 10,
             xpAwarded: 20);
@@ -77,9 +77,9 @@ public sealed class AnalyticsServiceTests
             harness.CreatePrincipal(userId),
             CancellationToken.None);
 
-        Assert.Equal(3, summary.TotalQuests);
-        Assert.Equal(2, summary.ActiveQuests);
-        Assert.Equal(1, summary.ArchivedQuests);
+        Assert.Equal(3, summary.TotalHabits);
+        Assert.Equal(2, summary.ActiveHabits);
+        Assert.Equal(1, summary.ArchivedHabits);
         Assert.Equal(6, summary.TotalCompletions);
         Assert.Equal(1, summary.CompletionsToday);
         Assert.Equal(4, summary.CompletionsThisWeek);
@@ -114,11 +114,11 @@ public sealed class AnalyticsServiceTests
         AssertBucket(summary.CompletionCountByDifficulty, "Hard", 2);
         AssertBucket(summary.CompletionCountByDifficulty, "Medium", 1);
         Assert.Equal(5, summary.RecentCompletions.Count);
-        Assert.Equal(healthQuestId, summary.RecentCompletions[0].QuestId);
+        Assert.Equal(healthHabitId, summary.RecentCompletions[0].HabitId);
         Assert.Equal(new DateOnly(2026, 6, 19), summary.RecentCompletions[0].CompletionDateUtc);
         Assert.DoesNotContain(
             summary.RecentCompletions,
-            completion => completion.QuestId == choresQuestId);
+            completion => completion.HabitId == choresHabitId);
     }
 
     [Fact]
@@ -127,32 +127,32 @@ public sealed class AnalyticsServiceTests
         using AnalyticsServiceHarness harness = AnalyticsServiceHarness.Create();
         Guid userId = await harness.AddUserAsync("player@example.com", totalXp: 100);
         Guid otherUserId = await harness.AddUserAsync("other@example.com", totalXp: 500);
-        Guid ownQuestId = await harness.AddQuestAsync(
+        Guid ownHabitId = await harness.AddHabitAsync(
             userId,
-            "Private quest",
+            "Private habit",
             category: "Health",
             difficulty: "Easy");
-        Guid otherQuestId = await harness.AddQuestAsync(
+        Guid otherHabitId = await harness.AddHabitAsync(
             otherUserId,
-            "Other quest",
+            "Other habit",
             category: "Coding",
             difficulty: "Hard");
 
         await harness.AddCompletionAsync(
             userId,
-            ownQuestId,
+            ownHabitId,
             new DateOnly(2026, 6, 19),
             hour: 8,
             xpAwarded: 10);
         await harness.AddCompletionAsync(
             otherUserId,
-            otherQuestId,
+            otherHabitId,
             new DateOnly(2026, 6, 19),
             hour: 9,
             xpAwarded: 35);
         await harness.AddCompletionAsync(
             otherUserId,
-            otherQuestId,
+            otherHabitId,
             new DateOnly(2026, 6, 18),
             hour: 9,
             xpAwarded: 35);
@@ -163,7 +163,7 @@ public sealed class AnalyticsServiceTests
             harness.CreatePrincipal(userId),
             CancellationToken.None);
 
-        Assert.Equal(1, summary.TotalQuests);
+        Assert.Equal(1, summary.TotalHabits);
         Assert.Equal(1, summary.TotalCompletions);
         Assert.Equal(100, summary.TotalXp);
         Assert.Equal(2, summary.CurrentLevel);
@@ -178,7 +178,7 @@ public sealed class AnalyticsServiceTests
             summary.CompletionCountByCategory,
             bucket => bucket.Name == "Coding");
         Assert.Single(summary.RecentCompletions);
-        Assert.Equal(ownQuestId, summary.RecentCompletions[0].QuestId);
+        Assert.Equal(ownHabitId, summary.RecentCompletions[0].HabitId);
     }
 
     [Fact]
@@ -191,9 +191,9 @@ public sealed class AnalyticsServiceTests
             harness.CreatePrincipal(userId),
             CancellationToken.None);
 
-        Assert.Equal(0, summary.TotalQuests);
-        Assert.Equal(0, summary.ActiveQuests);
-        Assert.Equal(0, summary.ArchivedQuests);
+        Assert.Equal(0, summary.TotalHabits);
+        Assert.Equal(0, summary.ActiveHabits);
+        Assert.Equal(0, summary.ArchivedHabits);
         Assert.Equal(0, summary.TotalCompletions);
         Assert.Equal(0, summary.CompletionsToday);
         Assert.Equal(0, summary.CompletionsThisWeek);
@@ -324,7 +324,7 @@ public sealed class AnalyticsServiceTests
             return userId;
         }
 
-        public async Task<Guid> AddQuestAsync(
+        public async Task<Guid> AddHabitAsync(
             Guid userId,
             string title,
             string category,
@@ -332,11 +332,11 @@ public sealed class AnalyticsServiceTests
             bool isArchived = false)
         {
             DateTimeOffset now = Time.GetUtcNow();
-            Quest quest = new()
+            Habit habit = new()
             {
                 UserId = userId,
                 Title = title,
-                Description = "Test quest",
+                Description = "Test habit",
                 Category = category,
                 Difficulty = difficulty,
                 Frequency = "Daily",
@@ -345,23 +345,23 @@ public sealed class AnalyticsServiceTests
                 UpdatedAtUtc = now
             };
 
-            DbContext.Quests.Add(quest);
+            DbContext.Habits.Add(habit);
             await DbContext.SaveChangesAsync();
 
-            return quest.Id;
+            return habit.Id;
         }
 
         public async Task AddCompletionAsync(
             Guid userId,
-            Guid questId,
+            Guid habitId,
             DateOnly completionDateUtc,
             int hour,
             int xpAwarded)
         {
-            DbContext.QuestCompletions.Add(new QuestCompletion
+            DbContext.HabitCompletions.Add(new HabitCompletion
             {
                 UserId = userId,
-                QuestId = questId,
+                HabitId = habitId,
                 CompletionDateUtc = completionDateUtc,
                 CompletedAtUtc = new DateTimeOffset(
                     completionDateUtc.Year,

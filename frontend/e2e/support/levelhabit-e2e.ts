@@ -7,7 +7,7 @@ export type TestUser = Readonly<{
   progressDisplayName: string;
 }>;
 
-export type QuestDraft = Readonly<{
+export type HabitDraft = Readonly<{
   title: string;
   description: string;
   category?: string;
@@ -89,10 +89,10 @@ export async function logout(page: Page): Promise<void> {
   await expect(page.getByTestId('login-submit-button')).toBeVisible();
 }
 
-export async function openQuests(page: Page): Promise<void> {
-  await page.getByTestId('nav-quests').click();
-  await expect(page.getByTestId('page-quests')).toBeVisible();
-  await waitForQuestsLoaded(page);
+export async function openHabits(page: Page): Promise<void> {
+  await page.getByTestId('nav-habits').click();
+  await expect(page.getByTestId('page-habits')).toBeVisible();
+  await waitForHabitsLoaded(page);
 }
 
 export async function openAnalytics(page: Page): Promise<void> {
@@ -101,41 +101,41 @@ export async function openAnalytics(page: Page): Promise<void> {
   await expect(page.locator('text=Loading analytics...')).toHaveCount(0);
 }
 
-export async function createQuest(page: Page, draft: QuestDraft): Promise<Locator> {
-  await page.getByTestId('quest-title-input').fill(draft.title);
-  await page.getByTestId('quest-description-input').fill(draft.description);
+export async function createHabit(page: Page, draft: HabitDraft): Promise<Locator> {
+  await page.getByTestId('habit-title-input').fill(draft.title);
+  await page.getByTestId('habit-description-input').fill(draft.description);
   await page.getByLabel('Category').selectOption(draft.category ?? 'Coding');
   await page.getByLabel('Difficulty').selectOption(draft.difficulty ?? 'Hard');
   await page.getByLabel('Frequency').selectOption(draft.frequency ?? 'Daily');
-  await page.getByTestId('quest-submit-button').click();
+  await page.getByTestId('habit-submit-button').click();
 
-  const card = questCard(page, draft.title);
+  const card = habitCard(page, draft.title);
   await expect(card).toBeVisible();
 
   return card;
 }
 
-export async function completeQuest(page: Page, title: string): Promise<Locator> {
-  const card = questCard(page, title);
-  await card.getByTestId('quest-complete-button').click();
+export async function completeHabit(page: Page, title: string): Promise<Locator> {
+  const card = habitCard(page, title);
+  await card.getByTestId('habit-complete-button').click();
 
   await expect(card).toContainText('Done today');
-  await expect(card.getByTestId('quest-complete-button')).toBeDisabled();
+  await expect(card.getByTestId('habit-complete-button')).toBeDisabled();
 
   return card;
 }
 
-export function questCard(page: Page, title: string): Locator {
-  return page.getByTestId('quest-card').filter({ hasText: title });
+export function habitCard(page: Page, title: string): Locator {
+  return page.getByTestId('habit-card').filter({ hasText: title });
 }
 
-export async function expectNoQuestCard(page: Page, title: string): Promise<void> {
-  await waitForQuestsLoaded(page);
-  await expect(questCard(page, title)).toHaveCount(0);
+export async function expectNoHabitCard(page: Page, title: string): Promise<void> {
+  await waitForHabitsLoaded(page);
+  await expect(habitCard(page, title)).toHaveCount(0);
 }
 
-async function waitForQuestsLoaded(page: Page): Promise<void> {
-  await expect(page.locator('text=Loading quests...')).toHaveCount(0);
+async function waitForHabitsLoaded(page: Page): Promise<void> {
+  await expect(page.locator('text=Loading habits...')).toHaveCount(0);
 }
 
 async function expectAnonymousHeader(page: Page): Promise<void> {
@@ -148,7 +148,7 @@ async function expectAnonymousHeader(page: Page): Promise<void> {
 async function expectAuthenticatedHeader(page: Page): Promise<void> {
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();
   await expect(page.getByTestId('nav-dashboard')).toBeVisible();
-  await expect(page.getByTestId('nav-quests')).toBeVisible();
+  await expect(page.getByTestId('nav-habits')).toBeVisible();
   await expect(page.getByTestId('nav-progress')).toBeVisible();
   await expect(page.getByTestId('nav-achievements')).toBeVisible();
   await expect(page.getByTestId('nav-analytics')).toBeVisible();

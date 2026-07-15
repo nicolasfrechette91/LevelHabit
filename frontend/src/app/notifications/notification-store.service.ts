@@ -241,7 +241,7 @@ export class NotificationStoreService {
           }
 
           const reminderNotifications = response.items.filter(
-            (notification) => notification.type === 'QuestReminder'
+            (notification) => notification.type === 'HabitReminder'
           );
 
           if (!this.browserDetectionSeededSignal()) {

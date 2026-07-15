@@ -65,7 +65,7 @@ namespace LevelHabit.Api.Migrations
                         new
                         {
                             Key = "first-step",
-                            Description = "Complete your first quest.",
+                            Description = "Complete your first habit.",
                             Rule = "total-completions",
                             SortOrder = 10,
                             Target = 1,
@@ -74,7 +74,7 @@ namespace LevelHabit.Api.Migrations
                         new
                         {
                             Key = "getting-started",
-                            Description = "Complete 5 quests total.",
+                            Description = "Complete 5 habits total.",
                             Rule = "total-completions",
                             SortOrder = 20,
                             Target = 5,
@@ -83,7 +83,7 @@ namespace LevelHabit.Api.Migrations
                         new
                         {
                             Key = "dedicated",
-                            Description = "Complete 25 quests total.",
+                            Description = "Complete 25 habits total.",
                             Rule = "total-completions",
                             SortOrder = 30,
                             Target = 25,
@@ -110,8 +110,8 @@ namespace LevelHabit.Api.Migrations
                         new
                         {
                             Key = "on-fire",
-                            Description = "Reach a 3-day streak on any quest.",
-                            Rule = "best-quest-streak",
+                            Description = "Reach a 3-day streak on any habit.",
+                            Rule = "best-habit-streak",
                             SortOrder = 60,
                             Target = 3,
                             Title = "On Fire"
@@ -119,8 +119,8 @@ namespace LevelHabit.Api.Migrations
                         new
                         {
                             Key = "unstoppable",
-                            Description = "Reach a 7-day streak on any quest.",
-                            Rule = "best-quest-streak",
+                            Description = "Reach a 7-day streak on any habit.",
+                            Rule = "best-habit-streak",
                             SortOrder = 70,
                             Target = 7,
                             Title = "Unstoppable"
@@ -128,7 +128,7 @@ namespace LevelHabit.Api.Migrations
                         new
                         {
                             Key = "hard-mode",
-                            Description = "Complete a hard quest.",
+                            Description = "Complete a hard habit.",
                             Rule = "hard-completion",
                             SortOrder = 80,
                             Target = 1,
@@ -137,7 +137,7 @@ namespace LevelHabit.Api.Migrations
                         new
                         {
                             Key = "balanced-progress",
-                            Description = "Complete quests in at least 3 different categories.",
+                            Description = "Complete habits in at least 3 different categories.",
                             Rule = "completed-categories",
                             SortOrder = 90,
                             Target = 3,
@@ -192,120 +192,7 @@ namespace LevelHabit.Api.Migrations
                     b.ToTable("auth_tokens", (string)null);
                 });
 
-            modelBuilder.Entity("LevelHabit.Api.Domain.Notification", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<string>("DeduplicationKey")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("deduplication_key");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_read");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("message");
-
-                    b.Property<Guid?>("QuestId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("quest_id");
-
-                    b.Property<DateTimeOffset?>("ReadAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("read_at_utc");
-
-                    b.Property<string>("ReferenceUrl")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)")
-                        .HasColumnName("reference_url");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)")
-                        .HasColumnName("title");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("type");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("QuestId");
-
-                    b.HasIndex("UserId", "DeduplicationKey")
-                        .IsUnique()
-                        .HasFilter("deduplication_key IS NOT NULL");
-
-                    b.HasIndex("UserId", "IsRead", "CreatedAtUtc");
-
-                    b.ToTable("notifications", (string)null);
-                });
-
-            modelBuilder.Entity("LevelHabit.Api.Domain.ProgressProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at_utc");
-
-                    b.Property<int>("CurrentStreak")
-                        .HasColumnType("integer")
-                        .HasColumnName("current_streak");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("display_name");
-
-                    b.Property<int>("Level")
-                        .HasColumnType("integer")
-                        .HasColumnName("level");
-
-                    b.Property<int>("TotalXp")
-                        .HasColumnType("integer")
-                        .HasColumnName("total_xp");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at_utc");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("progress_profiles", (string)null);
-                });
-
-            modelBuilder.Entity("LevelHabit.Api.Domain.Quest", b =>
+            modelBuilder.Entity("LevelHabit.Api.Domain.Habit", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -362,10 +249,10 @@ namespace LevelHabit.Api.Migrations
 
                     b.HasIndex("UserId", "IsArchived");
 
-                    b.ToTable("quests", (string)null);
+                    b.ToTable("habits", (string)null);
                 });
 
-            modelBuilder.Entity("LevelHabit.Api.Domain.QuestCompletion", b =>
+            modelBuilder.Entity("LevelHabit.Api.Domain.HabitCompletion", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -380,9 +267,9 @@ namespace LevelHabit.Api.Migrations
                         .HasColumnType("date")
                         .HasColumnName("completion_date_utc");
 
-                    b.Property<Guid>("QuestId")
+                    b.Property<Guid>("HabitId")
                         .HasColumnType("uuid")
-                        .HasColumnName("quest_id");
+                        .HasColumnName("habit_id");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -394,15 +281,15 @@ namespace LevelHabit.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("QuestId");
+                    b.HasIndex("HabitId");
 
-                    b.HasIndex("UserId", "QuestId", "CompletionDateUtc")
+                    b.HasIndex("UserId", "HabitId", "CompletionDateUtc")
                         .IsUnique();
 
-                    b.ToTable("quest_completions", (string)null);
+                    b.ToTable("habit_completions", (string)null);
                 });
 
-            modelBuilder.Entity("LevelHabit.Api.Domain.QuestReminder", b =>
+            modelBuilder.Entity("LevelHabit.Api.Domain.HabitReminder", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -417,6 +304,10 @@ namespace LevelHabit.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("days_of_week");
 
+                    b.Property<Guid>("HabitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("habit_id");
+
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("is_enabled");
@@ -428,10 +319,6 @@ namespace LevelHabit.Api.Migrations
                     b.Property<DateTimeOffset?>("NextTriggerAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("next_trigger_at_utc");
-
-                    b.Property<Guid>("QuestId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("quest_id");
 
                     b.Property<TimeOnly>("TimeOfDay")
                         .HasColumnType("time without time zone")
@@ -453,14 +340,127 @@ namespace LevelHabit.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("QuestId")
+                    b.HasIndex("HabitId")
                         .IsUnique();
 
                     b.HasIndex("UserId");
 
                     b.HasIndex("IsEnabled", "NextTriggerAtUtc");
 
-                    b.ToTable("quest_reminders", (string)null);
+                    b.ToTable("habit_reminders", (string)null);
+                });
+
+            modelBuilder.Entity("LevelHabit.Api.Domain.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("DeduplicationKey")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("deduplication_key");
+
+                    b.Property<Guid?>("HabitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("habit_id");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("message");
+
+                    b.Property<DateTimeOffset?>("ReadAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at_utc");
+
+                    b.Property<string>("ReferenceUrl")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("reference_url");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HabitId");
+
+                    b.HasIndex("UserId", "DeduplicationKey")
+                        .IsUnique()
+                        .HasFilter("deduplication_key IS NOT NULL");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAtUtc");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
+            modelBuilder.Entity("LevelHabit.Api.Domain.ProgressProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("CurrentStreak")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_streak");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("display_name");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer")
+                        .HasColumnName("level");
+
+                    b.Property<int>("TotalXp")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_xp");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("progress_profiles", (string)null);
                 });
 
             modelBuilder.Entity("LevelHabit.Api.Domain.RefreshToken", b =>
@@ -630,11 +630,60 @@ namespace LevelHabit.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LevelHabit.Api.Domain.Habit", b =>
+                {
+                    b.HasOne("LevelHabit.Api.Domain.User", "User")
+                        .WithMany("Habits")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LevelHabit.Api.Domain.HabitCompletion", b =>
+                {
+                    b.HasOne("LevelHabit.Api.Domain.Habit", "Habit")
+                        .WithMany("Completions")
+                        .HasForeignKey("HabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LevelHabit.Api.Domain.User", "User")
+                        .WithMany("HabitCompletions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Habit");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LevelHabit.Api.Domain.HabitReminder", b =>
+                {
+                    b.HasOne("LevelHabit.Api.Domain.Habit", "Habit")
+                        .WithOne("Reminder")
+                        .HasForeignKey("LevelHabit.Api.Domain.HabitReminder", "HabitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LevelHabit.Api.Domain.User", "User")
+                        .WithMany("HabitReminders")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Habit");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LevelHabit.Api.Domain.Notification", b =>
                 {
-                    b.HasOne("LevelHabit.Api.Domain.Quest", "Quest")
+                    b.HasOne("LevelHabit.Api.Domain.Habit", "Habit")
                         .WithMany("Notifications")
-                        .HasForeignKey("QuestId")
+                        .HasForeignKey("HabitId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("LevelHabit.Api.Domain.User", "User")
@@ -643,7 +692,7 @@ namespace LevelHabit.Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Quest");
+                    b.Navigation("Habit");
 
                     b.Navigation("User");
                 });
@@ -655,55 +704,6 @@ namespace LevelHabit.Api.Migrations
                         .HasForeignKey("LevelHabit.Api.Domain.ProgressProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LevelHabit.Api.Domain.Quest", b =>
-                {
-                    b.HasOne("LevelHabit.Api.Domain.User", "User")
-                        .WithMany("Quests")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LevelHabit.Api.Domain.QuestCompletion", b =>
-                {
-                    b.HasOne("LevelHabit.Api.Domain.Quest", "Quest")
-                        .WithMany("Completions")
-                        .HasForeignKey("QuestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LevelHabit.Api.Domain.User", "User")
-                        .WithMany("QuestCompletions")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Quest");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("LevelHabit.Api.Domain.QuestReminder", b =>
-                {
-                    b.HasOne("LevelHabit.Api.Domain.Quest", "Quest")
-                        .WithOne("Reminder")
-                        .HasForeignKey("LevelHabit.Api.Domain.QuestReminder", "QuestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LevelHabit.Api.Domain.User", "User")
-                        .WithMany("QuestReminders")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Quest");
 
                     b.Navigation("User");
                 });
@@ -743,7 +743,7 @@ namespace LevelHabit.Api.Migrations
                     b.Navigation("UserAchievements");
                 });
 
-            modelBuilder.Entity("LevelHabit.Api.Domain.Quest", b =>
+            modelBuilder.Entity("LevelHabit.Api.Domain.Habit", b =>
                 {
                     b.Navigation("Completions");
 
@@ -756,15 +756,15 @@ namespace LevelHabit.Api.Migrations
                 {
                     b.Navigation("AuthTokens");
 
+                    b.Navigation("HabitCompletions");
+
+                    b.Navigation("HabitReminders");
+
+                    b.Navigation("Habits");
+
                     b.Navigation("Notifications");
 
                     b.Navigation("ProgressProfile");
-
-                    b.Navigation("QuestCompletions");
-
-                    b.Navigation("QuestReminders");
-
-                    b.Navigation("Quests");
 
                     b.Navigation("RefreshTokens");
 

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-LevelHabit is a full-stack gamified habit tracker. Users create daily quests,
+LevelHabit is a full-stack gamified habit tracker. Users create daily habits,
 complete them for XP, build streaks, unlock achievements, and level up a hero
 profile that represents their progress.
 
@@ -28,12 +28,12 @@ database migrations, frontend routing, production configuration, and CI/CD.
 - Authentication with registration, login, JWT-protected API routes, and
   authenticated frontend routes.
 - Hero profile progression based on XP and level calculations.
-- Quest management for creating, updating, archiving, and completing habits.
+- Habit management for creating, updating, archiving, and completing habits.
 - Daily completion tracking with XP rewards.
 - Streak calculations based on completion history.
 - Achievement unlocks tied to user activity.
 - Analytics dashboard summarizing completion and progress data.
-- User data isolation so each account only sees its own quests, completions,
+- User data isolation so each account only sees its own habits, completions,
   achievements, and analytics.
 - Frontend validation for common user input flows.
 - Production deployment with documented smoke checks.
@@ -45,14 +45,14 @@ Pages. It uses hash routing and a `/LevelHabit/` base href so direct navigation
 works in the GitHub Pages environment.
 
 The backend is an ASP.NET Core Web API hosted on Render. It exposes controllers
-for authentication, quests, achievements, analytics, and health checks. The API
+for authentication, habits, achievements, analytics, and health checks. The API
 uses JWT bearer authentication, CORS configuration for local and production
 origins, service classes for business logic, and Entity Framework Core for data
 access.
 
 PostgreSQL is used in both local and production environments. Local development
 uses Docker Compose. Production uses Neon-hosted PostgreSQL. EF Core migrations
-manage schema changes across authentication, hero profiles, quests, quest
+manage schema changes across authentication, hero profiles, habits, habit
 completions, XP rewards, achievements, and analytics-related data.
 
 ## Backend Design
@@ -62,7 +62,7 @@ service classes, contracts, and EF Core configuration.
 
 - Controllers keep HTTP concerns focused on routing, authorization, status
   codes, and request/response contracts.
-- Services contain the application logic for authentication, quest workflows,
+- Services contain the application logic for authentication, habit workflows,
   XP rewards, streak calculations, achievements, and analytics.
 - EF Core maps domain entities to PostgreSQL tables and applies migrations.
 - Middleware centralizes API error handling and validation responses.
@@ -76,11 +76,11 @@ logic, persistence, and security concerns.
 ## Frontend Design
 
 The frontend is an Angular 21 application with route-based views for login,
-registration, dashboard, hero/profile, quests, achievements, and analytics.
+registration, dashboard, hero/profile, habits, achievements, and analytics.
 
 - Auth guards protect application routes.
 - An HTTP interceptor attaches JWT bearer tokens to API requests.
-- API services isolate backend communication for authentication, quests,
+- API services isolate backend communication for authentication, habits,
   achievements, analytics, and health checks.
 - Frontend validation handles basic form requirements before requests are sent.
 - SCSS and Bootstrap utilities provide a consistent responsive interface.
@@ -96,8 +96,8 @@ The database model centers on users and their progress data.
 
 - `User` stores account identity and authentication-related data.
 - `HeroProfile` stores user progress such as XP and level.
-- `Quest` stores user-owned habits.
-- `QuestCompletion` records daily completions and XP awarded.
+- `Habit` stores user-owned habits.
+- `HabitCompletion` records daily completions and XP awarded.
 - `Achievement` stores achievement definitions.
 - `UserAchievement` stores which achievements each user has unlocked.
 
@@ -131,7 +131,7 @@ same-site deployments and broader end-to-end authentication tests.
 
 The project includes automated backend and frontend tests.
 
-Backend tests use xUnit and cover authentication, quest services/controllers,
+Backend tests use xUnit and cover authentication, habit services/controllers,
 achievement logic, analytics logic, and hero progression calculations. These
 tests help protect the user-scoped business rules and core progression loop.
 
@@ -172,9 +172,9 @@ string before or during production releases.
 - Implementing authentication with JWT tokens and protected frontend/backend
   routes.
 - Fixing user data isolation so one account cannot see another account's
-  quests, completions, achievements, or analytics.
+  habits, completions, achievements, or analytics.
 - Coordinating XP, leveling, streaks, achievements, and analytics around the
-  same quest completion data.
+  same habit completion data.
 - Documenting a production smoke checklist to catch deployment or migration
   problems quickly.
 - Adding a health endpoint warmup flow to reduce friction from Render cold

@@ -12,10 +12,10 @@ import {
 } from '../analytics/analytics-api.service';
 import { AuthService } from '../auth/auth.service';
 import {
-  QuestApiService,
-  type QuestResponse,
-  type QuestUpsertRequest
-} from '../quests/quest-api.service';
+  HabitApiService,
+  type HabitResponse,
+  type HabitUpsertRequest
+} from '../habits/habit-api.service';
 import {
   BASE_XP,
   CURRENT_LEVEL_XP,
@@ -30,8 +30,8 @@ import type {
   Achievement,
   CategoryBreakdown,
   PrototypeTitle,
-  Quest,
-  QuestCategory,
+  Habit,
+  HabitCategory,
   StoredPrototypeState,
   WeekDay
 } from './levelhabit.models';
@@ -41,20 +41,20 @@ import type {
 })
 export class LevelHabitStateService {
   private readonly auth = inject(AuthService);
-  private readonly questApi = inject(QuestApiService);
+  private readonly habitApi = inject(HabitApiService);
   private readonly achievementApi = inject(AchievementApiService);
   private readonly analyticsApi = inject(AnalyticsApiService);
-  private readonly validQuestIds = new Set<string>(
-    PROTOTYPE_QUESTS.map((quest) => quest.id)
+  private readonly validHabitIds = new Set<string>(
+    PROTOTYPE_QUESTS.map((habit) => habit.id)
   );
   private readonly validTitles = new Set<string>(PROTOTYPE_TITLES);
   private readonly state = signal<StoredPrototypeState>(this.loadState());
-  private readonly persistedQuests = signal<Quest[]>([]);
-  private readonly questsLoadedSignal = signal(false);
-  private readonly questsLoadingSignal = signal(false);
-  private readonly questActionInFlightSignal = signal(false);
-  private readonly completionActionQuestIdsSignal = signal<readonly string[]>([]);
-  private readonly questErrorSignal = signal<string | null>(null);
+  private readonly persistedHabits = signal<Habit[]>([]);
+  private readonly habitsLoadedSignal = signal(false);
+  private readonly habitsLoadingSignal = signal(false);
+  private readonly habitActionInFlightSignal = signal(false);
+  private readonly completionActionHabitIdsSignal = signal<readonly string[]>([]);
+  private readonly habitErrorSignal = signal<string | null>(null);
   private readonly persistedAchievements = signal<Achievement[]>([]);
   private readonly achievementsLoadedSignal = signal(false);
   private readonly achievementsLoadingSignal = signal(false);
@@ -67,51 +67,51 @@ export class LevelHabitStateService {
   private activeApiUserId: string | null = null;
 
   readonly availableTitles = PROTOTYPE_TITLES;
-  readonly questsLoading = this.questsLoadingSignal.asReadonly();
-  readonly questActionInFlight = this.questActionInFlightSignal.asReadonly();
-  readonly questError = this.questErrorSignal.asReadonly();
+  readonly habitsLoading = this.habitsLoadingSignal.asReadonly();
+  readonly habitActionInFlight = this.habitActionInFlightSignal.asReadonly();
+  readonly habitError = this.habitErrorSignal.asReadonly();
   readonly achievementsLoading = this.achievementsLoadingSignal.asReadonly();
   readonly achievementError = this.achievementErrorSignal.asReadonly();
   readonly analyticsSummary = this.analyticsSummarySignal.asReadonly();
   readonly analyticsLoading = this.analyticsLoadingSignal.asReadonly();
   readonly analyticsError = this.analyticsErrorSignal.asReadonly();
-  readonly usesQuestApi = computed(() =>
+  readonly usesHabitApi = computed(() =>
     this.auth.authRequired && this.auth.isAuthenticated()
   );
 
-  readonly quests = computed<Quest[]>(() => {
+  readonly habits = computed<Habit[]>(() => {
     if (this.auth.authRequired) {
-      return this.persistedQuests();
+      return this.persistedHabits();
     }
 
-    const completedQuestIds = new Set(this.state().completedQuestIds);
+    const completedHabitIds = new Set(this.state().completedHabitIds);
 
-    return PROTOTYPE_QUESTS.map((quest) => ({
-      ...quest,
+    return PROTOTYPE_QUESTS.map((habit) => ({
+      ...habit,
       isArchived: false,
-      completed: completedQuestIds.has(quest.id)
+      completed: completedHabitIds.has(habit.id)
     }));
   });
 
-  readonly completedQuests = computed(() =>
-    this.quests().filter((quest) => quest.completed)
+  readonly completedHabits = computed(() =>
+    this.habits().filter((habit) => habit.completed)
   );
 
-  readonly activeQuests = computed(() =>
-    this.quests().filter((quest) => !quest.completed && !quest.isArchived)
+  readonly activeHabits = computed(() =>
+    this.habits().filter((habit) => !habit.completed && !habit.isArchived)
   );
 
-  readonly completedCount = computed(() => this.completedQuests().length);
-  readonly questCount = computed(() =>
-    this.quests().filter((quest) => !quest.isArchived).length
+  readonly completedCount = computed(() => this.completedHabits().length);
+  readonly habitCount = computed(() =>
+    this.habits().filter((habit) => !habit.isArchived).length
   );
 
-  readonly todayQuestCount = computed(() =>
-    Math.max(this.questCount(), this.completedCount())
+  readonly todayHabitCount = computed(() =>
+    Math.max(this.habitCount(), this.completedCount())
   );
 
   readonly earnedXp = computed(() => {
-    return this.completedQuests().reduce((total, quest) => total + quest.xp, 0);
+    return this.completedHabits().reduce((total, habit) => total + habit.xp, 0);
   });
 
   readonly progressProfile = computed(() => this.auth.progressProfile());
@@ -207,16 +207,16 @@ export class LevelHabitStateService {
       return 0;
     }
 
-    const completedStreaks = this.completedQuests().map((quest) => quest.streak);
+    const completedStreaks = this.completedHabits().map((habit) => habit.streak);
     const bestToday = completedStreaks.length > 0 ? Math.max(...completedStreaks) : 0;
 
     return bestToday + (this.completedCount() >= 4 ? 1 : 0);
   });
 
   readonly completionPercent = computed(() =>
-    this.todayQuestCount() === 0
+    this.todayHabitCount() === 0
       ? 0
-      : Math.round((this.completedCount() / this.todayQuestCount()) * 100)
+      : Math.round((this.completedCount() / this.todayHabitCount()) * 100)
   );
 
   readonly weeklyHistory = computed<WeekDay[]>(() => [
@@ -224,7 +224,7 @@ export class LevelHabitStateService {
     {
       label: 'Today',
       completed: this.completedCount(),
-      total: this.todayQuestCount(),
+      total: this.todayHabitCount(),
       xp: this.earnedXp()
     }
   ]);
@@ -245,24 +245,24 @@ export class LevelHabitStateService {
   readonly categoryBreakdown = computed<CategoryBreakdown[]>(() => {
     const categories = Array.from(
       new Set(
-        this.quests()
-          .filter((quest) => !quest.isArchived)
-          .map((quest) => quest.category)
+        this.habits()
+          .filter((habit) => !habit.isArchived)
+          .map((habit) => habit.category)
       )
-    ) as QuestCategory[];
+    ) as HabitCategory[];
 
     return categories.map((category) => {
-      const quests = this.quests().filter(
-        (quest) => quest.category === category && !quest.isArchived
+      const habits = this.habits().filter(
+        (habit) => habit.category === category && !habit.isArchived
       );
-      const completed = quests.filter((quest) => quest.completed);
+      const completed = habits.filter((habit) => habit.completed);
 
       return {
         category,
         completed: completed.length,
-        total: quests.length,
-        xp: completed.reduce((total, quest) => total + quest.xp, 0),
-        percent: Math.round((completed.length / quests.length) * 100)
+        total: habits.length,
+        xp: completed.reduce((total, habit) => total + habit.xp, 0),
+        percent: Math.round((completed.length / habits.length) * 100)
       };
     });
   });
@@ -280,25 +280,25 @@ export class LevelHabitStateService {
       {
         id: 'first-light',
         title: 'First Step',
-        summary: 'Complete the first quest of the day.',
+        summary: 'Complete the first habit of the day.',
         progress: Math.min(this.completedCount(), 1),
         target: 1,
-        progressText: `${Math.min(this.completedCount(), 1)}/1 quest completions`,
+        progressText: `${Math.min(this.completedCount(), 1)}/1 habit completions`,
         unlocked: this.completedCount() >= 1
       },
       {
         id: 'clean-sweep',
         title: 'Getting Started',
-        summary: 'Complete 5 quests total.',
+        summary: 'Complete 5 habits total.',
         progress: Math.min(this.completedCount(), 5),
         target: 5,
-        progressText: `${Math.min(this.completedCount(), 5)}/5 quest completions`,
+        progressText: `${Math.min(this.completedCount(), 5)}/5 habit completions`,
         unlocked: this.completedCount() >= 5
       },
       {
         id: 'streak-adept',
         title: 'On Fire',
-        summary: 'Reach a 3-day streak on any quest.',
+        summary: 'Reach a 3-day streak on any habit.',
         progress: Math.min(this.currentStreak(), 3),
         target: 3,
         progressText: `${Math.min(this.currentStreak(), 3)}/3 day streak`,
@@ -307,7 +307,7 @@ export class LevelHabitStateService {
       {
         id: 'balanced-build',
         title: 'Balanced Progress',
-        summary: 'Complete quests across 3 life areas.',
+        summary: 'Complete habits across 3 life areas.',
         progress: Math.min(completedCategories, 3),
         target: 3,
         progressText: `${Math.min(completedCategories, 3)}/3 categories`,
@@ -335,40 +335,40 @@ export class LevelHabitStateService {
     });
   }
 
-  loadQuests(): void {
+  loadHabits(): void {
     const apiUserId = this.currentApiUserId();
     this.ensureApiUserBoundary(apiUserId);
 
-    if (!apiUserId || this.questsLoadedSignal() || this.questsLoadingSignal()) {
+    if (!apiUserId || this.habitsLoadedSignal() || this.habitsLoadingSignal()) {
       return;
     }
 
-    this.questsLoadingSignal.set(true);
-    this.questErrorSignal.set(null);
+    this.habitsLoadingSignal.set(true);
+    this.habitErrorSignal.set(null);
 
-    this.questApi
+    this.habitApi
       .list(true)
       .pipe(finalize(() => {
         if (this.isCurrentApiUser(apiUserId)) {
-          this.questsLoadingSignal.set(false);
+          this.habitsLoadingSignal.set(false);
         }
       }))
       .subscribe({
-        next: (quests) => {
+        next: (habits) => {
           if (!this.isCurrentApiUser(apiUserId)) {
             return;
           }
 
-          this.persistedQuests.set(quests.map((quest) => this.mapPersistedQuest(quest)));
-          this.questsLoadedSignal.set(true);
+          this.persistedHabits.set(habits.map((habit) => this.mapPersistedHabit(habit)));
+          this.habitsLoadedSignal.set(true);
         },
         error: (error: unknown) => {
           if (!this.isCurrentApiUser(apiUserId)) {
             return;
           }
 
-          this.questErrorSignal.set(
-            this.describeQuestError(error, 'Quests could not be loaded.')
+          this.habitErrorSignal.set(
+            this.describeHabitError(error, 'Habits could not be loaded.')
           );
         }
       });
@@ -467,7 +467,7 @@ export class LevelHabitStateService {
       });
   }
 
-  createQuest(request: QuestUpsertRequest): Observable<Quest> {
+  createHabit(request: HabitUpsertRequest): Observable<Habit> {
     const apiUserId = this.currentApiUserId();
     this.ensureApiUserBoundary(apiUserId);
 
@@ -475,36 +475,36 @@ export class LevelHabitStateService {
       return throwError(() => new Error('A current authenticated user is required.'));
     }
 
-    this.questActionInFlightSignal.set(true);
-    this.questErrorSignal.set(null);
+    this.habitActionInFlightSignal.set(true);
+    this.habitErrorSignal.set(null);
 
-    return this.questApi.create(request).pipe(
-      map((quest) => this.mapPersistedQuest(quest)),
-      tap((quest) => {
+    return this.habitApi.create(request).pipe(
+      map((habit) => this.mapPersistedHabit(habit)),
+      tap((habit) => {
         if (!this.isCurrentApiUser(apiUserId)) {
           return;
         }
 
-        this.persistedQuests.update((quests) => [...quests, quest]);
-        this.questsLoadedSignal.set(true);
+        this.persistedHabits.update((habits) => [...habits, habit]);
+        this.habitsLoadedSignal.set(true);
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<Quest>(
+        this.captureHabitError<Habit>(
           error,
-          'Quest could not be created.',
+          'Habit could not be created.',
           apiUserId
         )
       ),
       finalize(() => {
         if (this.isCurrentApiUser(apiUserId)) {
-          this.questActionInFlightSignal.set(false);
+          this.habitActionInFlightSignal.set(false);
         }
       })
     );
   }
 
-  updateQuest(id: string, request: QuestUpsertRequest): Observable<Quest> {
+  updateHabit(id: string, request: HabitUpsertRequest): Observable<Habit> {
     const apiUserId = this.currentApiUserId();
     this.ensureApiUserBoundary(apiUserId);
 
@@ -512,37 +512,37 @@ export class LevelHabitStateService {
       return throwError(() => new Error('A current authenticated user is required.'));
     }
 
-    this.questActionInFlightSignal.set(true);
-    this.questErrorSignal.set(null);
+    this.habitActionInFlightSignal.set(true);
+    this.habitErrorSignal.set(null);
 
-    return this.questApi.update(id, request).pipe(
-      map((quest) => this.mapPersistedQuest(quest)),
-      tap((updatedQuest) => {
+    return this.habitApi.update(id, request).pipe(
+      map((habit) => this.mapPersistedHabit(habit)),
+      tap((updatedHabit) => {
         if (!this.isCurrentApiUser(apiUserId)) {
           return;
         }
 
-        this.persistedQuests.update((quests) =>
-          quests.map((quest) => quest.id === updatedQuest.id ? updatedQuest : quest)
+        this.persistedHabits.update((habits) =>
+          habits.map((habit) => habit.id === updatedHabit.id ? updatedHabit : habit)
         );
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<Quest>(
+        this.captureHabitError<Habit>(
           error,
-          'Quest could not be updated.',
+          'Habit could not be updated.',
           apiUserId
         )
       ),
       finalize(() => {
         if (this.isCurrentApiUser(apiUserId)) {
-          this.questActionInFlightSignal.set(false);
+          this.habitActionInFlightSignal.set(false);
         }
       })
     );
   }
 
-  archiveQuest(id: string): Observable<void> {
+  archiveHabit(id: string): Observable<void> {
     const apiUserId = this.currentApiUserId();
     this.ensureApiUserBoundary(apiUserId);
 
@@ -550,51 +550,51 @@ export class LevelHabitStateService {
       return throwError(() => new Error('A current authenticated user is required.'));
     }
 
-    this.questActionInFlightSignal.set(true);
-    this.questErrorSignal.set(null);
+    this.habitActionInFlightSignal.set(true);
+    this.habitErrorSignal.set(null);
 
-    return this.questApi.archive(id).pipe(
+    return this.habitApi.archive(id).pipe(
       tap(() => {
         if (!this.isCurrentApiUser(apiUserId)) {
           return;
         }
 
-        this.persistedQuests.update((quests) =>
-          quests.map((quest) =>
-            quest.id === id
+        this.persistedHabits.update((habits) =>
+          habits.map((habit) =>
+            habit.id === id
               ? {
-                  ...quest,
+                  ...habit,
                   isArchived: true
                 }
-              : quest
+              : habit
           )
         );
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<void>(
+        this.captureHabitError<void>(
           error,
-          'Quest could not be archived.',
+          'Habit could not be archived.',
           apiUserId
         )
       ),
       finalize(() => {
         if (this.isCurrentApiUser(apiUserId)) {
-          this.questActionInFlightSignal.set(false);
+          this.habitActionInFlightSignal.set(false);
         }
       })
     );
   }
 
-  completeQuest(id: string): Observable<Quest> {
-    if (!this.usesQuestApi()) {
-      this.toggleQuest(id);
+  completeHabit(id: string): Observable<Habit> {
+    if (!this.usesHabitApi()) {
+      this.toggleHabit(id);
 
-      const toggledQuest = this.quests().find((quest) => quest.id === id);
+      const toggledHabit = this.habits().find((habit) => habit.id === id);
 
-      return toggledQuest
-        ? of(toggledQuest)
-        : throwError(() => new Error('Quest not found.'));
+      return toggledHabit
+        ? of(toggledHabit)
+        : throwError(() => new Error('Habit not found.'));
     }
 
     const apiUserId = this.currentApiUserId();
@@ -604,22 +604,22 @@ export class LevelHabitStateService {
       return throwError(() => new Error('A current authenticated user is required.'));
     }
 
-    const quest = this.persistedQuests().find((candidate) => candidate.id === id);
+    const habit = this.persistedHabits().find((candidate) => candidate.id === id);
 
-    if (!quest || quest.isArchived) {
-      this.questErrorSignal.set('That quest could not be found.');
+    if (!habit || habit.isArchived) {
+      this.habitErrorSignal.set('That habit could not be found.');
 
-      return throwError(() => new Error('Quest not found.'));
+      return throwError(() => new Error('Habit not found.'));
     }
 
-    if (quest.completed || this.isQuestCompletionInFlight(id)) {
-      return of(quest);
+    if (habit.completed || this.isHabitCompletionInFlight(id)) {
+      return of(habit);
     }
 
-    this.setQuestCompletionInFlight(id, true);
-    this.questErrorSignal.set(null);
+    this.setHabitCompletionInFlight(id, true);
+    this.habitErrorSignal.set(null);
 
-    return this.questApi.complete(id).pipe(
+    return this.habitApi.complete(id).pipe(
       tap((completion) => {
         if (this.isCurrentApiUser(apiUserId)) {
           this.auth.updateProgressProfile(completion.progressProfile);
@@ -631,85 +631,85 @@ export class LevelHabitStateService {
         }
       }),
       map((completion) => {
-        const completedQuest = this.mapPersistedQuest(completion.quest);
+        const completedHabit = this.mapPersistedHabit(completion.habit);
 
         return {
-          ...completedQuest,
+          ...completedHabit,
           ...(completion.wasAlreadyCompleted
             ? {}
             : { xpAwardedJustNow: completion.xpAwarded })
         };
       }),
-      tap((completedQuest) => {
+      tap((completedHabit) => {
         if (!this.isCurrentApiUser(apiUserId)) {
           return;
         }
 
-        this.persistedQuests.update((quests) =>
-          quests.map((candidate) =>
-            candidate.id === completedQuest.id ? completedQuest : candidate
+        this.persistedHabits.update((habits) =>
+          habits.map((candidate) =>
+            candidate.id === completedHabit.id ? completedHabit : candidate
           )
         );
         this.refreshAnalyticsIfLoaded();
       }),
       catchError((error: unknown) =>
-        this.captureQuestError<Quest>(
+        this.captureHabitError<Habit>(
           error,
-          'Quest could not be completed.',
+          'Habit could not be completed.',
           apiUserId
         )
       ),
       finalize(() => {
         if (this.isCurrentApiUser(apiUserId)) {
-          this.setQuestCompletionInFlight(id, false);
+          this.setHabitCompletionInFlight(id, false);
         }
       })
     );
   }
 
-  isQuestCompletionInFlight(questId: string): boolean {
-    return this.completionActionQuestIdsSignal().includes(questId);
+  isHabitCompletionInFlight(habitId: string): boolean {
+    return this.completionActionHabitIdsSignal().includes(habitId);
   }
 
-  toggleQuest(questId: string): void {
-    if (this.usesQuestApi()) {
+  toggleHabit(habitId: string): void {
+    if (this.usesHabitApi()) {
       return;
     }
 
     const current = this.state();
-    const completedQuestIds = new Set(current.completedQuestIds);
+    const completedHabitIds = new Set(current.completedHabitIds);
 
-    if (completedQuestIds.has(questId)) {
-      completedQuestIds.delete(questId);
+    if (completedHabitIds.has(habitId)) {
+      completedHabitIds.delete(habitId);
     } else {
-      completedQuestIds.add(questId);
+      completedHabitIds.add(habitId);
     }
 
     this.saveState({
       ...current,
-      completedQuestIds: Array.from(completedQuestIds)
+      completedHabitIds: Array.from(completedHabitIds)
     });
   }
 
   completeAll(): void {
-    if (this.usesQuestApi()) {
+    if (this.usesHabitApi()) {
       return;
     }
 
     this.saveState({
       ...this.state(),
-      completedQuestIds: PROTOTYPE_QUESTS.map((quest) => quest.id)
+      completedHabitIds: PROTOTYPE_QUESTS.map((habit) => habit.id)
     });
   }
 
   resetToday(): void {
-    if (this.usesQuestApi()) {
+    if (this.usesHabitApi()) {
       return;
     }
 
     this.saveState({
       ...this.state(),
-      completedQuestIds: []
+      completedHabitIds: []
     });
   }
 
@@ -745,9 +745,9 @@ export class LevelHabitStateService {
       }
 
       return {
-        completedQuestIds: this.readCompletedQuestIds(
-          parsed['completedQuestIds'],
-          fallback.completedQuestIds
+        completedHabitIds: this.readCompletedHabitIds(
+          parsed['completedHabitIds'],
+          fallback.completedHabitIds
         ),
         selectedTitle: this.readSelectedTitle(
           parsed['selectedTitle'],
@@ -762,7 +762,7 @@ export class LevelHabitStateService {
   private saveState(nextState: StoredPrototypeState): void {
     this.state.set({
       ...nextState,
-      completedQuestIds: [...nextState.completedQuestIds]
+      completedHabitIds: [...nextState.completedHabitIds]
     });
 
     if (typeof localStorage === 'undefined') {
@@ -775,11 +775,11 @@ export class LevelHabitStateService {
   private createDefaultState(): StoredPrototypeState {
     return {
       ...DEFAULT_PROTOTYPE_STATE,
-      completedQuestIds: [...DEFAULT_PROTOTYPE_STATE.completedQuestIds]
+      completedHabitIds: [...DEFAULT_PROTOTYPE_STATE.completedHabitIds]
     };
   }
 
-  private readCompletedQuestIds(
+  private readCompletedHabitIds(
     value: unknown,
     fallback: readonly string[]
   ): readonly string[] {
@@ -788,8 +788,8 @@ export class LevelHabitStateService {
     }
 
     return value.filter(
-      (questId): questId is string =>
-        typeof questId === 'string' && this.validQuestIds.has(questId)
+      (habitId): habitId is string =>
+        typeof habitId === 'string' && this.validHabitIds.has(habitId)
     );
   }
 
@@ -808,8 +808,8 @@ export class LevelHabitStateService {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
-  private mapPersistedQuest(response: QuestResponse): Quest {
-    const quest: Quest = {
+  private mapPersistedHabit(response: HabitResponse): Habit {
+    const habit: Habit = {
       id: response.id,
       userId: response.userId,
       title: response.title,
@@ -828,7 +828,7 @@ export class LevelHabitStateService {
     };
 
     return {
-      ...quest,
+      ...habit,
       ...(response.completedTodayAtUtc === null
         ? {}
         : { completedTodayAtUtc: response.completedTodayAtUtc }),
@@ -863,7 +863,7 @@ export class LevelHabitStateService {
     };
   }
 
-  private accentForCategory(category: QuestResponse['category']): Quest['accent'] {
+  private accentForCategory(category: HabitResponse['category']): Habit['accent'] {
     switch (category) {
       case 'Fitness':
       case 'Health':
@@ -880,7 +880,7 @@ export class LevelHabitStateService {
   }
 
   private currentApiUserId(): string | null {
-    if (!this.usesQuestApi()) {
+    if (!this.usesHabitApi()) {
       return null;
     }
 
@@ -901,12 +901,12 @@ export class LevelHabitStateService {
   }
 
   private clearAuthenticatedState(): void {
-    this.persistedQuests.set([]);
-    this.questsLoadedSignal.set(false);
-    this.questsLoadingSignal.set(false);
-    this.questActionInFlightSignal.set(false);
-    this.completionActionQuestIdsSignal.set([]);
-    this.questErrorSignal.set(null);
+    this.persistedHabits.set([]);
+    this.habitsLoadedSignal.set(false);
+    this.habitsLoadingSignal.set(false);
+    this.habitActionInFlightSignal.set(false);
+    this.completionActionHabitIdsSignal.set([]);
+    this.habitErrorSignal.set(null);
     this.persistedAchievements.set([]);
     this.achievementsLoadedSignal.set(false);
     this.achievementsLoadingSignal.set(false);
@@ -917,19 +917,19 @@ export class LevelHabitStateService {
     this.analyticsErrorSignal.set(null);
   }
 
-  private captureQuestError<T>(
+  private captureHabitError<T>(
     error: unknown,
     fallback: string,
     apiUserId: string
   ): Observable<T> {
     if (this.isCurrentApiUser(apiUserId)) {
-      this.questErrorSignal.set(this.describeQuestError(error, fallback));
+      this.habitErrorSignal.set(this.describeHabitError(error, fallback));
     }
 
     return throwError(() => error);
   }
 
-  private describeQuestError(error: unknown, fallback: string): string {
+  private describeHabitError(error: unknown, fallback: string): string {
     if (!(error instanceof HttpErrorResponse)) {
       return fallback;
     }
@@ -939,15 +939,15 @@ export class LevelHabitStateService {
     }
 
     if (error.status === 401) {
-      return 'Your session expired. Sign in again to manage quests.';
+      return 'Your session expired. Sign in again to manage habits.';
     }
 
     if (error.status === 404) {
-      return 'That quest could not be found.';
+      return 'That habit could not be found.';
     }
 
     if (error.status === 409) {
-      return 'That quest is already completed today.';
+      return 'That habit is already completed today.';
     }
 
     const problem = this.isRecord(error.error) ? error.error : null;
@@ -1025,17 +1025,17 @@ export class LevelHabitStateService {
     }
   }
 
-  private setQuestCompletionInFlight(questId: string, inFlight: boolean): void {
-    this.completionActionQuestIdsSignal.update((questIds) => {
-      const nextQuestIds = new Set(questIds);
+  private setHabitCompletionInFlight(habitId: string, inFlight: boolean): void {
+    this.completionActionHabitIdsSignal.update((habitIds) => {
+      const nextHabitIds = new Set(habitIds);
 
       if (inFlight) {
-        nextQuestIds.add(questId);
+        nextHabitIds.add(habitId);
       } else {
-        nextQuestIds.delete(questId);
+        nextHabitIds.delete(habitId);
       }
 
-      return Array.from(nextQuestIds);
+      return Array.from(nextHabitIds);
     });
   }
 }

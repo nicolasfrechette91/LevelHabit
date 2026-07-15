@@ -8,7 +8,7 @@ using LevelHabit.Api.Services.Analytics;
 using LevelHabit.Api.Services.Auth;
 using LevelHabit.Api.Services.Email;
 using LevelHabit.Api.Services.Notifications;
-using LevelHabit.Api.Services.Quests;
+using LevelHabit.Api.Services.Habits;
 using LevelHabit.Api.Services.Reminders;
 using LevelHabit.Api.Services.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -139,12 +139,12 @@ builder.Services.AddScoped<IEmailVerificationCodeService, EmailVerificationCodeS
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
-builder.Services.AddScoped<IQuestService, QuestService>();
+builder.Services.AddScoped<IHabitService, HabitService>();
 builder.Services.AddSingleton<IReminderScheduleCalculator, ReminderScheduleCalculator>();
-builder.Services.AddScoped<IQuestReminderService, QuestReminderService>();
+builder.Services.AddScoped<IHabitReminderService, HabitReminderService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<IQuestReminderProcessor, QuestReminderProcessor>();
-builder.Services.AddHostedService<QuestReminderBackgroundService>();
+builder.Services.AddScoped<IHabitReminderProcessor, HabitReminderProcessor>();
+builder.Services.AddHostedService<HabitReminderBackgroundService>();
 
 builder.Services.AddCors(options =>
 {

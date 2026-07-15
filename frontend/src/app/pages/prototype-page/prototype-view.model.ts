@@ -1,6 +1,6 @@
 export type PrototypeView =
   | 'dashboard'
-  | 'quests'
+  | 'habits'
   | 'progress'
   | 'achievements'
   | 'analytics';
@@ -19,7 +19,7 @@ export type PrototypeRouteConfig = Readonly<{
 
 export const PROTOTYPE_ROUTE_CONFIGS = [
   { path: 'dashboard', navLabel: 'Today', title: 'Dashboard' },
-  { path: 'quests', navLabel: 'Quests', title: 'Quests' },
+  { path: 'habits', navLabel: 'Habits', title: 'Habits' },
   { path: 'progress', navLabel: 'Progress', title: 'Progress' },
   { path: 'achievements', navLabel: 'Achievements', title: 'Achievements' },
   { path: 'analytics', navLabel: 'Analytics', title: 'Analytics' }
@@ -28,13 +28,13 @@ export const PROTOTYPE_ROUTE_CONFIGS = [
 export const PROTOTYPE_VIEW_COPY = {
   dashboard: {
     eyebrow: 'Today',
-    title: 'Quest board',
+    title: 'Habit board',
     summary: 'A focused run of daily habits, XP progress, streak safety, and rewards.'
   },
-  quests: {
-    eyebrow: 'Quest log',
+  habits: {
+    eyebrow: 'Habit log',
     title: 'Active habits',
-    summary: 'Daily routines framed as repeatable quests with cadence, difficulty, and XP.'
+    summary: 'Daily routines framed as repeatable habits with cadence, difficulty, and XP.'
   },
   progress: {
     eyebrow: 'Progress',

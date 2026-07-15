@@ -3,7 +3,7 @@ namespace LevelHabit.Api.Contracts.Notifications;
 public sealed record NotificationResponse(
     Guid Id,
     Guid UserId,
-    Guid? QuestId,
+    Guid? HabitId,
     string Type,
     string Title,
     string Message,

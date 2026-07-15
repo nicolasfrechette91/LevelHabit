@@ -2,8 +2,8 @@ namespace LevelHabit.Api.Contracts.Analytics;
 
 public sealed record AnalyticsRecentCompletionResponse(
     Guid Id,
-    Guid QuestId,
-    string QuestTitle,
+    Guid HabitId,
+    string HabitTitle,
     string Category,
     string Difficulty,
     DateOnly CompletionDateUtc,

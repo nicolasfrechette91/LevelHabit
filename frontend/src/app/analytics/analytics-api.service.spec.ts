@@ -11,9 +11,9 @@ import {
 } from './analytics-api.service';
 
 const ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
-  totalQuests: 3,
-  activeQuests: 2,
-  archivedQuests: 1,
+  totalHabits: 3,
+  activeHabits: 2,
+  archivedHabits: 1,
   totalCompletions: 6,
   completionsToday: 1,
   completionsThisWeek: 4,
@@ -55,8 +55,8 @@ const ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
   recentCompletions: [
     {
       id: '889c6254-b88e-4606-98eb-651453c82382',
-      questId: 'f3d9d772-8e0d-47f7-970b-56f757f85f4d',
-      questTitle: 'Morning training',
+      habitId: 'f3d9d772-8e0d-47f7-970b-56f757f85f4d',
+      habitTitle: 'Morning training',
       category: 'Health',
       difficulty: 'Easy',
       completionDateUtc: '2026-06-19',

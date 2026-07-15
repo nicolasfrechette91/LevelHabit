@@ -16,36 +16,36 @@ export const PERSISTED_QUEST_FREQUENCIES = [
   'Custom'
 ] as const;
 
-export type PersistedQuestCategory = (typeof PERSISTED_QUEST_CATEGORIES)[number];
-export type PersistedQuestDifficulty = (typeof PERSISTED_QUEST_DIFFICULTIES)[number];
-export type PersistedQuestFrequency = (typeof PERSISTED_QUEST_FREQUENCIES)[number];
-export type QuestCategory =
-  | PersistedQuestCategory
+export type PersistedHabitCategory = (typeof PERSISTED_QUEST_CATEGORIES)[number];
+export type PersistedHabitDifficulty = (typeof PERSISTED_QUEST_DIFFICULTIES)[number];
+export type PersistedHabitFrequency = (typeof PERSISTED_QUEST_FREQUENCIES)[number];
+export type HabitCategory =
+  | PersistedHabitCategory
   | 'Mind'
   | 'Body'
   | 'Craft'
   | 'Home';
-export type QuestDifficulty = PersistedQuestDifficulty | 'Standard' | 'Boss';
-export type QuestAccent = 'emerald' | 'indigo' | 'amber' | 'rose' | 'cyan';
+export type HabitDifficulty = PersistedHabitDifficulty | 'Standard' | 'Boss';
+export type HabitAccent = 'emerald' | 'indigo' | 'amber' | 'rose' | 'cyan';
 export type PrototypeTitle =
   | 'Streakwarden'
-  | 'Quest Cartographer'
+  | 'Habit Cartographer'
   | 'Focus Adept'
   | 'Routine Smith';
 
-export type PrototypeQuest = Readonly<{
+export type PrototypeHabit = Readonly<{
   id: string;
   title: string;
-  category: QuestCategory;
+  category: HabitCategory;
   summary: string;
   cadence: string;
   xp: number;
   streak: number;
-  difficulty: QuestDifficulty;
-  accent: QuestAccent;
+  difficulty: HabitDifficulty;
+  accent: HabitAccent;
 }>;
 
-export type Quest = PrototypeQuest &
+export type Habit = PrototypeHabit &
   Readonly<{
     completed: boolean;
     userId?: string;
@@ -79,7 +79,7 @@ export type WeekDay = Readonly<{
 }>;
 
 export type CategoryBreakdown = Readonly<{
-  category: QuestCategory;
+  category: HabitCategory;
   completed: number;
   total: number;
   xp: number;
@@ -87,6 +87,6 @@ export type CategoryBreakdown = Readonly<{
 }>;
 
 export type StoredPrototypeState = Readonly<{
-  completedQuestIds: readonly string[];
+  completedHabitIds: readonly string[];
   selectedTitle: PrototypeTitle;
 }>;

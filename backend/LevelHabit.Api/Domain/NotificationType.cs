@@ -2,6 +2,6 @@ namespace LevelHabit.Api.Domain;
 
 public enum NotificationType
 {
-    QuestReminder = 1,
+    HabitReminder = 1,
     System = 2
 }

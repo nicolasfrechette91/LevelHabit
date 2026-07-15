@@ -52,9 +52,9 @@ describe('authTokenInterceptor', () => {
     const http = TestBed.inject(HttpTestingController);
 
     const responsePromise = firstValueFrom(
-      httpClient.get(`${environment.apiUrl}/quests`)
+      httpClient.get(`${environment.apiUrl}/habits`)
     );
-    const request = http.expectOne(`${environment.apiUrl}/quests`);
+    const request = http.expectOne(`${environment.apiUrl}/habits`);
     expect(request.request.headers.get('Authorization')).toBe('Bearer stored-jwt');
     request.flush([]);
 
@@ -96,10 +96,10 @@ describe('authTokenInterceptor', () => {
     const http = TestBed.inject(HttpTestingController);
 
     const responsePromise = firstValueFrom(
-      httpClient.get<unknown[]>(`${environment.apiUrl}/quests`)
+      httpClient.get<unknown[]>(`${environment.apiUrl}/habits`)
     );
 
-    const firstRequest = http.expectOne(`${environment.apiUrl}/quests`);
+    const firstRequest = http.expectOne(`${environment.apiUrl}/habits`);
     expect(firstRequest.request.headers.get('Authorization')).toBe(
       'Bearer expired-access-token'
     );
@@ -116,7 +116,7 @@ describe('authTokenInterceptor', () => {
     });
     refreshRequest.flush(REFRESH_RESPONSE);
 
-    const retryRequest = http.expectOne(`${environment.apiUrl}/quests`);
+    const retryRequest = http.expectOne(`${environment.apiUrl}/habits`);
     expect(retryRequest.request.headers.get('Authorization')).toBe(
       'Bearer new-access-token'
     );
@@ -138,14 +138,14 @@ describe('authTokenInterceptor', () => {
     const httpClient = TestBed.inject(HttpClient);
     const http = TestBed.inject(HttpTestingController);
 
-    const questsPromise = firstValueFrom(
-      httpClient.get<unknown[]>(`${environment.apiUrl}/quests`)
+    const habitsPromise = firstValueFrom(
+      httpClient.get<unknown[]>(`${environment.apiUrl}/habits`)
     );
     const achievementsPromise = firstValueFrom(
       httpClient.get<unknown[]>(`${environment.apiUrl}/achievements`)
     );
 
-    http.expectOne(`${environment.apiUrl}/quests`).flush(
+    http.expectOne(`${environment.apiUrl}/habits`).flush(
       { title: 'Unauthorized' },
       { status: 401, statusText: 'Unauthorized' }
     );
@@ -157,11 +157,11 @@ describe('authTokenInterceptor', () => {
     const refreshRequest = http.expectOne(`${environment.apiUrl}/auth/refresh`);
     refreshRequest.flush(REFRESH_RESPONSE);
 
-    const questsRetry = http.expectOne(`${environment.apiUrl}/quests`);
-    expect(questsRetry.request.headers.get('Authorization')).toBe(
+    const habitsRetry = http.expectOne(`${environment.apiUrl}/habits`);
+    expect(habitsRetry.request.headers.get('Authorization')).toBe(
       'Bearer new-access-token'
     );
-    questsRetry.flush([]);
+    habitsRetry.flush([]);
 
     const achievementsRetry = http.expectOne(`${environment.apiUrl}/achievements`);
     expect(achievementsRetry.request.headers.get('Authorization')).toBe(
@@ -169,7 +169,7 @@ describe('authTokenInterceptor', () => {
     );
     achievementsRetry.flush([]);
 
-    await expect(Promise.all([questsPromise, achievementsPromise])).resolves.toEqual([
+    await expect(Promise.all([habitsPromise, achievementsPromise])).resolves.toEqual([
       [],
       []
     ]);
@@ -190,10 +190,10 @@ describe('authTokenInterceptor', () => {
     const navigateByUrl = vi.spyOn(router, 'navigateByUrl');
 
     const responsePromise = firstValueFrom(
-      httpClient.get<unknown[]>(`${environment.apiUrl}/quests`)
+      httpClient.get<unknown[]>(`${environment.apiUrl}/habits`)
     );
 
-    http.expectOne(`${environment.apiUrl}/quests`).flush(
+    http.expectOne(`${environment.apiUrl}/habits`).flush(
       { title: 'Unauthorized' },
       { status: 401, statusText: 'Unauthorized' }
     );

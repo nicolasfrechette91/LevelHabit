@@ -140,7 +140,7 @@ public sealed class NotificationService(
         return new NotificationResponse(
             Id: notification.Id,
             UserId: notification.UserId,
-            QuestId: notification.QuestId,
+            HabitId: notification.HabitId,
             Type: notification.Type.ToString(),
             Title: notification.Title,
             Message: notification.Message,

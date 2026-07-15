@@ -14,7 +14,7 @@ import {
 } from '../analytics/analytics-api.service';
 import type { AuthUser, ProgressProfile } from '../auth/auth.models';
 import { AuthService } from '../auth/auth.service';
-import { QuestApiService, type QuestResponse } from '../quests/quest-api.service';
+import { HabitApiService, type HabitResponse } from '../habits/habit-api.service';
 import {
   BASE_XP,
   DEFAULT_COMPLETED_IDS,
@@ -60,14 +60,14 @@ const PROGRESS_PROFILE_B: ProgressProfile = {
   createdAtUtc: '2026-06-18T12:00:00Z'
 };
 
-const USER_A_QUEST = createQuestResponse(
+const USER_A_QUEST = createHabitResponse(
   USER_A.id,
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   'Drink Water',
   true
 );
 
-const USER_B_QUEST = createQuestResponse(
+const USER_B_QUEST = createHabitResponse(
   USER_B.id,
   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   'Read Book'
@@ -76,13 +76,13 @@ const USER_B_QUEST = createQuestResponse(
 const USER_A_ACHIEVEMENT: AchievementResponse = {
   key: 'first-step',
   title: 'First Step',
-  description: 'Complete your first quest.',
+  description: 'Complete your first habit.',
   rule: 'total-completions',
   isUnlocked: true,
   unlockedAtUtc: '2026-06-18T13:00:00Z',
   progress: 1,
   target: 1,
-  progressText: '1/1 quest completions'
+  progressText: '1/1 habit completions'
 };
 
 const USER_B_ACHIEVEMENT: AchievementResponse = {
@@ -90,12 +90,12 @@ const USER_B_ACHIEVEMENT: AchievementResponse = {
   isUnlocked: false,
   unlockedAtUtc: null,
   progress: 0,
-  progressText: '0/1 quest completions'
+  progressText: '0/1 habit completions'
 };
 
 const USER_A_ANALYTICS = createAnalyticsSummary({
-  totalQuests: 1,
-  activeQuests: 1,
+  totalHabits: 1,
+  activeHabits: 1,
   totalCompletions: 1,
   totalXp: PROGRESS_PROFILE_A.totalXp,
   currentLevel: PROGRESS_PROFILE_A.level,
@@ -106,8 +106,8 @@ const USER_A_ANALYTICS = createAnalyticsSummary({
   recentCompletions: [
     {
       id: '55555555-5555-4555-8555-555555555555',
-      questId: USER_A_QUEST.id,
-      questTitle: USER_A_QUEST.title,
+      habitId: USER_A_QUEST.id,
+      habitTitle: USER_A_QUEST.title,
       category: USER_A_QUEST.category,
       difficulty: USER_A_QUEST.difficulty,
       completionDateUtc: '2026-06-18',
@@ -134,67 +134,67 @@ describe('LevelHabitStateService', () => {
     localStorage.clear();
   });
 
-  it('starts from the centralized prototype quest data', () => {
+  it('starts from the centralized prototype habit data', () => {
     const state = TestBed.inject(LevelHabitStateService);
 
-    expect(state.quests()).toHaveLength(PROTOTYPE_QUESTS.length);
+    expect(state.habits()).toHaveLength(PROTOTYPE_QUESTS.length);
     expect(state.completedCount()).toBe(DEFAULT_COMPLETED_IDS.length);
     expect(state.totalXp()).toBe(
       BASE_XP +
         PROTOTYPE_QUESTS
-          .filter((quest) => DEFAULT_COMPLETED_IDS.includes(quest.id))
-          .reduce((total, quest) => total + quest.xp, 0)
+          .filter((habit) => DEFAULT_COMPLETED_IDS.includes(habit.id))
+          .reduce((total, habit) => total + habit.xp, 0)
     );
   });
 
-  it('updates completion, XP, and level progress when a mock quest is completed', () => {
+  it('updates completion, XP, and level progress when a mock habit is completed', () => {
     const state = TestBed.inject(LevelHabitStateService);
-    const quest = PROTOTYPE_QUESTS.find(
+    const habit = PROTOTYPE_QUESTS.find(
       (candidate) => !DEFAULT_COMPLETED_IDS.includes(candidate.id)
     );
 
-    expect(quest).toBeDefined();
+    expect(habit).toBeDefined();
 
     const startingXp = state.totalXp();
     const startingProgress = state.levelProgress();
 
-    state.toggleQuest(quest!.id);
+    state.toggleHabit(habit!.id);
 
-    expect(state.quests().find((candidate) => candidate.id === quest!.id)?.completed).toBe(true);
-    expect(state.totalXp()).toBe(startingXp + quest!.xp);
+    expect(state.habits().find((candidate) => candidate.id === habit!.id)?.completed).toBe(true);
+    expect(state.totalXp()).toBe(startingXp + habit!.xp);
     expect(state.levelProgress()).toBeGreaterThan(startingProgress);
   });
 
-  it('keeps today totals valid when a completed quest is archived', () => {
-    const { auth, questApi, state } = setupAuthenticatedState();
+  it('keeps today totals valid when a completed habit is archived', () => {
+    const { auth, habitApi, state } = setupAuthenticatedState();
     auth.loginAs(USER_A, PROGRESS_PROFILE_A);
     TestBed.tick();
-    questApi.setResponses(USER_A.id, [{ ...USER_A_QUEST, isArchived: true }]);
+    habitApi.setResponses(USER_A.id, [{ ...USER_A_QUEST, isArchived: true }]);
 
-    state.loadQuests();
+    state.loadHabits();
 
     expect(state.completedCount()).toBe(1);
-    expect(state.questCount()).toBe(0);
-    expect(state.todayQuestCount()).toBe(1);
+    expect(state.habitCount()).toBe(0);
+    expect(state.todayHabitCount()).toBe(1);
     expect(state.completionPercent()).toBe(100);
     expect(state.weeklyHistory().at(-1)).toMatchObject({ completed: 1, total: 1 });
   });
 
   it('clears authenticated user-specific state on logout', () => {
-    const { achievementApi, analyticsApi, auth, questApi, state } =
+    const { achievementApi, analyticsApi, auth, habitApi, state } =
       setupAuthenticatedState();
     auth.loginAs(USER_A, PROGRESS_PROFILE_A);
     TestBed.tick();
 
-    questApi.setResponses(USER_A.id, [USER_A_QUEST]);
+    habitApi.setResponses(USER_A.id, [USER_A_QUEST]);
     achievementApi.setResponses(USER_A.id, [USER_A_ACHIEVEMENT]);
     analyticsApi.setResponse(USER_A.id, USER_A_ANALYTICS);
 
-    state.loadQuests();
+    state.loadHabits();
     state.loadAchievements();
     state.loadAnalytics();
 
-    expect(state.quests().map((quest) => quest.title)).toEqual(['Drink Water']);
+    expect(state.habits().map((habit) => habit.title)).toEqual(['Drink Water']);
     expect(state.unlockedAchievements()).toHaveLength(1);
     expect(state.analyticsSummary()?.totalXp).toBe(PROGRESS_PROFILE_A.totalXp);
     expect(state.totalXp()).toBe(PROGRESS_PROFILE_A.totalXp);
@@ -204,43 +204,43 @@ describe('LevelHabitStateService', () => {
     TestBed.tick();
 
     expect(auth.user()).toBeNull();
-    expect(state.quests()).toEqual([]);
+    expect(state.habits()).toEqual([]);
     expect(state.achievements()).toEqual([]);
     expect(state.analyticsSummary()).toBeNull();
     expect(state.totalXp()).toBe(0);
     expect(state.level()).toBe(1);
     expect(state.currentStreak()).toBe(0);
-    expect(state.questsLoading()).toBe(false);
+    expect(state.habitsLoading()).toBe(false);
     expect(state.achievementsLoading()).toBe(false);
     expect(state.analyticsLoading()).toBe(false);
-    expect(state.questError()).toBeNull();
+    expect(state.habitError()).toBeNull();
     expect(state.achievementError()).toBeNull();
     expect(state.analyticsError()).toBeNull();
   });
 
-  it('clears and reloads quests when switching authenticated users', () => {
-    const { auth, questApi, state } = setupAuthenticatedState();
-    questApi.setResponses(USER_A.id, [USER_A_QUEST]);
-    questApi.setResponses(USER_B.id, [USER_B_QUEST]);
+  it('clears and reloads habits when switching authenticated users', () => {
+    const { auth, habitApi, state } = setupAuthenticatedState();
+    habitApi.setResponses(USER_A.id, [USER_A_QUEST]);
+    habitApi.setResponses(USER_B.id, [USER_B_QUEST]);
 
     auth.loginAs(USER_A, PROGRESS_PROFILE_A);
     TestBed.tick();
-    state.loadQuests();
+    state.loadHabits();
 
-    expect(state.quests().map((quest) => quest.title)).toEqual(['Drink Water']);
+    expect(state.habits().map((habit) => habit.title)).toEqual(['Drink Water']);
 
     auth.loginAs(USER_B, PROGRESS_PROFILE_B);
     TestBed.tick();
 
-    expect(state.quests()).toEqual([]);
+    expect(state.habits()).toEqual([]);
     expect(state.totalXp()).toBe(0);
     expect(state.currentStreak()).toBe(0);
 
-    state.loadQuests();
+    state.loadHabits();
 
-    expect(questApi.list).toHaveBeenCalledTimes(2);
-    expect(state.quests().map((quest) => quest.title)).toEqual(['Read Book']);
-    expect(state.quests().some((quest) => quest.title === 'Drink Water')).toBe(false);
+    expect(habitApi.list).toHaveBeenCalledTimes(2);
+    expect(state.habits().map((habit) => habit.title)).toEqual(['Read Book']);
+    expect(state.habits().some((habit) => habit.title === 'Drink Water')).toBe(false);
   });
 
   it('clears and reloads achievements and analytics on account switch', () => {
@@ -256,7 +256,7 @@ describe('LevelHabitStateService', () => {
     state.loadAnalytics();
 
     expect(state.unlockedAchievements()).toHaveLength(1);
-    expect(state.analyticsSummary()?.recentCompletions[0]?.questTitle).toBe(
+    expect(state.analyticsSummary()?.recentCompletions[0]?.habitTitle).toBe(
       'Drink Water'
     );
 
@@ -275,18 +275,18 @@ describe('LevelHabitStateService', () => {
     expect(state.analyticsSummary()?.totalCompletions).toBe(0);
     expect(
       state.analyticsSummary()?.recentCompletions.some(
-        (completion) => completion.questTitle === 'Drink Water'
+        (completion) => completion.habitTitle === 'Drink Water'
       )
     ).toBe(false);
   });
 });
 
-function createQuestResponse(
+function createHabitResponse(
   userId: string,
   id: string,
   title: string,
   completedToday = false
-): QuestResponse {
+): HabitResponse {
   return {
     id,
     userId,
@@ -313,9 +313,9 @@ function createAnalyticsSummary(
   overrides: Partial<AnalyticsSummaryResponse> = {}
 ): AnalyticsSummaryResponse {
   return {
-    totalQuests: 0,
-    activeQuests: 0,
-    archivedQuests: 0,
+    totalHabits: 0,
+    activeHabits: 0,
+    archivedHabits: 0,
     totalCompletions: 0,
     completionsToday: 0,
     completionsThisWeek: 0,
@@ -358,21 +358,21 @@ function setupAuthenticatedState(): {
   achievementApi: AchievementApiServiceStub;
   analyticsApi: AnalyticsApiServiceStub;
   auth: MutableAuthServiceStub;
-  questApi: QuestApiServiceStub;
+  habitApi: HabitApiServiceStub;
   state: LevelHabitStateService;
 } {
   TestBed.resetTestingModule();
   localStorage.clear();
 
   const auth = new MutableAuthServiceStub();
-  const questApi = new QuestApiServiceStub(auth);
+  const habitApi = new HabitApiServiceStub(auth);
   const achievementApi = new AchievementApiServiceStub(auth);
   const analyticsApi = new AnalyticsApiServiceStub(auth);
 
   TestBed.configureTestingModule({
     providers: [
       { provide: AuthService, useValue: auth },
-      { provide: QuestApiService, useValue: questApi },
+      { provide: HabitApiService, useValue: habitApi },
       { provide: AchievementApiService, useValue: achievementApi },
       { provide: AnalyticsApiService, useValue: analyticsApi }
     ]
@@ -382,7 +382,7 @@ function setupAuthenticatedState(): {
     achievementApi,
     analyticsApi,
     auth,
-    questApi,
+    habitApi,
     state: TestBed.inject(LevelHabitStateService)
   };
 }
@@ -440,16 +440,16 @@ class MutableAuthServiceStub {
   }
 }
 
-class QuestApiServiceStub {
-  private readonly responsesByUserId = new Map<string, QuestResponse[]>();
+class HabitApiServiceStub {
+  private readonly responsesByUserId = new Map<string, HabitResponse[]>();
 
   constructor(private readonly auth: MutableAuthServiceStub) {}
 
-  readonly list = vi.fn((_includeArchived = true): Observable<QuestResponse[]> =>
+  readonly list = vi.fn((_includeArchived = true): Observable<HabitResponse[]> =>
     of(this.responsesByUserId.get(this.auth.currentUserId() ?? '') ?? [])
   );
 
-  setResponses(userId: string, responses: QuestResponse[]): void {
+  setResponses(userId: string, responses: HabitResponse[]): void {
     this.responsesByUserId.set(userId, responses);
   }
 }

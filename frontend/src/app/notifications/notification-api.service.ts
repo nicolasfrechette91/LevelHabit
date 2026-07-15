@@ -4,12 +4,12 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export type NotificationType = 'QuestReminder' | 'System';
+export type NotificationType = 'HabitReminder' | 'System';
 
 export type NotificationResponse = Readonly<{
   id: string;
   userId: string;
-  questId: string | null;
+  habitId: string | null;
   type: NotificationType;
   title: string;
   message: string;

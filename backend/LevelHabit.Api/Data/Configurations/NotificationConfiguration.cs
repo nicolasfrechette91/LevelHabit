@@ -19,8 +19,8 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
             .HasColumnName("user_id")
             .IsRequired();
 
-        builder.Property(notification => notification.QuestId)
-            .HasColumnName("quest_id");
+        builder.Property(notification => notification.HabitId)
+            .HasColumnName("habit_id");
 
         builder.Property(notification => notification.Type)
             .HasColumnName("type")
@@ -62,9 +62,9 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
             .HasForeignKey(notification => notification.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(notification => notification.Quest)
-            .WithMany(quest => quest.Notifications)
-            .HasForeignKey(notification => notification.QuestId)
+        builder.HasOne(notification => notification.Habit)
+            .WithMany(habit => habit.Notifications)
+            .HasForeignKey(notification => notification.HabitId)
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(notification => new

@@ -30,8 +30,8 @@ workspace.
 - `standalone: true` was still explicitly set in component decorators even
   though Angular 21 supports standalone-by-default components.
 - The app shell static SVG used a plain `src` image instead of `NgOptimizedImage`.
-- A dynamic interpolated class was used for quest accent classes.
-- The custom quest toggle button had state text for screen readers but no
+- A dynamic interpolated class was used for habit accent classes.
+- The custom habit toggle button had state text for screen readers but no
   explicit pressed state or custom focus-visible treatment.
 - The production build briefly exposed an `anyComponentStyle` budget warning
   after the focus style was added.
@@ -43,7 +43,7 @@ workspace.
 - Added `levelhabit.models.ts` for shared prototype/domain types.
 - Kept mock data in the state area and typed constants with `satisfies`.
 - Hardened `LevelHabitStateService` by parsing stored JSON as `unknown`, using
-  type guards, cloning default state arrays, and validating quest IDs/titles.
+  type guards, cloning default state arrays, and validating habit IDs/titles.
 - Added `prototype-view.model.ts` to centralize prototype route metadata, view
   copy, and route-data validation.
 - Converted feature routes to `loadComponent` lazy routes while preserving hash
@@ -52,13 +52,13 @@ workspace.
 - Removed explicit `standalone: true` from Angular component decorators.
 - Used `NgOptimizedImage` for the LevelHabit mark.
 - Moved repeated template derivations into `computed()` values for achievement
-  preview and top quest handling.
-- Replaced dynamic quest accent class interpolation with explicit class
+  preview and top habit handling.
+- Replaced dynamic habit accent class interpolation with explicit class
   bindings.
 - Improved navigation accessibility with `ariaCurrentWhenActive="page"` and a
   properly labeled `nav`.
-- Added `aria-pressed` and `:focus-visible` styling to quest toggle buttons.
-- Added `aria-live="polite"` to the filtered quest count.
+- Added `aria-pressed` and `:focus-visible` styling to habit toggle buttons.
+- Added `aria-live="polite"` to the filtered habit count.
 - Reduced equivalent mobile segmented-control SCSS so the production component
   style budget is warning-free.
 

@@ -1,5 +1,5 @@
 import type {
-  PrototypeQuest,
+  PrototypeHabit,
   PrototypeTitle,
   StoredPrototypeState,
   WeekDay
@@ -66,7 +66,7 @@ export const PROTOTYPE_QUESTS = [
     difficulty: 'Standard',
     accent: 'rose'
   }
-] satisfies readonly PrototypeQuest[];
+] satisfies readonly PrototypeHabit[];
 
 export const DEFAULT_COMPLETED_IDS: readonly string[] = [
   'morning-training',
@@ -85,12 +85,12 @@ export const WEEK_BASE = [
 
 export const PROTOTYPE_TITLES = [
   'Streakwarden',
-  'Quest Cartographer',
+  'Habit Cartographer',
   'Focus Adept',
   'Routine Smith'
 ] satisfies readonly PrototypeTitle[];
 
 export const DEFAULT_PROTOTYPE_STATE = {
-  completedQuestIds: DEFAULT_COMPLETED_IDS,
+  completedHabitIds: DEFAULT_COMPLETED_IDS,
   selectedTitle: 'Streakwarden'
 } satisfies StoredPrototypeState;

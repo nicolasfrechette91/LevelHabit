@@ -12,7 +12,7 @@ public sealed class Notification
 
     public Guid UserId { get; set; }
 
-    public Guid? QuestId { get; set; }
+    public Guid? HabitId { get; set; }
 
     public NotificationType Type { get; set; }
 
@@ -32,5 +32,5 @@ public sealed class Notification
 
     public User? User { get; set; }
 
-    public Quest? Quest { get; set; }
+    public Habit? Habit { get; set; }
 }

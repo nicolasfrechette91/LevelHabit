@@ -65,7 +65,7 @@ export class BrowserNotificationService {
   showReminderNotification(notification: NotificationResponse): void {
     if (
       !this.browserNotificationsEnabled()
-      || notification.type !== 'QuestReminder'
+      || notification.type !== 'HabitReminder'
       || notification.isRead
       || this.shownNotificationIds.has(notification.id)
     ) {

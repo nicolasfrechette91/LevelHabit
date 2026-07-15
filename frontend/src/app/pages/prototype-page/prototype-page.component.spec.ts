@@ -18,24 +18,24 @@ import {
 import { AuthService } from '../../auth/auth.service';
 import type { MeResponse } from '../../auth/auth.models';
 import {
-  QuestApiService,
-  type QuestCompletionResponse,
-  type QuestResponse,
-  type QuestUpsertRequest
-} from '../../quests/quest-api.service';
+  HabitApiService,
+  type HabitCompletionResponse,
+  type HabitResponse,
+  type HabitUpsertRequest
+} from '../../habits/habit-api.service';
 import {
   REMINDER_DAYS,
-  QuestReminderApiService,
-  type QuestReminderResponse,
-  type UpsertQuestReminderRequest
-} from '../../reminders/quest-reminder-api.service';
+  HabitReminderApiService,
+  type HabitReminderResponse,
+  type UpsertHabitReminderRequest
+} from '../../reminders/habit-reminder-api.service';
 import {
   DEFAULT_COMPLETED_IDS,
   PROTOTYPE_QUESTS
 } from '../../state/levelhabit-prototype-data';
 import {
   getButtonByText,
-  getQuestToggle,
+  getHabitToggle,
   renderPrototypeRoute,
   resetPrototypeStorage,
   AUTH_ME_RESPONSE,
@@ -43,7 +43,7 @@ import {
 } from '../../test/prototype-test-utils';
 import { PrototypePageComponent } from './prototype-page.component';
 
-const API_QUEST: QuestResponse = {
+const API_QUEST: HabitResponse = {
   id: 'f3d9d772-8e0d-47f7-970b-56f757f85f4d',
   userId: AUTH_ME_RESPONSE.user.id,
   title: 'Morning training',
@@ -64,7 +64,7 @@ const API_QUEST: QuestResponse = {
   updatedAtUtc: '2026-06-18T12:00:00Z'
 };
 
-const COMPLETED_API_QUEST: QuestResponse = {
+const COMPLETED_API_QUEST: HabitResponse = {
   ...API_QUEST,
   completedToday: true,
   completedTodayXpAwarded: 20,
@@ -74,9 +74,9 @@ const COMPLETED_API_QUEST: QuestResponse = {
   lastCompletedAtUtc: '2026-06-18T13:00:00Z'
 };
 
-const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
+const QUEST_COMPLETION_RESPONSE: HabitCompletionResponse = {
   id: '889c6254-b88e-4606-98eb-651453c82382',
-  questId: API_QUEST.id,
+  habitId: API_QUEST.id,
   userId: API_QUEST.userId,
   completionDateUtc: '2026-06-18',
   completedAtUtc: '2026-06-18T13:00:00Z',
@@ -90,10 +90,10 @@ const QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
     xpRequiredForNextLevel: 200,
     xpToNextLevel: 180
   },
-  quest: COMPLETED_API_QUEST
+  habit: COMPLETED_API_QUEST
 };
 
-const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
+const DUPLICATE_QUEST_COMPLETION_RESPONSE: HabitCompletionResponse = {
   ...QUEST_COMPLETION_RESPONSE,
   wasAlreadyCompleted: true,
   progressProfile: {
@@ -104,7 +104,7 @@ const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
     xpRequiredForNextLevel: 100,
     xpToNextLevel: 80
   },
-  quest: {
+  habit: {
     ...COMPLETED_API_QUEST,
     currentStreak: API_QUEST.currentStreak,
     lastCompletedDateUtc: '2026-06-18',
@@ -114,9 +114,9 @@ const DUPLICATE_QUEST_COMPLETION_RESPONSE: QuestCompletionResponse = {
 
 const CREATED_API_QUEST_ID = '12e799df-aeca-4bd1-a548-f69f3fabd7d';
 
-const DISABLED_REMINDER_RESPONSE: QuestReminderResponse = {
+const DISABLED_REMINDER_RESPONSE: HabitReminderResponse = {
   id: null,
-  questId: API_QUEST.id,
+  habitId: API_QUEST.id,
   isEnabled: false,
   time: null,
   timeZoneId: null,
@@ -127,9 +127,9 @@ const DISABLED_REMINDER_RESPONSE: QuestReminderResponse = {
   updatedAtUtc: null
 };
 
-const ENABLED_REMINDER_RESPONSE: QuestReminderResponse = {
+const ENABLED_REMINDER_RESPONSE: HabitReminderResponse = {
   id: '2f398cae-2401-4d85-a8f9-491030e2bf6f',
-  questId: API_QUEST.id,
+  habitId: API_QUEST.id,
   isEnabled: true,
   time: '08:30',
   timeZoneId: 'America/Toronto',
@@ -144,31 +144,31 @@ const API_ACHIEVEMENTS: AchievementResponse[] = [
   {
     key: 'first-step',
     title: 'First Step',
-    description: 'Complete your first quest.',
+    description: 'Complete your first habit.',
     rule: 'total-completions',
     isUnlocked: true,
     unlockedAtUtc: '2026-06-18T12:00:00Z',
     progress: 1,
     target: 1,
-    progressText: '1/1 quest completions'
+    progressText: '1/1 habit completions'
   },
   {
     key: 'getting-started',
     title: 'Getting Started',
-    description: 'Complete 5 quests total.',
+    description: 'Complete 5 habits total.',
     rule: 'total-completions',
     isUnlocked: false,
     unlockedAtUtc: null,
     progress: 1,
     target: 5,
-    progressText: '1/5 quest completions'
+    progressText: '1/5 habit completions'
   }
 ];
 
 const API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
-  totalQuests: 3,
-  activeQuests: 2,
-  archivedQuests: 1,
+  totalHabits: 3,
+  activeHabits: 2,
+  archivedHabits: 1,
   totalCompletions: 6,
   completionsToday: 1,
   completionsThisWeek: 4,
@@ -212,8 +212,8 @@ const API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
   recentCompletions: [
     {
       id: '889c6254-b88e-4606-98eb-651453c82382',
-      questId: API_QUEST.id,
-      questTitle: 'Morning training',
+      habitId: API_QUEST.id,
+      habitTitle: 'Morning training',
       category: 'Health',
       difficulty: 'Easy',
       completionDateUtc: '2026-06-19',
@@ -224,9 +224,9 @@ const API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
 };
 
 const EMPTY_API_ANALYTICS_SUMMARY: AnalyticsSummaryResponse = {
-  totalQuests: 0,
-  activeQuests: 0,
-  archivedQuests: 0,
+  totalHabits: 0,
+  activeHabits: 0,
+  archivedHabits: 0,
   totalCompletions: 0,
   completionsToday: 0,
   completionsThisWeek: 0,
@@ -268,8 +268,8 @@ describe('Prototype routes', () => {
   });
 
   it.each([
-    ['/dashboard', 'Quest queue'],
-    ['/quests', 'shown'],
+    ['/dashboard', 'Habit queue'],
+    ['/habits', 'shown'],
     ['/progress', 'Personal progress'],
     ['/achievements', 'Unlocked'],
     ['/analytics', 'XP output']
@@ -285,38 +285,38 @@ describe('Dashboard view', () => {
     resetPrototypeStorage();
   });
 
-  it('displays authenticated progress profile data and the mock quest queue', async () => {
+  it('displays authenticated progress profile data and the mock habit queue', async () => {
     const { nativeElement, state } = await renderPrototypeRoute('/dashboard');
     const pageText = textContent(nativeElement);
 
     expect(pageText).toContain(`Level ${AUTH_ME_RESPONSE.progressProfile.level}`);
     expect(pageText).toContain(AUTH_ME_RESPONSE.progressProfile.displayName);
     expect(state.levelTitle()).toBe(AUTH_ME_RESPONSE.progressProfile.displayName);
-    expect(pageText).toContain(`${state.completedCount()}/${state.todayQuestCount()}`);
+    expect(pageText).toContain(`${state.completedCount()}/${state.todayHabitCount()}`);
 
-    for (const quest of PROTOTYPE_QUESTS.filter(
+    for (const habit of PROTOTYPE_QUESTS.filter(
       (candidate) => !DEFAULT_COMPLETED_IDS.includes(candidate.id)
     )) {
-      expect(pageText).toContain(quest.title);
+      expect(pageText).toContain(habit.title);
     }
   });
 
-  it('updates rendered completion when completing a mock quest', async () => {
+  it('updates rendered completion when completing a mock habit', async () => {
     const { harness, nativeElement, state } = await renderPrototypeRoute('/dashboard');
-    const quest = PROTOTYPE_QUESTS.find(
+    const habit = PROTOTYPE_QUESTS.find(
       (candidate) => !DEFAULT_COMPLETED_IDS.includes(candidate.id)
     );
 
-    expect(quest).toBeDefined();
+    expect(habit).toBeDefined();
 
-    getQuestToggle(nativeElement, quest!.title).click();
+    getHabitToggle(nativeElement, habit!.title).click();
     harness.detectChanges();
 
     const pageText = textContent(nativeElement);
 
-    expect(state.quests().find((candidate) => candidate.id === quest!.id)?.completed).toBe(true);
+    expect(state.habits().find((candidate) => candidate.id === habit!.id)?.completed).toBe(true);
     expect(state.totalXp()).toBe(AUTH_ME_RESPONSE.progressProfile.totalXp);
-    expect(pageText).toContain(`${state.completedCount()}/${state.todayQuestCount()}`);
+    expect(pageText).toContain(`${state.completedCount()}/${state.todayHabitCount()}`);
   });
 });
 
@@ -371,8 +371,8 @@ describe('Achievements API view', () => {
 
     expect(pageText).toContain('Unlocked');
     expect(pageText).toContain('Locked');
-    expect(pageText).toContain('1/1 quest completions');
-    expect(pageText).toContain('1/5 quest completions');
+    expect(pageText).toContain('1/1 habit completions');
+    expect(pageText).toContain('1/5 habit completions');
   });
 
   it('shows a friendly error when achievements cannot be loaded', async () => {
@@ -404,8 +404,8 @@ describe('Analytics API view', () => {
     const { analyticsApi, nativeElement } = await renderApiAnalyticsRoute();
 
     expect(analyticsApi.summary).toHaveBeenCalledTimes(1);
-    expect(textContent(nativeElement)).toContain('Quest library');
-    expect(textContent(nativeElement)).toContain('3 quests');
+    expect(textContent(nativeElement)).toContain('Habit library');
+    expect(textContent(nativeElement)).toContain('3 habits');
   });
 
   it('shows the loading state while analytics are pending', async () => {
@@ -445,7 +445,7 @@ describe('Analytics API view', () => {
     const pageText = textContent(nativeElement);
 
     expect(pageText).toContain('No persisted activity yet');
-    expect(pageText).toContain('0 quests');
+    expect(pageText).toContain('0 habits');
     expect(pageText).toContain('Level 1');
     expect(pageText).toContain('0/9');
     expect(pageText).toContain('Daily trends will appear');
@@ -521,43 +521,43 @@ describe('Analytics API view', () => {
   });
 });
 
-describe('Quests view', () => {
+describe('Habits view', () => {
   beforeEach(() => {
     resetPrototypeStorage();
   });
 
-  it('filters visible quests by active and archived state', async () => {
-    const { harness, nativeElement, state } = await renderPrototypeRoute('/quests');
-    const completedQuest = state.quests().find((quest) => quest.completed);
-    const activeQuest = state.quests().find((quest) => !quest.completed);
+  it('filters visible habits by active and archived state', async () => {
+    const { harness, nativeElement, state } = await renderPrototypeRoute('/habits');
+    const completedHabit = state.habits().find((habit) => habit.completed);
+    const activeHabit = state.habits().find((habit) => !habit.completed);
 
-    expect(completedQuest).toBeDefined();
-    expect(activeQuest).toBeDefined();
+    expect(completedHabit).toBeDefined();
+    expect(activeHabit).toBeDefined();
 
-    expect(textContent(nativeElement)).toContain(activeQuest!.title);
-    expect(textContent(nativeElement)).not.toContain(completedQuest!.title);
+    expect(textContent(nativeElement)).toContain(activeHabit!.title);
+    expect(textContent(nativeElement)).not.toContain(completedHabit!.title);
 
     getButtonByText(nativeElement, /^All$/).click();
     harness.detectChanges();
 
-    expect(textContent(nativeElement)).toContain(completedQuest!.title);
+    expect(textContent(nativeElement)).toContain(completedHabit!.title);
 
     getButtonByText(nativeElement, /^Archived$/).click();
     harness.detectChanges();
 
-    expect(textContent(nativeElement)).toContain('No quests shown');
-    expect(textContent(nativeElement)).not.toContain(completedQuest!.title);
-    expect(textContent(nativeElement)).not.toContain(activeQuest!.title);
+    expect(textContent(nativeElement)).toContain('No habits shown');
+    expect(textContent(nativeElement)).not.toContain(completedHabit!.title);
+    expect(textContent(nativeElement)).not.toContain(activeHabit!.title);
   });
 });
 
-describe('Quests API view', () => {
+describe('Habits API view', () => {
   beforeEach(() => {
     resetPrototypeStorage();
   });
 
-  it('loads quests from the API', async () => {
-    const { api, nativeElement } = await renderApiQuestRoute();
+  it('loads habits from the API', async () => {
+    const { api, nativeElement } = await renderApiHabitRoute();
 
     expect(api.list).toHaveBeenCalledWith(true);
     expect(textContent(nativeElement)).toContain(API_QUEST.title);
@@ -566,13 +566,13 @@ describe('Quests API view', () => {
     expect(textContent(nativeElement)).toContain('Best: 7');
   });
 
-  it('creates quests through the API', async () => {
-    const api = new QuestApiServiceStub([]);
-    const { nativeElement, harness } = await renderApiQuestRoute(api);
+  it('creates habits through the API', async () => {
+    const api = new HabitApiServiceStub([]);
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
 
-    setFormField(harness, nativeElement, '#quest-title', 'Study sprint');
-    setFormField(harness, nativeElement, '#quest-description', 'Read one chapter.');
-    submitQuestForm(harness, nativeElement);
+    setFormField(harness, nativeElement, '#habit-title', 'Study sprint');
+    setFormField(harness, nativeElement, '#habit-description', 'Read one chapter.');
+    submitHabitForm(harness, nativeElement);
 
     expect(api.create).toHaveBeenCalledWith({
       title: 'Study sprint',
@@ -585,7 +585,7 @@ describe('Quests API view', () => {
   });
 
   it('shows reminder fields when reminders are enabled', async () => {
-    const { nativeElement, harness } = await renderApiQuestRoute();
+    const { nativeElement, harness } = await renderApiHabitRoute();
 
     expect(nativeElement.querySelector('[data-testid="reminder-time-input"]')).toBeNull();
 
@@ -603,7 +603,7 @@ describe('Quests API view', () => {
   });
 
   it('validates reminder days when reminders are enabled', async () => {
-    const { nativeElement, harness } = await renderApiQuestRoute();
+    const { nativeElement, harness } = await renderApiHabitRoute();
     const enabledInput = nativeElement.querySelector(
       '[data-testid="reminder-enabled-input"]'
     ) as HTMLInputElement;
@@ -617,22 +617,22 @@ describe('Quests API view', () => {
       (checkbox as HTMLInputElement).click();
     }
 
-    submitQuestForm(harness, nativeElement);
+    submitHabitForm(harness, nativeElement);
 
     expect(textContent(nativeElement)).toContain('Select at least one reminder day.');
   });
 
-  it('saves a reminder after creating a quest', async () => {
-    const api = new QuestApiServiceStub([]);
-    const reminderApi = new QuestReminderApiServiceStub();
-    const { nativeElement, harness } = await renderApiQuestRoute(
+  it('saves a reminder after creating a habit', async () => {
+    const api = new HabitApiServiceStub([]);
+    const reminderApi = new HabitReminderApiServiceStub();
+    const { nativeElement, harness } = await renderApiHabitRoute(
       api,
       new AchievementApiServiceStub(),
       reminderApi
     );
 
-    setFormField(harness, nativeElement, '#quest-title', 'Study sprint');
-    setFormField(harness, nativeElement, '#quest-description', 'Read one chapter.');
+    setFormField(harness, nativeElement, '#habit-title', 'Study sprint');
+    setFormField(harness, nativeElement, '#habit-description', 'Read one chapter.');
 
     const enabledInput = nativeElement.querySelector(
       '[data-testid="reminder-enabled-input"]'
@@ -640,7 +640,7 @@ describe('Quests API view', () => {
     enabledInput.click();
     harness.detectChanges();
 
-    submitQuestForm(harness, nativeElement);
+    submitHabitForm(harness, nativeElement);
 
     expect(reminderApi.upsert).toHaveBeenCalledWith(CREATED_API_QUEST_ID, {
       isEnabled: true,
@@ -650,10 +650,10 @@ describe('Quests API view', () => {
     });
   });
 
-  it('loads an existing reminder when editing a quest', async () => {
-    const reminderApi = new QuestReminderApiServiceStub(ENABLED_REMINDER_RESPONSE);
-    const { nativeElement, harness } = await renderApiQuestRoute(
-      new QuestApiServiceStub(),
+  it('loads an existing reminder when editing a habit', async () => {
+    const reminderApi = new HabitReminderApiServiceStub(ENABLED_REMINDER_RESPONSE);
+    const { nativeElement, harness } = await renderApiHabitRoute(
+      new HabitApiServiceStub(),
       new AchievementApiServiceStub(),
       reminderApi
     );
@@ -667,15 +667,15 @@ describe('Quests API view', () => {
     );
   });
 
-  it('updates quests through the API', async () => {
-    const { api, nativeElement, harness } = await renderApiQuestRoute();
+  it('updates habits through the API', async () => {
+    const { api, nativeElement, harness } = await renderApiHabitRoute();
 
     getButtonByText(nativeElement, /^Edit$/).click();
     harness.detectChanges();
 
-    setFormField(harness, nativeElement, '#quest-title', 'Evening training');
-    setFormField(harness, nativeElement, '#quest-description', 'Move after work.');
-    submitQuestForm(harness, nativeElement);
+    setFormField(harness, nativeElement, '#habit-title', 'Evening training');
+    setFormField(harness, nativeElement, '#habit-description', 'Move after work.');
+    submitHabitForm(harness, nativeElement);
 
     expect(api.update).toHaveBeenCalledWith(API_QUEST.id, {
       title: 'Evening training',
@@ -687,18 +687,18 @@ describe('Quests API view', () => {
     expect(textContent(nativeElement)).toContain('Evening training');
   });
 
-  it('archives quests through the API', async () => {
-    const { api, nativeElement, harness } = await renderApiQuestRoute();
+  it('archives habits through the API', async () => {
+    const { api, nativeElement, harness } = await renderApiHabitRoute();
 
     getButtonByText(nativeElement, /^Archive$/).click();
     harness.detectChanges();
 
     expect(api.archive).toHaveBeenCalledWith(API_QUEST.id);
-    expect(textContent(nativeElement)).toContain('No quests shown');
+    expect(textContent(nativeElement)).toContain('No habits shown');
   });
 
-  it('completes quests through the API', async () => {
-    const { achievementApi, api, nativeElement, harness } = await renderApiQuestRoute();
+  it('completes habits through the API', async () => {
+    const { achievementApi, api, nativeElement, harness } = await renderApiHabitRoute();
 
     getButtonByText(nativeElement, /^Complete today$/).click();
     harness.detectChanges();
@@ -712,7 +712,7 @@ describe('Quests API view', () => {
   });
 
   it('updates progress XP and level when completion returns updated profile data', async () => {
-    const { nativeElement, harness } = await renderApiQuestRoute();
+    const { nativeElement, harness } = await renderApiHabitRoute();
 
     getButtonByText(nativeElement, /^Complete today$/).click();
     harness.detectChanges();
@@ -726,16 +726,16 @@ describe('Quests API view', () => {
   });
 
   it('displays completed-today state from the API', async () => {
-    const api = new QuestApiServiceStub([COMPLETED_API_QUEST]);
-    const { nativeElement } = await renderApiQuestRoute(api);
+    const api = new HabitApiServiceStub([COMPLETED_API_QUEST]);
+    const { nativeElement } = await renderApiHabitRoute(api);
 
     expect(textContent(nativeElement)).toContain('Done today');
     expect(getButtonByText(nativeElement, /^Done today$/).disabled).toBe(true);
   });
 
-  it('does not call the completion API for a quest already completed today', async () => {
-    const api = new QuestApiServiceStub([COMPLETED_API_QUEST]);
-    const { nativeElement, harness } = await renderApiQuestRoute(api);
+  it('does not call the completion API for a habit already completed today', async () => {
+    const api = new HabitApiServiceStub([COMPLETED_API_QUEST]);
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
 
     getButtonByText(nativeElement, /^Done today$/).click();
     harness.detectChanges();
@@ -744,9 +744,9 @@ describe('Quests API view', () => {
   });
 
   it('does not show duplicate XP gain when the API returns an existing completion', async () => {
-    const api = new QuestApiServiceStub();
+    const api = new HabitApiServiceStub();
     api.complete.mockReturnValueOnce(of(DUPLICATE_QUEST_COMPLETION_RESPONSE));
-    const { nativeElement, harness } = await renderApiQuestRoute(api);
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
 
     getButtonByText(nativeElement, /^Complete today$/).click();
     harness.detectChanges();
@@ -757,8 +757,8 @@ describe('Quests API view', () => {
     expect(textContent(nativeElement)).not.toContain('+20 XP awarded');
   });
 
-  it('shows a friendly error when quest completion fails', async () => {
-    const api = new QuestApiServiceStub();
+  it('shows a friendly error when habit completion fails', async () => {
+    const api = new HabitApiServiceStub();
     api.complete.mockReturnValueOnce(
       throwError(
         () =>
@@ -768,16 +768,16 @@ describe('Quests API view', () => {
           })
       )
     );
-    const { nativeElement, harness } = await renderApiQuestRoute(api);
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
 
     getButtonByText(nativeElement, /^Complete today$/).click();
     harness.detectChanges();
 
-    expect(textContent(nativeElement)).toContain('Quest could not be completed.');
+    expect(textContent(nativeElement)).toContain('Habit could not be completed.');
   });
 
   it('shows a friendly error when the API cannot be reached', async () => {
-    const api = new QuestApiServiceStub();
+    const api = new HabitApiServiceStub();
     api.list.mockReturnValueOnce(
       throwError(
         () =>
@@ -788,7 +788,7 @@ describe('Quests API view', () => {
       )
     );
 
-    const { nativeElement } = await renderApiQuestRoute(api);
+    const { nativeElement } = await renderApiHabitRoute(api);
 
     expect(textContent(nativeElement)).toContain(
       'The backend is unavailable. Start the API and try again.'
@@ -796,25 +796,25 @@ describe('Quests API view', () => {
   });
 });
 
-class QuestApiServiceStub
+class HabitApiServiceStub
   implements Pick<
-    QuestApiService,
+    HabitApiService,
     'list' | 'get' | 'create' | 'update' | 'complete' | 'archive'
   >
 {
-  constructor(private readonly responses: QuestResponse[] = [API_QUEST]) {}
+  constructor(private readonly responses: HabitResponse[] = [API_QUEST]) {}
 
-  readonly list = vi.fn((_includeArchived = true): Observable<QuestResponse[]> =>
+  readonly list = vi.fn((_includeArchived = true): Observable<HabitResponse[]> =>
     of(this.responses)
   );
 
-  readonly get = vi.fn((id: string): Observable<QuestResponse> => {
-    const response = this.responses.find((quest) => quest.id === id) ?? API_QUEST;
+  readonly get = vi.fn((id: string): Observable<HabitResponse> => {
+    const response = this.responses.find((habit) => habit.id === id) ?? API_QUEST;
 
     return of(response);
   });
 
-  readonly create = vi.fn((request: QuestUpsertRequest): Observable<QuestResponse> =>
+  readonly create = vi.fn((request: HabitUpsertRequest): Observable<HabitResponse> =>
     of({
       ...API_QUEST,
       ...request,
@@ -832,8 +832,8 @@ class QuestApiServiceStub
 
   readonly update = vi.fn((
     id: string,
-    request: QuestUpsertRequest
-  ): Observable<QuestResponse> =>
+    request: HabitUpsertRequest
+  ): Observable<HabitResponse> =>
     of({
       ...API_QUEST,
       ...request,
@@ -842,7 +842,7 @@ class QuestApiServiceStub
     })
   );
 
-  readonly complete = vi.fn((_id: string): Observable<QuestCompletionResponse> =>
+  readonly complete = vi.fn((_id: string): Observable<HabitCompletionResponse> =>
     of(QUEST_COMPLETION_RESPONSE)
   );
 
@@ -884,8 +884,8 @@ async function renderApiAchievementRoute(
         useValue: createApiAuthService()
       },
       {
-        provide: QuestApiService,
-        useValue: new QuestApiServiceStub()
+        provide: HabitApiService,
+        useValue: new HabitApiServiceStub()
       },
       {
         provide: AchievementApiService,
@@ -896,8 +896,8 @@ async function renderApiAchievementRoute(
         useValue: new AnalyticsApiServiceStub()
       },
       {
-        provide: QuestReminderApiService,
-        useValue: new QuestReminderApiServiceStub()
+        provide: HabitReminderApiService,
+        useValue: new HabitReminderApiServiceStub()
       }
     ]
   });
@@ -932,8 +932,8 @@ async function renderApiAnalyticsRoute(
         useValue: createApiAuthService()
       },
       {
-        provide: QuestApiService,
-        useValue: new QuestApiServiceStub()
+        provide: HabitApiService,
+        useValue: new HabitApiServiceStub()
       },
       {
         provide: AchievementApiService,
@@ -944,8 +944,8 @@ async function renderApiAnalyticsRoute(
         useValue: analyticsApi
       },
       {
-        provide: QuestReminderApiService,
-        useValue: new QuestReminderApiServiceStub()
+        provide: HabitReminderApiService,
+        useValue: new HabitReminderApiServiceStub()
       }
     ]
   });
@@ -965,16 +965,16 @@ async function renderApiAnalyticsRoute(
   };
 }
 
-async function renderApiQuestRoute(
-  api: QuestApiServiceStub = new QuestApiServiceStub(),
+async function renderApiHabitRoute(
+  api: HabitApiServiceStub = new HabitApiServiceStub(),
   achievementApi: AchievementApiServiceStub = new AchievementApiServiceStub(),
-  reminderApi: QuestReminderApiServiceStub = new QuestReminderApiServiceStub()
+  reminderApi: HabitReminderApiServiceStub = new HabitReminderApiServiceStub()
 ): Promise<{
   achievementApi: AchievementApiServiceStub;
-  api: QuestApiServiceStub;
+  api: HabitApiServiceStub;
   harness: RouterTestingHarness;
   nativeElement: HTMLElement;
-  reminderApi: QuestReminderApiServiceStub;
+  reminderApi: HabitReminderApiServiceStub;
 }> {
   TestBed.configureTestingModule({
     providers: [
@@ -984,7 +984,7 @@ async function renderApiQuestRoute(
         useValue: createApiAuthService()
       },
       {
-        provide: QuestApiService,
+        provide: HabitApiService,
         useValue: api
       },
       {
@@ -996,18 +996,18 @@ async function renderApiQuestRoute(
         useValue: new AnalyticsApiServiceStub()
       },
       {
-        provide: QuestReminderApiService,
+        provide: HabitReminderApiService,
         useValue: reminderApi
       }
     ]
   });
 
   const harness = await RouterTestingHarness.create();
-  await harness.navigateByUrl('/quests', PrototypePageComponent);
+  await harness.navigateByUrl('/habits', PrototypePageComponent);
   const nativeElement = harness.routeNativeElement;
 
   if (!nativeElement) {
-    throw new Error('Quests route did not render a native element.');
+    throw new Error('Habits route did not render a native element.');
   }
 
   return {
@@ -1019,27 +1019,27 @@ async function renderApiQuestRoute(
   };
 }
 
-class QuestReminderApiServiceStub
-  implements Pick<QuestReminderApiService, 'get' | 'upsert' | 'delete'>
+class HabitReminderApiServiceStub
+  implements Pick<HabitReminderApiService, 'get' | 'upsert' | 'delete'>
 {
   constructor(
-    private readonly response: QuestReminderResponse = DISABLED_REMINDER_RESPONSE
+    private readonly response: HabitReminderResponse = DISABLED_REMINDER_RESPONSE
   ) {}
 
-  readonly get = vi.fn((questId: string): Observable<QuestReminderResponse> =>
+  readonly get = vi.fn((habitId: string): Observable<HabitReminderResponse> =>
     of({
       ...this.response,
-      questId
+      habitId
     })
   );
 
   readonly upsert = vi.fn((
-    questId: string,
-    request: UpsertQuestReminderRequest
-  ): Observable<QuestReminderResponse> =>
+    habitId: string,
+    request: UpsertHabitReminderRequest
+  ): Observable<HabitReminderResponse> =>
     of({
       id: '2f398cae-2401-4d85-a8f9-491030e2bf6f',
-      questId,
+      habitId,
       isEnabled: request.isEnabled,
       time: request.time,
       timeZoneId: request.timeZoneId,
@@ -1051,7 +1051,7 @@ class QuestReminderApiServiceStub
     })
   );
 
-  readonly delete = vi.fn((_questId: string): Observable<void> => of(void 0));
+  readonly delete = vi.fn((_habitId: string): Observable<void> => of(void 0));
 }
 
 function createApiAuthService(): Pick<
@@ -1104,14 +1104,14 @@ function setFormField(
   harness.detectChanges();
 }
 
-function submitQuestForm(
+function submitHabitForm(
   harness: RouterTestingHarness,
   container: ParentNode
 ): void {
-  const form = container.querySelector('.quest-editor form');
+  const form = container.querySelector('.habit-editor form');
 
   if (!(form instanceof HTMLFormElement)) {
-    throw new Error('Quest form not found.');
+    throw new Error('Habit form not found.');
   }
 
   form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));

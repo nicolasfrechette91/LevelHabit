@@ -1,9 +1,9 @@
 namespace LevelHabit.Api.Contracts.Analytics;
 
 public sealed record AnalyticsSummaryResponse(
-    int TotalQuests,
-    int ActiveQuests,
-    int ArchivedQuests,
+    int TotalHabits,
+    int ActiveHabits,
+    int ArchivedHabits,
     int TotalCompletions,
     int CompletionsToday,
     int CompletionsThisWeek,

@@ -27,25 +27,25 @@
 
 .intro-copy,
 .stat-box,
-.quest-card,
+.habit-card,
 .achievement-card,
 .stat-card {
   overflow-wrap: anywhere;
 }
 
 .intro-actions .btn,
-.quest-form-actions .btn,
-.quest-actions .btn,
+.habit-form-actions .btn,
+.habit-actions .btn,
 .title-button {
   min-height: 2.75rem;
 }
 
-.quest-actions .btn {
+.habit-actions .btn {
   flex: 1 1 8.5rem;
 }
 
-.quest-editor .form-control,
-.quest-editor .form-select,
+.habit-editor .form-control,
+.habit-editor .form-select,
 .segmented-control .btn {
   min-height: 2.75rem;
 }
@@ -346,21 +346,21 @@ progress.lh-progress {
   }
 
   .intro-actions .btn,
-  .quest-form-actions .btn {
+  .habit-form-actions .btn {
     width: 100%;
   }
 
-  .quest-row {
+  .habit-row {
     align-items: flex-start !important;
     gap: 0.75rem !important;
   }
 
-  .quest-actions {
+  .habit-actions {
     display: grid !important;
     grid-template-columns: 1fr;
   }
 
-  .quest-actions .btn {
+  .habit-actions .btn {
     width: 100%;
   }
 

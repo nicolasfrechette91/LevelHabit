@@ -16,8 +16,8 @@ export type AnalyticsDailyMetricResponse = Readonly<{
 
 export type AnalyticsRecentCompletionResponse = Readonly<{
   id: string;
-  questId: string;
-  questTitle: string;
+  habitId: string;
+  habitTitle: string;
   category: string;
   difficulty: string;
   completionDateUtc: string;
@@ -26,9 +26,9 @@ export type AnalyticsRecentCompletionResponse = Readonly<{
 }>;
 
 export type AnalyticsSummaryResponse = Readonly<{
-  totalQuests: number;
-  activeQuests: number;
-  archivedQuests: number;
+  totalHabits: number;
+  activeHabits: number;
+  archivedHabits: number;
   totalCompletions: number;
   completionsToday: number;
   completionsThisWeek: number;

@@ -2,16 +2,16 @@
 
 LevelHabit uses Playwright for a small local E2E suite that drives the real
 Angular app against the local ASP.NET Core API and local PostgreSQL database.
-The tests generate unique users and quest names at runtime and do not require
+The tests generate unique users and habit names at runtime and do not require
 production credentials.
 
 ## Covered Flows
 
-- Main user journey: register, reach the dashboard, create a quest, complete it,
+- Main user journey: register, reach the dashboard, create a habit, complete it,
   verify XP/streak/achievement/analytics feedback, log out, log back in, and
   confirm persisted progress.
-- User isolation: complete a quest as User A, register User B, and confirm User
-  B does not see User A's quest, analytics progress, or achievement unlocks.
+- User isolation: complete a habit as User A, register User B, and confirm User
+  B does not see User A's habit, analytics progress, or achievement unlocks.
 
 ## Prerequisites
 
