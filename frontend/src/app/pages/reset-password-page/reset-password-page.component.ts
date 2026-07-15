@@ -10,10 +10,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../auth/auth.service';
+import { TranslatePipe } from '../../i18n/i18n.pipes';
 
 @Component({
   selector: 'app-reset-password-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe],
   templateUrl: './reset-password-page.component.html',
   styleUrls: ['./reset-password-page.component.scss']
 })
@@ -49,7 +50,7 @@ export class ResetPasswordPageComponent {
     this.errorMessage.set(null);
 
     if (this.missingLinkData()) {
-      this.errorMessage.set('This reset link is missing required details.');
+      this.errorMessage.set('passwordRecovery.missingDetails');
       return;
     }
 
@@ -75,8 +76,8 @@ export class ResetPasswordPageComponent {
       )
       .pipe(finalize(() => this.pending.set(false)))
       .subscribe({
-        next: (response) => {
-          this.successMessage.set(response.message);
+        next: () => {
+          this.successMessage.set('passwordRecovery.resetSuccess');
           this.form.disable();
         },
         error: (error: unknown) => {
@@ -91,23 +92,13 @@ export class ResetPasswordPageComponent {
 
   private readErrorMessage(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return 'This reset link is invalid or has expired.';
+      return 'errors.resetInvalid';
     }
 
     if (error.status === 0) {
-      return 'LevelHabit API is not reachable right now. Please try again in a moment.';
+      return 'errors.apiUnavailable';
     }
 
-    const problem = error.error as { detail?: unknown; title?: unknown } | undefined;
-
-    if (typeof problem?.detail === 'string') {
-      return problem.detail;
-    }
-
-    if (typeof problem?.title === 'string') {
-      return problem.title;
-    }
-
-    return 'This reset link is invalid or has expired.';
+    return 'errors.resetInvalid';
   }
 }

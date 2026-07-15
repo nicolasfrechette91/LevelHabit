@@ -1,5 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   type ActivatedRouteSnapshot,
@@ -10,8 +10,12 @@ import {
   RouterOutlet
 } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
+import { Meta, Title } from '@angular/platform-browser';
 
 import { AuthService } from './auth/auth.service';
+import { TranslatePipe } from './i18n/i18n.pipes';
+import { LanguageSelectorComponent } from './i18n/language-selector.component';
+import { LanguageService } from './i18n/language.service';
 import { NotificationCenterComponent } from './notifications/notification-center.component';
 import {
   PROTOTYPE_ROUTE_CONFIGS,
@@ -28,10 +32,12 @@ type NavItem = {
   selector: 'app-root',
   imports: [
     NgOptimizedImage,
+    LanguageSelectorComponent,
     NotificationCenterComponent,
     RouterLink,
     RouterLinkActive,
-    RouterOutlet
+    RouterOutlet,
+    TranslatePipe
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -39,6 +45,16 @@ type NavItem = {
 export class AppComponent {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly language = inject(LanguageService);
+  private readonly meta = inject(Meta);
+  private readonly title = inject(Title);
+
+  private readonly navigation = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ),
+    { initialValue: null }
+  );
 
   protected readonly usesAuthenticatedLayout = toSignal(
     this.router.events.pipe(
@@ -63,11 +79,23 @@ export class AppComponent {
   );
 
   protected readonly navItems: readonly NavItem[] = PROTOTYPE_ROUTE_CONFIGS.map(
-    ({ navLabel, path }) => ({
-      label: navLabel,
+    ({ navLabelKey, path }) => ({
+      label: navLabelKey,
       path: `/${path}` as NavPath
     })
   );
+
+  private readonly synchronizeDocumentMetadata = effect(() => {
+    this.navigation();
+    this.language.currentLanguage();
+    const titleKey = this.deepestRouteData('titleKey') ?? 'routes.login';
+
+    this.title.setTitle(this.language.translate(titleKey));
+    this.meta.updateTag({
+      name: 'description',
+      content: this.language.translate('common.metaDescription')
+    });
+  });
 
   protected logout(): void {
     this.auth.logout();
@@ -86,5 +114,22 @@ export class AppComponent {
     }
 
     return false;
+  }
+
+  private deepestRouteData(key: string): string | null {
+    let route: ActivatedRouteSnapshot | null = this.router.routerState.snapshot.root;
+    let value: string | null = null;
+
+    while (route) {
+      const candidate = route.data[key];
+
+      if (typeof candidate === 'string') {
+        value = candidate;
+      }
+
+      route = route.firstChild;
+    }
+
+    return value;
   }
 }

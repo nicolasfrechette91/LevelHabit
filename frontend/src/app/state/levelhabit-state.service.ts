@@ -368,7 +368,7 @@ export class LevelHabitStateService {
           }
 
           this.habitErrorSignal.set(
-            this.describeHabitError(error, 'Habits could not be loaded.')
+            this.describeHabitError(error, 'errors.habitLoad')
           );
         }
       });
@@ -417,7 +417,7 @@ export class LevelHabitStateService {
           this.achievementErrorSignal.set(
             this.describeAchievementError(
               error,
-              'Achievements could not be loaded.'
+              'errors.achievementLoad'
             )
           );
         }
@@ -461,7 +461,7 @@ export class LevelHabitStateService {
           }
 
           this.analyticsErrorSignal.set(
-            this.describeAnalyticsError(error, 'Analytics could not be loaded.')
+            this.describeAnalyticsError(error, 'errors.analyticsLoad')
           );
         }
       });
@@ -492,7 +492,7 @@ export class LevelHabitStateService {
       catchError((error: unknown) =>
         this.captureHabitError<Habit>(
           error,
-          'Habit could not be created.',
+          'errors.habitCreate',
           apiUserId
         )
       ),
@@ -530,7 +530,7 @@ export class LevelHabitStateService {
       catchError((error: unknown) =>
         this.captureHabitError<Habit>(
           error,
-          'Habit could not be updated.',
+          'errors.habitUpdate',
           apiUserId
         )
       ),
@@ -574,7 +574,7 @@ export class LevelHabitStateService {
       catchError((error: unknown) =>
         this.captureHabitError<void>(
           error,
-          'Habit could not be archived.',
+          'errors.habitArchive',
           apiUserId
         )
       ),
@@ -607,7 +607,7 @@ export class LevelHabitStateService {
     const habit = this.persistedHabits().find((candidate) => candidate.id === id);
 
     if (!habit || habit.isArchived) {
-      this.habitErrorSignal.set('That habit could not be found.');
+      this.habitErrorSignal.set('errors.habitNotFound');
 
       return throwError(() => new Error('Habit not found.'));
     }
@@ -655,7 +655,7 @@ export class LevelHabitStateService {
       catchError((error: unknown) =>
         this.captureHabitError<Habit>(
           error,
-          'Habit could not be completed.',
+          'errors.habitComplete',
           apiUserId
         )
       ),
@@ -814,7 +814,7 @@ export class LevelHabitStateService {
       userId: response.userId,
       title: response.title,
       category: response.category,
-      summary: response.description || 'No description yet.',
+      summary: response.description,
       cadence: response.frequency,
       xp: response.xpReward,
       streak: response.currentStreak,
@@ -935,39 +935,19 @@ export class LevelHabitStateService {
     }
 
     if (error.status === 0) {
-      return 'The backend is unavailable. Start the API and try again.';
+      return 'errors.backendStart';
     }
 
     if (error.status === 401) {
-      return 'Your session expired. Sign in again to manage habits.';
+      return 'errors.sessionHabits';
     }
 
     if (error.status === 404) {
-      return 'That habit could not be found.';
+      return 'errors.habitNotFound';
     }
 
     if (error.status === 409) {
-      return 'That habit is already completed today.';
-    }
-
-    const problem = this.isRecord(error.error) ? error.error : null;
-    const errors = problem && this.isRecord(problem['errors'])
-      ? problem['errors']
-      : null;
-    const firstValidationError = errors
-      ? Object.values(errors).find((value): value is string[] =>
-          Array.isArray(value) && value.every((item) => typeof item === 'string')
-        )?.[0]
-      : null;
-
-    if (firstValidationError) {
-      return firstValidationError;
-    }
-
-    const detail = problem?.['detail'];
-
-    if (typeof detail === 'string' && detail.trim().length > 0) {
-      return detail;
+      return 'errors.habitAlreadyComplete';
     }
 
     return fallback;
@@ -979,18 +959,11 @@ export class LevelHabitStateService {
     }
 
     if (error.status === 0) {
-      return 'The backend is unavailable. Start the API and try again.';
+      return 'errors.backendStart';
     }
 
     if (error.status === 401) {
-      return 'Your session expired. Sign in again to view achievements.';
-    }
-
-    const problem = this.isRecord(error.error) ? error.error : null;
-    const detail = problem?.['detail'];
-
-    if (typeof detail === 'string' && detail.trim().length > 0) {
-      return detail;
+      return 'errors.sessionAchievements';
     }
 
     return fallback;
@@ -1002,18 +975,11 @@ export class LevelHabitStateService {
     }
 
     if (error.status === 0) {
-      return 'The backend is unavailable. Start the API and try again.';
+      return 'errors.backendStart';
     }
 
     if (error.status === 401) {
-      return 'Your session expired. Sign in again to view analytics.';
-    }
-
-    const problem = this.isRecord(error.error) ? error.error : null;
-    const detail = problem?.['detail'];
-
-    if (typeof detail === 'string' && detail.trim().length > 0) {
-      return detail;
+      return 'errors.sessionAnalytics';
     }
 
     return fallback;

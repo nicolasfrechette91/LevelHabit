@@ -17,6 +17,7 @@
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "useDefineForClassFields": false,
     "lib": [
       "ES2022",

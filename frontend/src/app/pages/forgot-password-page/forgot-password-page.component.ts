@@ -9,13 +9,11 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../auth/auth.service';
-
-const GENERIC_SUCCESS_MESSAGE =
-  'If an account exists for that email, a password reset link has been sent.';
+import { TranslatePipe } from '../../i18n/i18n.pipes';
 
 @Component({
   selector: 'app-forgot-password-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe],
   templateUrl: './forgot-password-page.component.html',
   styleUrls: ['./forgot-password-page.component.scss']
 })
@@ -47,11 +45,11 @@ export class ForgotPasswordPageComponent {
       .forgotPassword(email)
       .pipe(finalize(() => this.pending.set(false)))
       .subscribe({
-        next: (response) => {
-          this.successMessage.set(response.message || GENERIC_SUCCESS_MESSAGE);
+        next: () => {
+          this.successMessage.set('passwordRecovery.sent');
         },
         error: () => {
-          this.successMessage.set(GENERIC_SUCCESS_MESSAGE);
+          this.successMessage.set('passwordRecovery.sent');
         }
       });
   }

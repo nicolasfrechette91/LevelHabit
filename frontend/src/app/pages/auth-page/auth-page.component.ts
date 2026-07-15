@@ -13,12 +13,13 @@ import { Observable, finalize } from 'rxjs';
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
 import { BackendHealthService } from '../../backend-health.service';
+import { TranslatePipe } from '../../i18n/i18n.pipes';
 
 type AuthMode = 'login' | 'register';
 
 @Component({
   selector: 'app-auth-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe],
   templateUrl: './auth-page.component.html',
   styleUrls: ['./auth-page.component.scss']
 })
@@ -63,7 +64,7 @@ export class AuthPageComponent implements OnInit {
   ngOnInit(): void {
     if (this.route.snapshot.queryParamMap.get('verified') === 'email-confirmed') {
       this.successMessage.set(
-        'Your email has been confirmed. You can now log in.'
+        'auth.emailConfirmed'
       );
     }
 
@@ -169,34 +170,22 @@ export class AuthPageComponent implements OnInit {
 
   private readErrorMessage(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return 'Authentication failed. Please try again.';
+      return 'errors.authentication';
     }
 
     if (error.status === 0) {
-      return 'Level Habit API is not reachable right now. Please try again in a moment.';
+      return 'errors.apiUnavailable';
     }
 
-    const problem = error.error as
-      | { detail?: unknown; title?: unknown; errors?: Record<string, string[]> }
-      | undefined;
-
-    if (typeof problem?.detail === 'string') {
-      return problem.detail;
+    if (this.readErrorCode(error) === 'EMAIL_NOT_CONFIRMED') {
+      return 'errors.emailNotConfirmed';
     }
 
-    if (problem?.errors) {
-      const firstError = Object.values(problem.errors)[0]?.[0];
-
-      if (firstError) {
-        return firstError;
-      }
+    if (error.status === 401) {
+      return 'errors.invalidCredentials';
     }
 
-    if (typeof problem?.title === 'string') {
-      return problem.title;
-    }
-
-    return 'Authentication failed. Please try again.';
+    return 'errors.authentication';
   }
 
   private readErrorCode(error: unknown): string | null {

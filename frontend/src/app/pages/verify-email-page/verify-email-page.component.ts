@@ -10,14 +10,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../auth/auth.service';
+import { TranslatePipe } from '../../i18n/i18n.pipes';
 
 const RESEND_COOLDOWN_SECONDS = 60;
-const GENERIC_RESEND_MESSAGE =
-  'If an unconfirmed account exists for this email, a verification code has been sent.';
 
 @Component({
   selector: 'app-verify-email-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe],
   templateUrl: './verify-email-page.component.html',
   styleUrls: ['./verify-email-page.component.scss']
 })
@@ -49,7 +48,7 @@ export class VerifyEmailPageComponent implements OnInit {
     const email = this.route.snapshot.queryParamMap.get('email')?.trim() ?? '';
 
     if (email.length === 0) {
-      this.errorMessage.set('The email address for this verification request is missing.');
+      this.errorMessage.set('errors.verificationMissingEmail');
       return;
     }
 
@@ -86,7 +85,7 @@ export class VerifyEmailPageComponent implements OnInit {
     const email = this.email();
 
     if (!email) {
-      this.errorMessage.set('The email address for this verification request is missing.');
+      this.errorMessage.set('errors.verificationMissingEmail');
       return;
     }
 
@@ -96,8 +95,8 @@ export class VerifyEmailPageComponent implements OnInit {
       .confirmEmail(email, this.form.controls.code.value)
       .pipe(finalize(() => this.confirmPending.set(false)))
       .subscribe({
-        next: (response) => {
-          this.successMessage.set(response.message);
+        next: () => {
+          this.successMessage.set('verification.confirmed');
           void this.router.navigate(['/login'], {
             queryParams: {
               verified: 'email-confirmed'
@@ -125,9 +124,9 @@ export class VerifyEmailPageComponent implements OnInit {
       .resendVerificationCode(email)
       .pipe(finalize(() => this.resendPending.set(false)))
       .subscribe({
-        next: (response) => {
+        next: () => {
           this.auth.rememberVerificationCodeSent(email);
-          this.resendMessage.set(response.message || GENERIC_RESEND_MESSAGE);
+          this.resendMessage.set('verification.resendSent');
           this.updateCooldown();
           this.startCountdownTimer();
         },
@@ -181,33 +180,13 @@ export class VerifyEmailPageComponent implements OnInit {
 
   private readErrorMessage(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return 'The verification code is invalid or has expired.';
+      return 'errors.verificationInvalid';
     }
 
     if (error.status === 0) {
-      return 'LevelHabit API is not reachable right now. Please try again in a moment.';
+      return 'errors.apiUnavailable';
     }
 
-    const problem = error.error as
-      | { detail?: unknown; title?: unknown; errors?: Record<string, string[]> }
-      | undefined;
-
-    if (problem?.errors) {
-      const firstError = Object.values(problem.errors)[0]?.[0];
-
-      if (firstError) {
-        return firstError;
-      }
-    }
-
-    if (typeof problem?.detail === 'string') {
-      return problem.detail;
-    }
-
-    if (typeof problem?.title === 'string') {
-      return problem.title;
-    }
-
-    return 'The verification code is invalid or has expired.';
+    return 'errors.verificationInvalid';
   }
 }

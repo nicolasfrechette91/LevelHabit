@@ -1,4 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import localeEnCa from '@angular/common/locales/en-CA';
+import localeFrCa from '@angular/common/locales/fr-CA';
 import { provideZoneChangeDetection, type Provider } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter, withHashLocation, withInMemoryScrolling } from '@angular/router';
@@ -7,6 +10,9 @@ import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { authTokenInterceptor } from './app/auth/auth-token.interceptor';
 import { environment } from './environments/environment';
+
+registerLocaleData(localeEnCa);
+registerLocaleData(localeFrCa);
 
 bootstrapLevelHabit().catch((error: unknown) => console.error(error));
 

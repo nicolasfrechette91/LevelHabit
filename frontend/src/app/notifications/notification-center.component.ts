@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   Component,
   ElementRef,
@@ -8,13 +7,14 @@ import {
   inject
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { LocalDatePipe, TranslatePipe } from '../i18n/i18n.pipes';
 
 import type { NotificationResponse } from './notification-api.service';
 import { NotificationStoreService } from './notification-store.service';
 
 @Component({
   selector: 'app-notification-center',
-  imports: [DatePipe],
+  imports: [LocalDatePipe, TranslatePipe],
   templateUrl: './notification-center.component.html',
   styleUrls: ['./notification-center.component.scss']
 })

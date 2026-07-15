@@ -17,6 +17,7 @@ import {
 } from '../../analytics/analytics-api.service';
 import { AuthService } from '../../auth/auth.service';
 import type { MeResponse } from '../../auth/auth.models';
+import { LanguageService } from '../../i18n/language.service';
 import {
   HabitApiService,
   type HabitCompletionResponse,
@@ -278,6 +279,17 @@ describe('Prototype routes', () => {
 
     expect(textContent(nativeElement)).toContain(expectedContent);
   });
+
+  it('renders an authenticated habits page in French after a runtime language change', async () => {
+    const { harness, nativeElement } = await renderPrototypeRoute('/habits');
+
+    TestBed.inject(LanguageService).setLanguage('fr');
+    harness.detectChanges();
+
+    expect(textContent(nativeElement)).toContain('Habitudes actives');
+    expect(textContent(nativeElement)).toContain('Toutes');
+    expect(textContent(nativeElement)).toContain('Archivées');
+  });
 });
 
 describe('Dashboard view', () => {
@@ -513,7 +525,7 @@ describe('Analytics API view', () => {
     expect(pageText).toContain('Level 3');
     expect(pageText).toContain('280 XP to next');
     expect(pageText).toContain('2/9');
-    expect(pageText).toContain('5d');
+    expect(pageText).toContain('5 days');
     expect(pageText).toContain('Health');
     expect(pageText).toContain('Easy');
     expect(pageText).toContain('Morning training');
@@ -599,7 +611,7 @@ describe('Habits API view', () => {
     harness.detectChanges();
 
     expect(nativeElement.querySelector('[data-testid="reminder-time-input"]')).not.toBeNull();
-    expect(textContent(nativeElement)).toContain('Every day at 8:30 AM');
+    expect(textContent(nativeElement)).toContain('Every day at 8:30 a.m.');
   });
 
   it('validates reminder days when reminders are enabled', async () => {
@@ -663,7 +675,7 @@ describe('Habits API view', () => {
 
     expect(reminderApi.get).toHaveBeenCalledWith(API_QUEST.id);
     expect(textContent(nativeElement)).toContain(
-      'Monday, Wednesday and Friday at 8:30 AM'
+      'Monday, Wednesday and Friday at 8:30 a.m.'
     );
   });
 

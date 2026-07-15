@@ -1,4 +1,3 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
@@ -34,6 +33,14 @@ import type {
 } from '../../analytics/analytics-api.service';
 import { AuthService } from '../../auth/auth.service';
 import { BrowserNotificationService } from '../../notifications/browser-notification.service';
+import {
+  LocalDatePipe,
+  LocalNumberPipe,
+  LocalPercentPipe,
+  TranslateCountPipe,
+  TranslatePipe
+} from '../../i18n/i18n.pipes';
+import { LanguageService } from '../../i18n/language.service';
 import type { HabitUpsertRequest } from '../../habits/habit-api.service';
 import {
   REMINDER_DAYS,
@@ -78,7 +85,15 @@ const COMMON_TIME_ZONE_IDS = [
 
 @Component({
   selector: 'app-prototype-page',
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink],
+  imports: [
+    LocalDatePipe,
+    LocalNumberPipe,
+    LocalPercentPipe,
+    ReactiveFormsModule,
+    RouterLink,
+    TranslateCountPipe,
+    TranslatePipe
+  ],
   templateUrl: './prototype-page.component.html',
   styleUrls: ['./prototype-page.component.scss']
 })
@@ -86,6 +101,7 @@ export class PrototypePageComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly game = inject(LevelHabitStateService);
   protected readonly browserNotifications = inject(BrowserNotificationService);
+  protected readonly language = inject(LanguageService);
 
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -147,11 +163,14 @@ export class PrototypePageComponent implements OnInit {
   protected readonly progressProfile = computed(() => this.auth.progressProfile());
 
   protected readonly playerDisplayName = computed(
-    () => this.profileUser()?.displayName ?? 'Prototype player'
+    () => this.profileUser()?.displayName ?? this.language.translate('progress.prototypePlayer')
   );
 
   protected readonly progressDisplayName = computed(
-    () => this.progressProfile()?.displayName ?? this.game.levelTitle()
+    () => this.progressProfile()?.displayName
+      ?? (this.auth.authRequired
+        ? this.language.translate('common.progress')
+        : this.language.translate(`enums.titles.${this.game.levelTitle()}`))
   );
 
   protected readonly profileLevel = computed(
@@ -399,7 +418,7 @@ export class PrototypePageComponent implements OnInit {
     this.editingHabitId.set(habit.id);
     this.habitForm.setValue({
       title: habit.title,
-      description: habit.summary === 'No description yet.' ? '' : habit.summary,
+      description: habit.summary,
       category: habit.category as PersistedHabitCategory,
       difficulty: habit.difficulty as PersistedHabitDifficulty,
       frequency: habit.cadence as PersistedHabitFrequency,
@@ -478,14 +497,53 @@ export class PrototypePageComponent implements OnInit {
     const value = this.habitForm.getRawValue();
 
     if (!value.reminderEnabled) {
-      return 'Reminders disabled';
+      return this.language.translate('reminders.disabled');
     }
 
     if (value.reminderDaysOfWeek.length === 0) {
-      return 'Select at least one day';
+      return this.language.translate('reminders.selectDay');
     }
 
-    return `${this.formatReminderDays(value.reminderDaysOfWeek)} at ${this.formatReminderTime(value.reminderTime)}`;
+    return this.language.translate('reminders.summary', {
+      days: this.formatReminderDays(value.reminderDaysOfWeek),
+      time: this.formatReminderTime(value.reminderTime)
+    });
+  }
+
+  protected enumLabel(group: 'categories' | 'difficulties' | 'frequencies' | 'dayShort' | 'titles', value: string): string {
+    return this.language.translate(`enums.${group}.${value}`);
+  }
+
+  protected achievementText(
+    achievement: { id: string; title: string; summary: string; progress: number; target: number },
+    field: 'title' | 'summary' | 'progress'
+  ): string {
+    const aliases: Readonly<Record<string, string>> = {
+      'first-light': 'first-step',
+      'first-step': 'first-step',
+      'clean-sweep': 'getting-started',
+      'getting-started': 'getting-started',
+      'streak-adept': 'on-fire',
+      'on-fire': 'on-fire',
+      'balanced-build': 'balanced-progress',
+      'balanced-progress': 'balanced-progress',
+      'level-break': 'level-up',
+      'level-up': 'level-up'
+    };
+    const key = aliases[achievement.id];
+
+    if (!key) {
+      return field === 'title'
+        ? achievement.title
+        : field === 'summary'
+          ? achievement.summary
+          : `${achievement.progress}/${achievement.target}`;
+    }
+
+    return this.language.translate(`achievements.${key}.${field}`, {
+      progress: achievement.progress,
+      target: achievement.target
+    });
   }
 
   protected enableBrowserNotifications(): void {
@@ -612,18 +670,13 @@ export class PrototypePageComponent implements OnInit {
 
   private formatReminderDays(days: readonly ReminderDay[]): string {
     if (days.length === REMINDER_DAYS.length) {
-      return 'Every day';
+      return this.language.translate('reminders.everyDay');
     }
 
-    if (days.length === 1) {
-      return days[0] ?? '';
-    }
-
-    if (days.length === 2) {
-      return `${days[0]} and ${days[1]}`;
-    }
-
-    return `${days.slice(0, -1).join(', ')} and ${days.at(-1)}`;
+    return new Intl.ListFormat(this.language.locale(), {
+      style: 'long',
+      type: 'conjunction'
+    }).format(days.map((day) => this.language.translate(`enums.days.${day}`)));
   }
 
   private formatReminderTime(time: string): string {
@@ -635,7 +688,7 @@ export class PrototypePageComponent implements OnInit {
       return time;
     }
 
-    return new Date(2000, 0, 1, hour, minute).toLocaleTimeString(undefined, {
+    return new Date(2000, 0, 1, hour, minute).toLocaleTimeString(this.language.locale(), {
       hour: 'numeric',
       minute: '2-digit'
     });
@@ -666,37 +719,14 @@ export class PrototypePageComponent implements OnInit {
 
   private describeReminderError(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return 'Reminder failed to save.';
+      return 'errors.reminderSave';
     }
 
     if (error.status === 0) {
-      return 'The backend is unavailable. Your habit values are still here.';
+      return 'errors.reminderBackend';
     }
 
-    const problem = this.isRecord(error.error) ? error.error : null;
-    const errors = problem && this.isRecord(problem['errors'])
-      ? problem['errors']
-      : null;
-    const firstValidationError = errors
-      ? Object.values(errors).find((value): value is string[] =>
-          Array.isArray(value) && value.every((item) => typeof item === 'string')
-        )?.[0]
-      : null;
-
-    if (firstValidationError) {
-      return firstValidationError;
-    }
-
-    const detail = problem?.['detail'];
-
-    if (typeof detail === 'string' && detail.trim().length > 0) {
-      return detail;
-    }
-
-    return 'Reminder failed to save.';
+    return 'errors.reminderSave';
   }
 
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-  }
 }

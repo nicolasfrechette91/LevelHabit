@@ -266,11 +266,7 @@ export class AuthService {
   }
 
   showEmailVerificationNotice(email: string): void {
-    const target = email.trim() || 'your inbox';
-
-    this.emailVerificationNoticeSignal.set(
-      `Account created. Check ${target} to verify your email address.`
-    );
+    this.emailVerificationNoticeSignal.set(email.trim());
   }
 
   dismissEmailVerificationNotice(): void {

@@ -37,46 +37,46 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: loadAuthPage,
-    title: 'Sign in | LevelHabit',
     data: {
+      titleKey: 'routes.login',
       mode: 'login'
     }
   },
   {
     path: 'register',
     loadComponent: loadAuthPage,
-    title: 'Create account | LevelHabit',
     data: {
+      titleKey: 'routes.register',
       mode: 'register'
     }
   },
   {
     path: 'forgot-password',
     loadComponent: loadForgotPasswordPage,
-    title: 'Forgot password | LevelHabit'
+    data: { titleKey: 'routes.forgotPassword' }
   },
   {
     path: 'reset-password',
     loadComponent: loadResetPasswordPage,
-    title: 'Reset password | LevelHabit'
+    data: { titleKey: 'routes.resetPassword' }
   },
   {
     path: 'verify-email',
     loadComponent: loadVerifyEmailPage,
-    title: 'Verify email | LevelHabit'
+    data: { titleKey: 'routes.verifyEmail' }
   },
   {
     path: 'profile',
     redirectTo: 'progress',
     pathMatch: 'full'
   },
-  ...PROTOTYPE_ROUTE_CONFIGS.map(({ path, title }) => ({
+  ...PROTOTYPE_ROUTE_CONFIGS.map(({ path, titleKey }) => ({
     path,
     loadComponent: loadPrototypePage,
-    title: `${title} | LevelHabit`,
     canActivate: [authGuard],
     data: {
       layout: 'authenticated',
+      titleKey,
       view: path
     }
   })),

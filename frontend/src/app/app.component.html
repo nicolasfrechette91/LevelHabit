@@ -10,11 +10,11 @@
         aria-label="LevelHabit"
       >
         <img ngSrc="levelhabit-mark.svg" alt="" width="36" height="36" priority>
-        <span>Level Habit</span>
+        <span>LevelHabit</span>
       </a>
 
       @if (auth.isAuthenticated()) {
-        <nav class="navbar-nav site-nav flex-row flex-wrap gap-1 ms-md-auto" aria-label="Primary">
+        <nav class="navbar-nav site-nav flex-row flex-wrap gap-1 ms-md-auto" [attr.aria-label]="'navigation.primary' | translate">
           @for (item of navItems; track item.path) {
             <a
               class="nav-link rounded-3 px-3 py-2"
@@ -24,7 +24,7 @@
               [routerLinkActiveOptions]="{ exact: true }"
               [attr.data-testid]="'nav-' + item.path.slice(1)"
             >
-              {{ item.label }}
+              {{ item.label | translate }}
             </a>
           }
 
@@ -32,17 +32,20 @@
             <app-notification-center />
           }
 
+          <app-language-selector />
+
           <button
             type="button"
             class="nav-link logout-button rounded-3 px-3 py-2"
             data-testid="logout-button"
             (click)="logout()"
           >
-            Logout
+            {{ 'navigation.logout' | translate }}
           </button>
         </nav>
       } @else {
-        <nav class="navbar-nav auth-nav flex-row align-items-center gap-2 ms-md-auto" aria-label="Account">
+        <nav class="navbar-nav auth-nav flex-row align-items-center gap-2 ms-md-auto" [attr.aria-label]="'navigation.account' | translate">
+          <app-language-selector />
           @if (!isLoginPage()) {
             <a
               class="nav-link auth-nav-link rounded-3 px-3 py-2"
@@ -51,7 +54,7 @@
               ariaCurrentWhenActive="page"
               [routerLinkActiveOptions]="{ exact: true }"
             >
-              Log in
+              {{ 'navigation.login' | translate }}
             </a>
           }
           <a
@@ -61,7 +64,7 @@
             ariaCurrentWhenActive="page"
             [routerLinkActiveOptions]="{ exact: true }"
           >
-            Create account
+            {{ 'navigation.createAccount' | translate }}
           </a>
         </nav>
       }
@@ -71,11 +74,13 @@
   @if (auth.emailVerificationNotice(); as notice) {
     <div class="container-xl pt-3">
       <div class="alert alert-success app-notice mb-0" role="alert">
-        <span>{{ notice }}</span>
+        <span>
+          {{ (notice ? 'auth.verificationNotice' : 'auth.verificationNoticeGeneric') | translate: { email: notice } }}
+        </span>
         <button
           type="button"
           class="btn-close"
-          aria-label="Dismiss"
+          [attr.aria-label]="'navigation.dismiss' | translate"
           (click)="auth.dismissEmailVerificationNotice()"
         ></button>
       </div>

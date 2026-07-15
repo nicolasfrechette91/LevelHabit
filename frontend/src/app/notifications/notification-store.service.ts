@@ -277,17 +277,17 @@ export class NotificationStoreService {
 
   private describeError(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return 'Notifications could not be loaded.';
+      return 'errors.notificationsLoad';
     }
 
     if (error.status === 0) {
-      return 'The backend is unavailable. Try again when the API is running.';
+      return 'errors.backendUnavailable';
     }
 
     if (error.status === 401) {
-      return 'Your session expired. Sign in again to view notifications.';
+      return 'errors.sessionNotifications';
     }
 
-    return 'Notifications could not be loaded.';
+    return 'errors.notificationsLoad';
   }
 }

@@ -14,6 +14,7 @@ import type {
   RegisterResponse
 } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
+import { LanguageService } from '../../i18n/language.service';
 import { AuthPageComponent } from './auth-page.component';
 
 const AUTH_RESPONSE: AuthResponse = {
@@ -66,6 +67,7 @@ class AuthServiceStub {
 describe('AuthPageComponent', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+    localStorage.clear();
   });
 
   it('calls the backend health endpoint when initialized', async () => {
@@ -77,6 +79,17 @@ describe('AuthPageComponent', () => {
 
     request.flush('Healthy');
     http.verify();
+  });
+
+  it('renders the login page in French after a runtime language change', async () => {
+    const { fixture, nativeElement } = await setup('login');
+
+    TestBed.inject(LanguageService).setLanguage('fr');
+    fixture.detectChanges();
+
+    expect(nativeElement.textContent).toContain('Bon retour');
+    expect(nativeElement.textContent).toContain('Se connecter');
+    expect(nativeElement.textContent).toContain('Mot de passe oublié?');
   });
 
   it('keeps login usable when backend warm-up fails', async () => {

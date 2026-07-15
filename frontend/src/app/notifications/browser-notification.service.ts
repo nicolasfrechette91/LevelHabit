@@ -108,13 +108,15 @@ export class BrowserNotificationService {
   permissionStatusLabel(): string {
     switch (this.permissionStatusSignal()) {
       case 'granted':
-        return this.browserNotificationsEnabled() ? 'Enabled' : 'Allowed';
+        return this.browserNotificationsEnabled()
+          ? 'enums.browserStatus.enabled'
+          : 'enums.browserStatus.allowed';
       case 'denied':
-        return 'Denied';
+        return 'enums.browserStatus.denied';
       case 'default':
-        return 'Not enabled';
+        return 'enums.browserStatus.default';
       default:
-        return 'Unsupported';
+        return 'enums.browserStatus.unsupported';
     }
   }
 

@@ -6,50 +6,50 @@ export type PrototypeView =
   | 'analytics';
 
 export type PrototypeViewCopy = Readonly<{
-  eyebrow: string;
-  title: string;
-  summary: string;
+  eyebrowKey: string;
+  titleKey: string;
+  summaryKey: string;
 }>;
 
 export type PrototypeRouteConfig = Readonly<{
   path: PrototypeView;
-  navLabel: string;
-  title: string;
+  navLabelKey: string;
+  titleKey: string;
 }>;
 
 export const PROTOTYPE_ROUTE_CONFIGS = [
-  { path: 'dashboard', navLabel: 'Today', title: 'Dashboard' },
-  { path: 'habits', navLabel: 'Habits', title: 'Habits' },
-  { path: 'progress', navLabel: 'Progress', title: 'Progress' },
-  { path: 'achievements', navLabel: 'Achievements', title: 'Achievements' },
-  { path: 'analytics', navLabel: 'Analytics', title: 'Analytics' }
+  { path: 'dashboard', navLabelKey: 'navigation.today', titleKey: 'routes.dashboard' },
+  { path: 'habits', navLabelKey: 'navigation.habits', titleKey: 'routes.habits' },
+  { path: 'progress', navLabelKey: 'navigation.progress', titleKey: 'routes.progress' },
+  { path: 'achievements', navLabelKey: 'navigation.achievements', titleKey: 'routes.achievements' },
+  { path: 'analytics', navLabelKey: 'navigation.analytics', titleKey: 'routes.analytics' }
 ] satisfies readonly PrototypeRouteConfig[];
 
 export const PROTOTYPE_VIEW_COPY = {
   dashboard: {
-    eyebrow: 'Today',
-    title: 'Habit board',
-    summary: 'A focused run of daily habits, XP progress, streak safety, and rewards.'
+    eyebrowKey: 'views.dashboard.eyebrow',
+    titleKey: 'views.dashboard.title',
+    summaryKey: 'views.dashboard.summary'
   },
   habits: {
-    eyebrow: 'Habit log',
-    title: 'Active habits',
-    summary: 'Daily routines framed as repeatable habits with cadence, difficulty, and XP.'
+    eyebrowKey: 'views.habits.eyebrow',
+    titleKey: 'views.habits.title',
+    summaryKey: 'views.habits.summary'
   },
   progress: {
-    eyebrow: 'Progress',
-    title: 'Your progress',
-    summary: 'Build consistency, track your growth, and turn daily habits into lasting progress.'
+    eyebrowKey: 'views.progress.eyebrow',
+    titleKey: 'views.progress.title',
+    summaryKey: 'views.progress.summary'
   },
   achievements: {
-    eyebrow: 'Achievements',
-    title: 'Milestone vault',
-    summary: 'Unlockable badges for streaks, balanced routines, and high-consistency days.'
+    eyebrowKey: 'views.achievements.eyebrow',
+    titleKey: 'views.achievements.title',
+    summaryKey: 'views.achievements.summary'
   },
   analytics: {
-    eyebrow: 'Analytics',
-    title: 'Consistency map',
-    summary: 'A lightweight read on weekly momentum, category balance, and XP output.'
+    eyebrowKey: 'views.analytics.eyebrow',
+    titleKey: 'views.analytics.title',
+    summaryKey: 'views.analytics.summary'
   }
 } satisfies Record<PrototypeView, PrototypeViewCopy>;
 
