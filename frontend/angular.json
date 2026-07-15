@@ -107,6 +107,9 @@
           "options": {
             "buildTarget": "levelhabit:build:development",
             "runner": "vitest",
+            "setupFiles": [
+              "src/test-setup.ts"
+            ],
             "tsConfig": "tsconfig.spec.json"
           }
         }
