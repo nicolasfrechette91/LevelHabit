@@ -8,7 +8,7 @@
 
 .auth-page {
   --auth-ink: #102a2e;
-  --auth-muted: #52656a;
+  --auth-muted: #455b5b;
   --auth-green: #0f6f52;
   --auth-sage: #eaf3df;
   background: #f8f1df;
@@ -30,7 +30,7 @@
   z-index: 0;
 
   &::after {
-    background: rgba(#fffdf7, 0.28);
+    background: rgba(#fffdf7, 0.1);
     content: "";
     inset: 0;
     position: absolute;
@@ -141,7 +141,8 @@
   }
 
   p {
-    color: #2f5062;
+    color: var(--auth-muted);
+    font-size: 0.95rem;
     margin: 0.55rem 0 0;
   }
 }
@@ -206,8 +207,8 @@
 }
 
 .form-control {
-  background-color: #fffefa;
-  border-color: rgba($lh-ink, 0.15);
+  background-color: #f7f8f5;
+  border-color: #d7ddd7;
   border-radius: 0.62rem;
   color: var(--auth-ink);
   min-height: 3.55rem;
@@ -218,8 +219,9 @@
   }
 
   &:focus {
-    border-color: var(--auth-green);
-    box-shadow: 0 0 0 0.22rem rgba($lh-emerald, 0.17);
+    background-color: #f7f8f5;
+    border-color: #2f765e;
+    box-shadow: 0 0 0 3px rgba(47, 118, 94, 0.14);
   }
 }
 
@@ -272,6 +274,8 @@
 }
 
 .auth-switch {
+  color: var(--auth-muted);
+  font-size: 0.875rem;
   margin: 0;
   text-align: center;
 }

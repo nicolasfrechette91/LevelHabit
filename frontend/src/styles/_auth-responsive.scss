@@ -1,6 +1,8 @@
 @use "variables" as *;
 
 .auth-page {
+
+
   .input-shell:has(.password-toggle) .form-control {
     padding-right: 3.2rem;
   }
@@ -11,7 +13,7 @@
     background: transparent;
     border: 0;
     border-radius: 0.4rem;
-    color: var(--auth-muted);
+    color: #35504f;
     display: inline-flex;
     height: 2.35rem;
     justify-content: center;
@@ -32,8 +34,8 @@
     }
 
     svg {
-      height: 1.2rem;
-      width: 1.2rem;
+      height: 1.35rem;
+      width: 1.35rem;
     }
   }
 
@@ -63,7 +65,7 @@
   }
 
   .auth-form-login.auth-form-login {
-    gap: 0.9rem;
+    gap: 0.82rem;
 
     .auth-or.auth-or {
       margin-top: 0.15rem;
@@ -98,7 +100,8 @@
   .mountain-illustration {
     display: block;
     margin: 0 auto;
-    width: 94%;
+    transform: translateX(0.65rem);
+    width: 88%;
   }
 
   :where(.milestone, .feature-icon) {
@@ -269,8 +272,8 @@
     border: 1px solid rgba(#1f4d3d, 0.12);
     border-radius: 0.72rem;
     box-shadow: 0 1rem 2.3rem rgba($lh-ink, 0.08);
-    min-height: 8.35rem;
-    padding: 0.9rem 0.75rem;
+    min-height: 8.75rem;
+    padding: 1rem 0.9rem;
     text-align: center;
 
     h2 {
@@ -281,7 +284,7 @@
 
     p {
       color: var(--auth-muted);
-      font-size: 0.84rem;
+      font-size: 0.875rem;
       line-height: 1.42;
       margin: 0;
     }
@@ -310,6 +313,33 @@
       height: 2.05rem;
       overflow: visible;
       width: 2.05rem;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-page-login.auth-page-login {
+    .auth-panel-body.auth-panel-body {
+      padding: clamp(1.4rem, 2.25vw, 1.85rem);
+    }
+
+    .panel-icon.panel-icon {
+      height: 5.15rem;
+      margin-bottom: 0.8rem;
+      width: 5.15rem;
+
+      svg {
+        height: 2.75rem;
+        width: 2.75rem;
+      }
+    }
+
+    .panel-header.panel-header p {
+      margin-top: 0.4rem;
+    }
+
+    .panel-divider.panel-divider {
+      margin: 0.72rem 0;
     }
   }
 }
@@ -409,7 +439,7 @@
 
     .feature-card.feature-card {
       min-height: 7.25rem;
-      padding: 0.72rem 0.6rem;
+      padding: 0.82rem 0.72rem;
     }
 
     .feature-icon.feature-icon {
@@ -589,8 +619,17 @@
       background-position: 44% 55%;
       position: absolute;
 
+      &::before {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 251, 241, 0.9) 0%,
+          rgba(255, 251, 241, 0.58) 38%,
+          transparent 72%
+        );
+      }
+
       &::after {
-        background: rgba(#fffdf7, 0.5);
+        background: rgba(#fffdf7, 0.14);
       }
     }
 
@@ -653,10 +692,20 @@
 @media (max-width: 767.98px) {
   .auth-page {
     .auth-background.auth-background {
-      background-position: 52% 50%;
+      background-position: 38% 55%;
+
+      &::before {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 251, 241, 0.94) 0%,
+          rgba(255, 251, 241, 0.72) 34%,
+          rgba(255, 251, 241, 0.22) 68%,
+          transparent 84%
+        );
+      }
 
       &::after {
-        background: rgba(#fffdf7, 0.68);
+        background: rgba(#fffdf7, 0.12);
       }
     }
 
@@ -780,7 +829,7 @@
       display: flex;
       justify-content: center;
       justify-self: end;
-      width: min(100%, 20.5rem);
+      width: min(100%, 19rem);
     }
   }
 }
@@ -803,7 +852,7 @@
     }
 
     .progress-story.progress-story {
-      width: min(100%, 24rem);
+      width: min(100%, 22.5rem);
     }
 
     .auth-panel.auth-panel {
@@ -835,7 +884,7 @@
     }
 
     .progress-story.progress-story {
-      width: min(100%, 26rem);
+      width: min(100%, 24rem);
     }
 
     .auth-panel.auth-panel {
@@ -853,17 +902,35 @@
 @media (max-width: 575.98px) {
   .auth-page {
     .auth-shell.auth-shell {
-      grid-template-areas: "panel";
+      grid-template-areas:
+        "copy"
+        "panel";
       padding-block: 1.1rem 2rem;
       padding-inline: clamp(1rem, 5vw, 1.25rem);
     }
 
     .auth-copy.auth-copy {
+      display: block;
+    }
+
+    .eyebrow.eyebrow,
+    .title-accent.title-accent,
+    .auth-summary.auth-summary {
       display: none;
+    }
+
+    .auth-title.auth-title {
+      font-size: clamp(1.65rem, 7.5vw, 2rem);
+      line-height: 1.12;
     }
 
     .auth-panel-body.auth-panel-body {
       padding: 1.1rem;
+    }
+
+    .auth-switch.auth-switch,
+    .field-label-row.field-label-row a {
+      font-size: 0.875rem;
     }
   }
 
