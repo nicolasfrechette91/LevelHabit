@@ -45,7 +45,7 @@
         </nav>
       } @else {
         <nav class="navbar-nav auth-nav flex-row align-items-center gap-2 ms-md-auto" [attr.aria-label]="'navigation.account' | translate">
-          <app-language-selector />
+          <app-language-selector class="auth-header-control" />
           @if (!isLoginPage()) {
             <a
               class="nav-link auth-nav-link rounded-3 px-3 py-2"
@@ -58,7 +58,7 @@
             </a>
           }
           <a
-            class="btn btn-lh-primary auth-create-link fw-bold"
+            class="btn btn-lh-primary auth-create-link auth-header-control"
             routerLink="/register"
             routerLinkActive="active"
             ariaCurrentWhenActive="page"
