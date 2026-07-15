@@ -58,9 +58,8 @@
 .showcase-top {
   align-items: center;
   display: grid;
-  gap: 2.2rem;
   grid-area: top;
-  grid-template-columns: minmax(22rem, 1.38fr) minmax(12rem, 0.55fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .auth-title {

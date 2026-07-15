@@ -71,14 +71,26 @@
   }
 
   .progress-story {
-    min-height: 20rem;
+    --progress-cream: #fffdf7;
+    --progress-flag-pole: #7f6a2c;
+    --progress-foreground: #d4dfa6;
+    --progress-gold: #{$lh-gold};
+    --progress-hill: #b5cc94;
+    --progress-leaves: #7fae72;
+    --progress-mountain: #6fa280;
+    --progress-mountain-shade: #3f805f;
+    --progress-pale-green: #eff4df;
+    --progress-path: #efe5c5;
+    --progress-snow: #dbeecf;
+    display: none;
+    pointer-events: none;
     position: relative;
   }
 
   .orbit {
-    border: 2px dashed rgba(#9eba83, 0.55);
+    border: 1px dashed rgba(#7fae72, 0.48);
     border-radius: 50%;
-    inset: 1.45rem 1rem 1.9rem 0.8rem;
+    inset: 7% 5% 10%;
     position: absolute;
     transform: rotate(12deg);
   }
@@ -86,8 +98,7 @@
   .mountain-illustration {
     display: block;
     margin: 0 auto;
-    max-width: 20rem;
-    width: 92%;
+    width: 94%;
   }
 
   :where(.milestone, .feature-icon) {
@@ -99,10 +110,12 @@
 
   .milestone {
     background: rgba(#f8f0c8, 0.78);
+    border: 1px solid rgba(#7f6a2c, 0.08);
+    box-shadow: 0 0.45rem 1rem rgba($lh-ink, 0.06);
     color: var(--auth-green);
-    height: 3.25rem;
+    height: clamp(2.5rem, 3vw, 3.1rem);
     position: absolute;
-    width: 3.25rem;
+    width: clamp(2.5rem, 3vw, 3.1rem);
 
     svg {
       height: 1.5rem;
@@ -112,58 +125,94 @@
 
   .milestone-target {
     background: rgba(#dce9cd, 0.9);
-    left: 6%;
-    top: 1%;
+    left: 3%;
+    top: 9%;
   }
 
   .milestone-flame {
     color: #e5a614;
-    right: 10%;
-    top: 10%;
+    right: 7%;
+    top: 5%;
   }
 
   .milestone-check {
     background: rgba(#e6ebc7, 0.9);
     bottom: 22%;
-    left: 4%;
+    left: 2%;
   }
 
   .milestone-star {
-    bottom: 15%;
+    bottom: 18%;
     color: #d99a13;
-    right: 5%;
+    right: 2%;
   }
 
   .level-ring {
     align-items: center;
-    background: rgba(#eff6df, 0.86);
-    border: 0.36rem solid rgba($lh-emerald, 0.76);
+    background: radial-gradient(
+      circle at 38% 32%,
+      rgba(#ffffff, 0.42),
+      rgba(#eff6df, 0.96) 68%
+    );
+    border: 0;
     border-radius: 50%;
+    box-shadow: 0 0.55rem 1.2rem rgba($lh-ink, 0.07);
     color: var(--auth-green);
     display: flex;
     flex-direction: column;
-    height: 4.4rem;
+    height: clamp(4rem, 4.4vw, 4.65rem);
     justify-content: center;
     position: absolute;
-    right: 11%;
-    top: 43%;
-    width: 4.4rem;
+    right: 8%;
+    top: 34%;
+    width: clamp(4rem, 4.4vw, 4.65rem);
+
+    &::before {
+      background: conic-gradient(
+        from 180deg,
+        rgba($lh-emerald, 0.8) 0 67%,
+        rgba($lh-emerald, 0.14) 67% 100%
+      );
+      border-radius: inherit;
+      content: "";
+      inset: 0;
+      mask: radial-gradient(
+        farthest-side,
+        transparent calc(100% - 0.38rem),
+        #000 calc(100% - 0.36rem)
+      );
+      pointer-events: none;
+      position: absolute;
+      -webkit-mask: radial-gradient(
+        farthest-side,
+        transparent calc(100% - 0.38rem),
+        #000 calc(100% - 0.36rem)
+      );
+    }
+
+    span,
+    strong {
+      position: relative;
+      z-index: 1;
+    }
 
     span {
       font-size: 0.72rem;
       font-weight: 900;
+      line-height: 1;
     }
 
     strong {
       font-size: 1.55rem;
+      line-height: 1;
     }
   }
 
   .xp-readout {
-    bottom: 2.35rem;
+    bottom: 1.5%;
     color: var(--auth-green);
     left: 50%;
-    min-width: 12rem;
+    width: min(58%, 11rem);
     position: absolute;
     text-align: center;
     transform: translateX(-50%);
@@ -174,7 +223,7 @@
     }
 
     strong {
-      font-size: 1.55rem;
+      font-size: clamp(1.35rem, 1.8vw, 1.55rem);
       line-height: 1.1;
     }
 
@@ -191,7 +240,7 @@
     height: 0.58rem;
     margin: 0.6rem auto 0;
     overflow: hidden;
-    width: 8.5rem;
+    width: min(100%, 8.5rem);
 
     span {
       background: linear-gradient(90deg, #4d9b70, var(--auth-green));
@@ -211,7 +260,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    transform: translateY(-3rem);
+    transform: none;
     width: min(100%, 38.5rem);
   }
 
@@ -239,20 +288,28 @@
   }
 
   .feature-icon {
+    --feature-icon-detail: #{$lh-white};
+    --feature-icon-secondary: #{$lh-gold};
     background: var(--auth-sage);
-    color: var(--auth-green);
+    color: $lh-emerald;
     height: 3.2rem;
     margin-inline: auto;
     width: 3.2rem;
 
     &.gold {
+      --feature-icon-detail: #fff0c9;
       background: #fff0c9;
-      color: #d9940f;
+      color: $lh-gold;
+    }
+
+    &.trophy {
+      --feature-icon-detail: #fff6dc;
     }
 
     svg {
-      height: 1.7rem;
-      width: 1.7rem;
+      height: 2.05rem;
+      overflow: visible;
+      width: 2.05rem;
     }
   }
 }
@@ -344,48 +401,9 @@
       max-width: 30rem;
     }
 
-    .progress-story.progress-story {
-      margin-left: auto;
-      min-height: clamp(13rem, 24vw, 18rem);
-      width: min(100%, 18.5rem);
-    }
-
-    .mountain-illustration.mountain-illustration {
-      max-width: 17rem;
-    }
-
-    .milestone.milestone {
-      height: 2.65rem;
-      width: 2.65rem;
-
-      svg {
-        height: 1.25rem;
-        width: 1.25rem;
-      }
-    }
-
-    .level-ring.level-ring {
-      border-width: 0.3rem;
-      height: 3.7rem;
-      width: 3.7rem;
-
-      strong {
-        font-size: 1.32rem;
-      }
-    }
-
-    .xp-readout.xp-readout {
-      bottom: 1.15rem;
-      min-width: 10rem;
-
-      strong {
-        font-size: 1.28rem;
-      }
-    }
-
     .feature-list.feature-list {
       gap: 0.55rem;
-      transform: translateY(-1rem);
+      transform: none;
       width: min(100%, 33rem);
     }
 
@@ -399,8 +417,8 @@
       width: 2.75rem;
 
       svg {
-        height: 1.45rem;
-        width: 1.45rem;
+        height: 1.75rem;
+        width: 1.75rem;
       }
     }
 
@@ -469,18 +487,10 @@
       line-height: 1.5;
     }
 
-    .progress-story.progress-story {
-      min-height: 16rem;
-    }
-
-    .mountain-illustration.mountain-illustration {
-      max-width: 17.5rem;
-    }
-
     .feature-list.feature-list {
       gap: 0.5rem;
       grid-template-columns: 1fr;
-      transform: translateY(-0.35rem);
+      transform: none;
       width: 15rem;
     }
 
@@ -508,8 +518,8 @@
       width: 2.35rem;
 
       svg {
-        height: 1.25rem;
-        width: 1.25rem;
+        height: 1.5rem;
+        width: 1.5rem;
       }
     }
 
@@ -588,7 +598,6 @@
       grid-template-areas:
         "copy"
         "panel"
-        "progress"
         "features";
       grid-template-columns: 1fr;
       max-width: 45rem;
@@ -604,13 +613,6 @@
     .auth-copy.auth-copy {
       grid-area: copy;
       text-align: center;
-    }
-
-    .progress-story.progress-story {
-      grid-area: progress;
-      margin: 0.25rem auto 0;
-      min-height: 14rem;
-      width: min(100%, 20rem);
     }
 
     .auth-panel.auth-panel {
@@ -677,10 +679,6 @@
     }
 
     .auth-summary.auth-summary {
-      display: none;
-    }
-
-    .progress-story.progress-story {
       display: none;
     }
 
@@ -765,6 +763,24 @@
       span {
         width: min(30vw, 5rem);
       }
+    }
+  }
+}
+
+@media (min-width: 1400px) and (min-height: 820px) {
+  .auth-page {
+    .showcase-top.showcase-top {
+      gap: clamp(1.5rem, 2.4vw, 2.5rem);
+      grid-template-columns: minmax(22rem, 1.25fr) minmax(17rem, 0.72fr);
+    }
+
+    .progress-story.progress-story {
+      align-items: center;
+      aspect-ratio: 1;
+      display: flex;
+      justify-content: center;
+      justify-self: end;
+      width: min(100%, 20.5rem);
     }
   }
 }
