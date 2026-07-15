@@ -38,6 +38,10 @@ import {
       border-color: rgba(23, 55, 47, .25);
       font-weight: 700;
     }
+
+    @media (max-width: 575.98px) {
+      .language-select { min-width: 6.25rem; }
+    }
   `]
 })
 export class LanguageSelectorComponent {

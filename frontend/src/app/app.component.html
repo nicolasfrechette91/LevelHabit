@@ -3,7 +3,7 @@
     class="navbar site-header sticky-top"
     [class.site-header-anonymous]="!auth.isAuthenticated()"
   >
-    <div class="container-xl d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2">
+    <div class="app-container d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2">
       <a
         class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0"
         [routerLink]="auth.isAuthenticated() ? '/dashboard' : '/login'"
@@ -72,7 +72,7 @@
   </header>
 
   @if (auth.emailVerificationNotice(); as notice) {
-    <div class="container-xl pt-3">
+    <div class="app-container pt-3">
       <div class="alert alert-success app-notice mb-0" role="alert">
         <span>
           {{ (notice ? 'auth.verificationNotice' : 'auth.verificationNoticeGeneric') | translate: { email: notice } }}

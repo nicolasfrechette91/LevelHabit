@@ -31,6 +31,13 @@ $lh-shadow-soft: 0 18px 45px rgba($lh-ink, 0.12);
 $lh-shadow-subtle: 0 12px 30px rgba($lh-ink, 0.08);
 $lh-progress-gradient: linear-gradient(90deg, #5fd0a5, $lh-warning, #ef7d67);
 
+$lh-app-container-large-breakpoint: 1600px;
+$lh-app-container-ultrawide-breakpoint: 2200px;
+$lh-app-container-large-max: 1920px;
+$lh-app-container-ultrawide-max: 2320px;
+$lh-app-container-large-inset: 10rem;
+$lh-app-container-ultrawide-inset: 15rem;
+
 @mixin levelhabit-css-variables {
   :root {
     color-scheme: light;

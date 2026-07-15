@@ -20,3 +20,121 @@ body {
 a {
   color: inherit;
 }
+
+// Mirrors Bootstrap's container-xl sizing through normal desktop widths, then
+// opens the application shell up for large and ultrawide displays.
+.app-container {
+  --app-container-gutter: 1.5rem;
+  margin-inline: auto;
+  padding-inline: calc(var(--app-container-gutter) * 0.5);
+  width: 100%;
+}
+
+.app-page {
+  min-width: 0;
+  width: 100%;
+}
+
+.app-content {
+  max-width: 48rem;
+  width: 100%;
+}
+
+.app-content--wide {
+  max-width: none;
+}
+
+.auth-content {
+  margin-inline: auto;
+  max-width: 30rem;
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .app-container {
+    max-width: 540px;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 992px) {
+  .app-container {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .app-container {
+    max-width: 1140px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .app-container {
+    max-width: 1320px;
+  }
+}
+
+@media (min-width: $lh-app-container-large-breakpoint) {
+  .app-container {
+    --app-container-gutter: 2.5rem;
+    max-width: $lh-app-container-large-max;
+    width: calc(100% - #{$lh-app-container-large-inset});
+  }
+
+  .app-page {
+    .row.g-3 {
+      --bs-gutter-x: 1.5rem;
+      --bs-gutter-y: 1.5rem;
+    }
+
+    .row.g-4 {
+      --bs-gutter-x: 2rem;
+      --bs-gutter-y: 2rem;
+    }
+  }
+
+  .app-card-grid--habits > .app-card-grid__item,
+  .progress-stats-grid > * {
+    flex: 0 0 auto;
+    width: 25%;
+  }
+
+  .app-card-grid--achievements > .app-card-grid__item {
+    flex: 0 0 auto;
+    width: 33.333333%;
+  }
+}
+
+@media (min-width: $lh-app-container-ultrawide-breakpoint) {
+  .app-container {
+    --app-container-gutter: 4rem;
+    max-width: $lh-app-container-ultrawide-max;
+    width: calc(100% - #{$lh-app-container-ultrawide-inset});
+  }
+
+  .app-page {
+    .row.g-3 {
+      --bs-gutter-x: 1.75rem;
+      --bs-gutter-y: 1.75rem;
+    }
+
+    .row.g-4 {
+      --bs-gutter-x: 2.25rem;
+      --bs-gutter-y: 2.25rem;
+    }
+  }
+
+  .app-card-grid--habits > .app-card-grid__item {
+    width: 20%;
+  }
+
+  .app-card-grid--achievements > .app-card-grid__item {
+    width: 25%;
+  }
+}

@@ -163,12 +163,14 @@
   }
 
   .site-header-anonymous {
-    .container-xl {
+    .app-container {
       align-items: center !important;
       flex-direction: row !important;
+      gap: 0.25rem !important;
     }
 
     .auth-nav {
+      gap: 0.25rem !important;
       margin-left: auto;
       width: auto;
     }

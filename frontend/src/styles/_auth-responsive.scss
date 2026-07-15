@@ -785,6 +785,71 @@
   }
 }
 
+@media (min-width: $lh-app-container-large-breakpoint) and (min-height: 801px) {
+  .auth-page {
+    .auth-shell.auth-shell {
+      column-gap: clamp(4rem, 4.5vw, 6rem);
+      grid-template-columns: minmax(0, 1.3fr) minmax(30rem, 0.82fr);
+    }
+
+    .showcase-top.showcase-top {
+      gap: clamp(2rem, 3vw, 3.5rem);
+      grid-template-columns: minmax(24rem, 1.2fr) minmax(20rem, 0.8fr);
+    }
+
+    .feature-list.feature-list {
+      gap: 1rem;
+      width: min(100%, 46rem);
+    }
+
+    .progress-story.progress-story {
+      width: min(100%, 24rem);
+    }
+
+    .auth-panel.auth-panel {
+      max-width: 34rem;
+      width: min(100%, 34rem);
+    }
+  }
+
+  .auth-page-register.auth-page-register {
+    .auth-shell.auth-shell {
+      grid-template-columns: minmax(0, 1.15fr) minmax(36rem, 0.9fr);
+    }
+
+    .auth-panel.auth-panel {
+      max-width: 40rem;
+      width: min(100%, 40rem);
+    }
+  }
+}
+
+@media (min-width: $lh-app-container-ultrawide-breakpoint) and (min-height: 801px) {
+  .auth-page {
+    .auth-shell.auth-shell {
+      column-gap: clamp(6rem, 5vw, 7.5rem);
+    }
+
+    .feature-list.feature-list {
+      width: min(100%, 50rem);
+    }
+
+    .progress-story.progress-story {
+      width: min(100%, 26rem);
+    }
+
+    .auth-panel.auth-panel {
+      max-width: 35rem;
+      width: min(100%, 35rem);
+    }
+  }
+
+  .auth-page-register.auth-page-register .auth-panel.auth-panel {
+    max-width: 42rem;
+    width: min(100%, 42rem);
+  }
+}
+
 @media (max-width: 575.98px) {
   .auth-page {
     .auth-shell.auth-shell {
