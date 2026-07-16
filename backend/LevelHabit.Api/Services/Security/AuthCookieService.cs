@@ -11,7 +11,6 @@ public sealed class AuthCookieService(
     IOptions<AuthCookieOptions> authCookieOptions) : IAuthCookieService
 {
     public const string CsrfHeaderName = "X-LevelHabit-CSRF";
-    private const string CookiePath = "/api/auth";
     private const int CsrfTokenByteLength = 32;
     private readonly AuthCookieOptions options = authCookieOptions.Value;
 
@@ -68,8 +67,8 @@ public sealed class AuthCookieService(
         CookieOptions expiredCookieOptions = CreateCookieOptions(DateTimeOffset.UnixEpoch);
         expiredCookieOptions.MaxAge = TimeSpan.Zero;
 
-        response.Cookies.Delete(options.RefreshTokenName, expiredCookieOptions);
-        response.Cookies.Delete(options.CsrfTokenName, expiredCookieOptions);
+        response.Cookies.Append(options.RefreshTokenName, string.Empty, expiredCookieOptions);
+        response.Cookies.Append(options.CsrfTokenName, string.Empty, expiredCookieOptions);
     }
 
     private CookieOptions CreateCookieOptions(DateTimeOffset? expiresAtUtc)
@@ -79,7 +78,8 @@ public sealed class AuthCookieService(
             HttpOnly = true,
             Secure = options.Secure,
             SameSite = options.SameSite,
-            Path = CookiePath,
+            Path = options.Path,
+            Domain = options.Domain,
             Expires = expiresAtUtc,
             IsEssential = true
         };

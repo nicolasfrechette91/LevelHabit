@@ -598,7 +598,7 @@ public sealed class AuthServiceTests
     }
 
     [Fact]
-    public async Task LogoutAsync_revokes_refresh_token()
+    public async Task LogoutAsync_revokes_refresh_token_and_refresh_rejects_it()
     {
         using AuthServiceHarness harness = AuthServiceHarness.Create();
         AuthResponse login = await harness.LoginDefaultAsync();

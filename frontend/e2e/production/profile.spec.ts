@@ -1,4 +1,11 @@
-import { LevelHabitPage, credentials, expect, test, warmBackend } from './support/production-fixture';
+import {
+  LevelHabitPage,
+  credentials,
+  expect,
+  skipForWebKitCrossSiteRefreshCookie,
+  test,
+  warmBackend
+} from './support/production-fixture';
 
 test.describe('production profile and account surface', () => {
   test.beforeEach(async ({ page }) => warmBackend(page));
@@ -11,6 +18,13 @@ test.describe('production profile and account surface', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Your progress' })).toBeVisible();
     expect(page.url()).not.toContain(credentials().email);
     expect(page.url()).not.toMatch(/[0-9a-f]{8}-[0-9a-f-]{27,}/i);
+  });
+
+  test('restores profile information after reload', async ({ browserName, page }) => {
+    skipForWebKitCrossSiteRefreshCookie(browserName);
+    const app = new LevelHabitPage(page);
+    await app.login();
+    await app.openRoute('progress');
     await page.reload();
     await expect(page.getByText(credentials().email, { exact: true })).toBeVisible();
   });

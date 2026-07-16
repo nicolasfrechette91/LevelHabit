@@ -15,7 +15,8 @@ public sealed class AuthCookieServiceTests
         RefreshTokenName = "LevelHabit.Refresh",
         CsrfTokenName = "LevelHabit.Csrf",
         Secure = true,
-        SameSite = SameSiteMode.None
+        SameSite = SameSiteMode.None,
+        Path = "/api/auth"
     };
 
     [Fact]
@@ -112,10 +113,57 @@ public sealed class AuthCookieServiceTests
         Assert.Contains(setCookies, value => value.StartsWith("LevelHabit.Csrf="));
         Assert.All(
             setCookies,
-            value => Assert.Contains(
-                "expires=Thu, 01 Jan 1970",
-                value,
-                StringComparison.OrdinalIgnoreCase));
+            value =>
+            {
+                Assert.Contains(
+                    "expires=Thu, 01 Jan 1970",
+                    value,
+                    StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("max-age=0", value, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("path=/api/auth", value, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("secure", value, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("httponly", value, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("samesite=none", value, StringComparison.OrdinalIgnoreCase);
+            });
+    }
+
+    [Fact]
+    public void Cookie_deletion_uses_the_same_configured_path_and_domain_as_creation()
+    {
+        AuthCookieOptions configuredOptions = new()
+        {
+            RefreshTokenName = "LevelHabit.Refresh",
+            CsrfTokenName = "LevelHabit.Csrf",
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = "/configured/auth",
+            Domain = "api.example.com"
+        };
+        AuthCookieService service = new(Options.Create(configuredOptions));
+        DefaultHttpContext creationContext = new();
+        DefaultHttpContext deletionContext = new();
+
+        service.WriteRefreshToken(
+            creationContext.Response,
+            "refresh-token",
+            DateTimeOffset.Parse("2099-02-01T00:00:00Z"));
+        service.ClearAuthenticationCookies(deletionContext.Response);
+
+        string createdCookie = Assert.IsType<string>(
+            Assert.Single(creationContext.Response.Headers.SetCookie));
+        string[] deletedCookies = deletionContext.Response.Headers.SetCookie
+            .Select(value => value ?? string.Empty)
+            .ToArray();
+
+        Assert.Contains("path=/configured/auth", createdCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("domain=api.example.com", createdCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.All(
+            deletedCookies,
+            value =>
+            {
+                Assert.Contains("path=/configured/auth", value, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("domain=api.example.com", value, StringComparison.OrdinalIgnoreCase);
+            });
     }
 
     private static AuthCookieService CreateService()

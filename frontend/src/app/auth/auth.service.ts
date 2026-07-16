@@ -290,9 +290,15 @@ export class AuthService {
   }
 
   logout(): Observable<void> {
+    const pendingRefreshRequest = this.refreshRequest$;
     this.clearSession();
 
-    return this.requestCsrfToken().pipe(
+    const waitForPendingRefresh = pendingRefreshRequest
+      ? pendingRefreshRequest.pipe(catchError(() => of(null)))
+      : of(null);
+
+    return waitForPendingRefresh.pipe(
+      switchMap(() => this.requestCsrfToken()),
       switchMap((csrfToken) =>
         this.http.post<void>(
           `${environment.apiUrl}/auth/logout`,

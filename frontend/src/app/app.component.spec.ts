@@ -6,7 +6,7 @@ import {
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../environments/environment';
@@ -100,8 +100,10 @@ describe('AppComponent', () => {
     expect(element.querySelector('.site-nav')).toBeNull();
   });
 
-  it('neutralizes the authenticated page while navigating immediately after logout', async () => {
+  it('neutralizes the authenticated page and waits for logout before replacing the route', async () => {
     const { auth, element, fixture, router } = await setupApp({ status: 'authenticated' });
+    const logoutCompletion = new Subject<void>();
+    auth.logout.mockReturnValue(logoutCompletion);
     let resolveNavigation!: (navigated: boolean) => void;
     const navigation = new Promise<boolean>((resolve) => {
       resolveNavigation = resolve;
@@ -119,7 +121,13 @@ describe('AppComponent', () => {
     expect(element.querySelector('.auth-nav')).toBeNull();
     expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).not.toBeNull();
     expect(element.querySelector('.app-main')?.classList).toContain('app-main-logging-out');
-    expect(navigateByUrl).toHaveBeenCalledWith('/login');
+    expect(navigateByUrl).not.toHaveBeenCalled();
+
+    logoutCompletion.next();
+    expect(navigateByUrl).not.toHaveBeenCalled();
+    auth.setStatus('unauthenticated');
+    logoutCompletion.complete();
+    expect(navigateByUrl).toHaveBeenCalledWith('/login', { replaceUrl: true });
 
     resolveNavigation(true);
     await navigation;
@@ -128,6 +136,20 @@ describe('AppComponent', () => {
     expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).toBeNull();
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
     expect(element.querySelector('.app-main')?.classList).not.toContain('app-main-logging-out');
+  });
+
+  it('navigates to login after the logout request safely fails', async () => {
+    const { auth, element, router } = await setupApp({ status: 'authenticated' });
+    auth.logout.mockReturnValue(throwError(() => new Error('network failure')));
+    const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const logoutButton = element.querySelector(
+      '[data-testid="logout-button"]'
+    ) as HTMLButtonElement;
+
+    logoutButton.click();
+    await Promise.resolve();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/login', { replaceUrl: true });
   });
 });
 
@@ -181,6 +203,7 @@ class AuthServiceStub {
   readonly isCheckingAuth = () => this.status() === 'checking';
   readonly isAuthenticated = () => this.status() === 'authenticated';
   readonly isUnauthenticated = () => this.status() === 'unauthenticated';
+  readonly user = signal(null).asReadonly();
   readonly emailVerificationNotice = signal<string | null>(null).asReadonly();
   readonly dismissEmailVerificationNotice = vi.fn();
   readonly clearSession = vi.fn(() => this.status.set('unauthenticated'));

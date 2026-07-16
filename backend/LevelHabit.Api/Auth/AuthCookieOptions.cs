@@ -15,4 +15,9 @@ public sealed class AuthCookieOptions
     public bool Secure { get; init; } = true;
 
     public SameSiteMode SameSite { get; init; } = SameSiteMode.None;
+
+    [Required]
+    public string Path { get; init; } = "/api/auth";
+
+    public string? Domain { get; init; }
 }

@@ -1,8 +1,32 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL =
-  process.env['LEVELHABIT_BASE_URL'] ??
-  'https://nicolasfrechette91.github.io/LevelHabit/';
+const requiredEnvironmentVariables = [
+  'LEVELHABIT_BASE_URL',
+  'LEVELHABIT_TEST_EMAIL',
+  'LEVELHABIT_TEST_PASSWORD'
+] as const;
+const missingEnvironmentVariables = requiredEnvironmentVariables.filter(
+  (name) => !process.env[name]?.trim()
+);
+
+if (missingEnvironmentVariables.length > 0) {
+  throw new Error(
+    `Production Playwright requires: ${missingEnvironmentVariables.join(', ')}.`
+  );
+}
+
+const baseURL = process.env['LEVELHABIT_BASE_URL'] as string;
+const productionUrl = new URL(baseURL);
+
+if (
+  productionUrl.protocol !== 'https:'
+  || productionUrl.hostname !== 'nicolasfrechette91.github.io'
+  || !productionUrl.pathname.startsWith('/LevelHabit')
+) {
+  throw new Error(
+    'LEVELHABIT_BASE_URL must target the production GitHub Pages LevelHabit URL.'
+  );
+}
 
 export default defineConfig({
   testDir: './e2e/production',
@@ -21,9 +45,8 @@ export default defineConfig({
     baseURL,
     actionTimeout: 20_000,
     navigationTimeout: 45_000,
-    screenshot: 'off',
-    // Production credentials and bearer tokens must not be persisted in traces/videos.
-    trace: 'off',
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
     video: 'off'
   },
   projects: [

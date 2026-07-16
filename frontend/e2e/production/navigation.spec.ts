@@ -1,17 +1,37 @@
-import { LevelHabitPage, PROTECTED_ROUTES, expect, test, warmBackend } from './support/production-fixture';
+import {
+  LevelHabitPage,
+  PRODUCTION_API_URL,
+  PROTECTED_ROUTES,
+  expect,
+  hasConfirmedWebKitCrossSiteCookieLimitation,
+  skipForWebKitCrossSiteRefreshCookie,
+  test,
+  warmBackend
+} from './support/production-fixture';
 
 test.describe('production navigation and authorization', () => {
   test.beforeEach(async ({ page }) => warmBackend(page));
 
-  test('opens, refreshes, and directly navigates to every protected route', async ({ page }) => {
+  test('opens and navigates to every protected route before reload', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.login();
     for (const route of PROTECTED_ROUTES) {
       await app.openRoute(route);
       await expect(page.getByTestId(`nav-${route}`)).toHaveAttribute('aria-current', 'page');
-      await page.reload();
-      await expect(page.getByTestId(`page-${route}`)).toBeVisible();
+    }
+  });
+
+  test('restores every protected route after reload and direct navigation', async ({
+    browserName,
+    page
+  }) => {
+    skipForWebKitCrossSiteRefreshCookie(browserName);
+    const app = new LevelHabitPage(page);
+    await app.login();
+    for (const route of PROTECTED_ROUTES) {
       await page.goto(`./#/${route}`);
+      await expect(page.getByTestId(`page-${route}`)).toBeVisible();
+      await page.reload();
       await expect(page.getByTestId(`page-${route}`)).toBeVisible();
     }
   });
@@ -31,6 +51,9 @@ test.describe('production navigation and authorization', () => {
     const app = new LevelHabitPage(page);
     await app.login();
     await app.logout();
+    await page.goBack();
+    await expect(page.getByTestId('login-submit-button')).toBeVisible();
+    await expect(page.getByTestId('page-dashboard')).toHaveCount(0);
     for (const route of PROTECTED_ROUTES) {
       await page.goto(`./#/${route}`);
       await expect(page.getByTestId('login-submit-button')).toBeVisible();
@@ -53,35 +76,57 @@ test.describe('production navigation and authorization', () => {
     await expect(page.getByTestId('register-submit-button')).toHaveCount(0);
   });
 
-  test('clears the authentication cookie and rejects session restoration after logout', async ({ page }) => {
+  test('clears the authentication cookie and rejects session restoration after logout', async ({
+    browserName,
+    page
+  }) => {
     const app = new LevelHabitPage(page);
     await app.login();
     expect(await page.evaluate(() => localStorage.getItem('levelhabit.auth.v1'))).toBeNull();
     expect(await page.evaluate(() => sessionStorage.getItem('levelhabit.auth.v1'))).toBeNull();
-    await app.logout();
-    expect(
-      (await page.context().cookies()).some((cookie) => cookie.name === 'LevelHabit.Refresh')
-    ).toBe(false);
+    const logoutResponse = await app.logout();
+    const cookiesAfterLogout = await page.context().cookies();
+    expect(cookiesAfterLogout.some((cookie) => cookie.name === 'LevelHabit.Refresh')).toBe(false);
+    expect(cookiesAfterLogout.some((cookie) => cookie.name === 'LevelHabit.Csrf')).toBe(false);
+    if (!hasConfirmedWebKitCrossSiteCookieLimitation(browserName)) {
+      expect(logoutResponse.status()).toBe(204);
+      const setCookie = (await logoutResponse.allHeaders())['set-cookie'] ?? '';
+      expect(setCookie).toContain('LevelHabit.Refresh=');
+      expect(setCookie).toContain('LevelHabit.Csrf=');
+      expect(setCookie.match(/Max-Age=0/gi)).toHaveLength(2);
+      expect(setCookie.match(/Path=\/api\/auth/gi)).toHaveLength(2);
+    }
     await page.reload();
     await expect(page.getByTestId('login-submit-button')).toBeVisible();
     await page.goto('./#/register');
     await expect(page.getByTestId('register-submit-button')).toBeVisible();
-    const status = await page.evaluate(async () => {
-      const response = await fetch('https://level-habit-api.onrender.com/api/habits');
-      return response.status;
-    });
-    expect(status).toBe(401);
+    const refreshStatus = await page.evaluate(async ({ apiUrl, csrfHeader }) => {
+      const csrfResponse = await fetch(`${apiUrl}/auth/csrf`, {
+        credentials: 'include'
+      });
+      const csrfBody = await csrfResponse.json() as { csrfToken: string };
+      const refreshResponse = await fetch(`${apiUrl}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { [csrfHeader]: csrfBody.csrfToken }
+      });
+
+      return refreshResponse.status;
+    }, { apiUrl: PRODUCTION_API_URL, csrfHeader: 'X-LevelHabit-CSRF' });
+    expect(refreshStatus).toBe(
+      hasConfirmedWebKitCrossSiteCookieLimitation(browserName) ? 403 : 401
+    );
   });
 
   test('allows credentialed CORS from GitHub Pages', async ({ page }) => {
     await page.goto('./#/login');
-    const result = await page.evaluate(async () => {
+    const result = await page.evaluate(async (apiUrl) => {
       const response = await fetch(
-        'https://level-habit-api.onrender.com/api/health',
+        `${apiUrl}/health`,
         { credentials: 'include' }
       );
       return { ok: response.ok, status: response.status };
-    });
+    }, PRODUCTION_API_URL);
 
     expect(result).toEqual({ ok: true, status: 200 });
   });

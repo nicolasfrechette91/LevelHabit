@@ -1,4 +1,11 @@
-import { LevelHabitPage, credentials, expect, test, warmBackend } from './support/production-fixture';
+import {
+  LevelHabitPage,
+  credentials,
+  expect,
+  skipForWebKitCrossSiteRefreshCookie,
+  test,
+  warmBackend
+} from './support/production-fixture';
 
 test.describe('production authentication', () => {
   test.beforeEach(async ({ page }) => warmBackend(page));
@@ -32,7 +39,7 @@ test.describe('production authentication', () => {
     await expect(page.getByRole('alert')).toHaveText(firstMessage);
   });
 
-  test('submits with Enter, prevents duplicate requests, refreshes, and keeps secrets out of the URL', async ({ page }) => {
+  test('submits with Enter, prevents duplicate requests, and keeps secrets out of the URL', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.openLogin();
     let loginRequests = 0;
@@ -45,6 +52,15 @@ test.describe('production authentication', () => {
     await expect(page.getByTestId('page-dashboard')).toBeVisible({ timeout: 3_000 });
     expect(loginRequests).toBe(1);
     expect(page.url()).not.toContain(credentials().password);
+  });
+
+  test('restores the authenticated session after reload and keeps Back guarded', async ({
+    browserName,
+    page
+  }) => {
+    skipForWebKitCrossSiteRefreshCookie(browserName);
+    const app = new LevelHabitPage(page);
+    await app.login();
     await page.reload();
     await expect(page.getByTestId('page-dashboard')).toBeVisible();
     await page.goBack();
@@ -102,6 +118,27 @@ test.describe('production authentication', () => {
     expect(responseJson).not.toHaveProperty('refreshTokenExpiresAtUtc');
     expect(await page.evaluate(() => localStorage.getItem('levelhabit.auth.v1'))).toBeNull();
     expect(await page.evaluate(() => sessionStorage.getItem('levelhabit.auth.v1'))).toBeNull();
+  });
+
+  test('sets the production refresh cookie with secure cross-site attributes', async ({
+    browserName,
+    page
+  }) => {
+    skipForWebKitCrossSiteRefreshCookie(browserName);
+    const app = new LevelHabitPage(page);
+    const loginResponsePromise = page.waitForResponse((response) =>
+      response.url().endsWith('/api/auth/login') && response.status() === 200
+    );
+
+    await app.login();
+    const loginResponse = await loginResponsePromise;
+    const setCookie = (await loginResponse.allHeaders())['set-cookie'] ?? '';
+    expect(setCookie).toContain('LevelHabit.Refresh=');
+    expect(setCookie).toMatch(/HttpOnly/i);
+    expect(setCookie).toMatch(/Secure/i);
+    expect(setCookie).toMatch(/SameSite=None/i);
+    expect(setCookie).toMatch(/Path=\/api\/auth/i);
+    expect(setCookie).not.toMatch(/Domain=/i);
     const refreshCookie = (await page.context().cookies()).find((cookie) =>
       cookie.name === 'LevelHabit.Refresh'
     );

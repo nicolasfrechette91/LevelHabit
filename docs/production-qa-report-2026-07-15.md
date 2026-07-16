@@ -362,3 +362,103 @@ Observations and follow-up:
 - After deployment, rerun `npm run e2e:production` with the authorized test
   account, first non-mutating and then with destructive lifecycle coverage only
   in an isolated test environment or with an approved cleanup strategy.
+
+## 10. Production stabilization follow-up (2026-07-16)
+
+Status: **Failures classified and fixes implemented locally; the new production
+matrix is pending deployment and credentials.** This section does not claim a
+fully passing production suite.
+
+### Latest deployed-production baseline
+
+The supplied/latest JSON run contains 69 tests: **58 passed, 11 failed, 0
+skipped, and 0 flaky or retry-only passes**. Retries reproduced every failure.
+
+| Browser | Passed | Failed | Skipped |
+|---|---:|---:|---:|
+| Chromium | 21 | 2 | 0 |
+| Firefox | 20 | 3 | 0 |
+| WebKit | 17 | 6 | 0 |
+| **Total** | **58** | **11** | **0** |
+
+Failure classification:
+
+| Failure group | Classification | Evidence and correction |
+|---|---|---|
+| Chromium/Firefox logout (4 failures) | **Application defect** | Angular cleared memory and started navigation without waiting for the CSRF plus logout request chain. The cookie was still present when the login route appeared, so reload could restore the session. Logout now waits for any in-flight refresh, waits for the logout request to complete or safely fail, and then replaces the current history entry with login. |
+| Firefox habit boundary test (1 failure) | **Playwright synchronization defect** | The routed POST had started and the Save button showed `Saving...`, but the test read `createRequests` before Firefox entered the route handler. Create and update assertions now wait for the exact API response, and real lifecycle create/update/complete/archive operations use equivalent response synchronization. No timeout was increased. |
+| WebKit auth/navigation/profile reloads (5 failures) | **Confirmed browser/production topology limitation** | Login returned 200 and rendered authenticated content, but `browserContext.cookies()` had no `LevelHabit.Refresh`; reload then returned to login. The frontend is on `github.io` and the API is on `onrender.com`, making the API cookie third-party/cross-site. WebKit documents full third-party-cookie blocking by default: [Full Third-Party Cookie Blocking and More](https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/). |
+| WebKit habit persistence after reload (1 failure) | **Same confirmed WebKit limitation** | The record existed before reload; authentication was lost at reload and the app returned to login. This was not evidence of failed habit persistence, a locator defect, or a completion race. Completion is now response-synchronized and persistence is isolated in its own conditionally unsupported test. |
+| WebKit responsive authenticated-route failure | **Incorrect test scope/expectation caused by the same limitation** | A responsive-layout test used full-page `goto` calls and accidentally required cross-site session restoration. It now uses Angular navigation and retains WebKit coverage for authenticated responsive layout before reload. |
+
+### Logout and cookie verification
+
+Backend review confirmed that logout already revokes the current stored refresh
+token and that a refresh using that token returns 401. The current production
+cookie is host-only (no `Domain`) and uses `/api/auth`, `HttpOnly`, `Secure`, and
+`SameSite=None`. Cookie expiry previously reused the same hard-coded path and no
+domain; configuration is now explicit and testable:
+
+- `AuthCookies:Path` defaults to `/api/auth`; optional `AuthCookies:Domain` is
+  used identically for creation and deletion.
+- Invalid path/domain shapes fail at API startup.
+- Logout emits empty expired `LevelHabit.Refresh` and `LevelHabit.Csrf` cookies
+  with `Expires` in 1970, `Max-Age=0`, and the same security/path/domain options.
+- Controller, cookie-service, and auth-service tests cover revocation, both
+  expired cookies, option parity, and refresh rejection after logout.
+- Angular tests cover waiting for an in-flight refresh and deferring navigation
+  until logout completion, including the safe-failure route.
+
+### Browser-limited coverage after deployment
+
+The revised suite collects **84 tests (28 per browser)**. Under the current
+`github.io` to `onrender.com` topology, exactly five WebKit tests are
+conditionally skipped; Chromium and Firefox remain fully covered. The shared
+exact annotation reason is:
+
+> WebKit blocks the cross-site refresh cookie between github.io and onrender.com.
+
+Conditionally unsupported WebKit cases:
+
+1. `restores the authenticated session after reload and keeps Back guarded`
+2. `sets the production refresh cookie with secure cross-site attributes`
+3. `restores every protected route after reload and direct navigation`
+4. `persists a completed habit and XP after reload`
+5. `restores profile information after reload`
+
+Login, pre-reload navigation, create/edit/complete/archive, validation,
+accessibility, responsive layout, and safe logged-out behavior remain enabled
+in WebKit. If deployment verification succeeds as designed, the supported
+coverage would be 28 Chromium passes, 28 Firefox passes, and 23 WebKit passes,
+with 5 WebKit browser-limited skips (**79 supported passes plus 5 skips**). This
+is a target, not a recorded production result.
+
+### Verification performed locally
+
+- `npm test`: **138 passed**, 0 failed, 0 skipped.
+- `npm run build`: passed.
+- `dotnet test LevelHabit.Api.Tests\\LevelHabit.Api.Tests.csproj --configuration Release`: **105 passed**, 0 failed, 0 skipped. Release was used because a user-owned running Debug API process locked the Debug executable.
+- `dotnet build LevelHabit.Api\\LevelHabit.Api.csproj --configuration Release`: passed with 0 errors. The only warning was an unavailable NuGet vulnerability-service index in the restricted environment.
+- Production Playwright collection: **84 tests in 6 files**.
+- Production configuration retains traces and screenshots only on failure and
+  keeps video disabled. Failure traces can contain entered credentials and must
+  remain in ignored/local test artifacts rather than being committed or shared.
+- `git diff --check`: passed.
+- Focused production execution: not run. The new fail-fast validation correctly
+  reported missing `LEVELHABIT_BASE_URL`, `LEVELHABIT_TEST_EMAIL`, and
+  `LEVELHABIT_TEST_PASSWORD`; no password value was printed. The frontend and
+  backend fixes are also not yet deployed.
+
+### Deployment requirements and remaining limitation
+
+Deploy the backend first so cookie expiration uses the explicit production
+path/domain configuration, then deploy the frontend so logout waits for the
+server response. Set `LEVELHABIT_BASE_URL` to
+`https://nicolasfrechette91.github.io/LevelHabit/` and provide the authorized
+test email/password only in the test environment before running the focused
+commands and full matrix.
+
+The durable production solution for WebKit reload persistence is a same-site
+deployment, for example serving the API from a custom domain under the same
+registrable site as the frontend. Weakening `Secure`, `HttpOnly`, or
+`SameSite=None` is not an acceptable workaround.

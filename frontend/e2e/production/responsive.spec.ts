@@ -30,8 +30,7 @@ test.describe('production responsive layout', () => {
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
       for (const route of ['dashboard', 'habits', 'progress'] as const) {
-        await page.goto(`./#/${route}`);
-        await expect(page.getByTestId(`page-${route}`)).toBeVisible();
+        await app.openRoute(route);
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(overflow, `${route} ${viewport.width}x${viewport.height}`).toBeLessThanOrEqual(1);
       }

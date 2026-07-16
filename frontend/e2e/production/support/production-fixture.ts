@@ -1,8 +1,19 @@
-import { expect, test as base, type Locator, type Page, type Request, type TestInfo } from '@playwright/test';
+import {
+  expect,
+  test as base,
+  type Locator,
+  type Page,
+  type Request,
+  type Response,
+  type TestInfo
+} from '@playwright/test';
 
 export const PROTECTED_ROUTES = [
   'dashboard', 'habits', 'progress', 'achievements', 'analytics'
 ] as const;
+export const PRODUCTION_API_URL = 'https://level-habit-api.onrender.com/api';
+export const WEBKIT_CROSS_SITE_REFRESH_COOKIE_REASON =
+  'WebKit blocks the cross-site refresh cookie between github.io and onrender.com.';
 
 type AuditEvent = Readonly<{
   kind: 'console' | 'pageerror' | 'requestfailed' | 'http' | 'api';
@@ -37,7 +48,7 @@ export const test = base.extend<{ auditEvents: AuditEvent[] }>({
     page.on('request', (request) => requestStartedAt.set(request, Date.now()));
     page.on('response', (response) => {
       const request = response.request();
-      if (response.url().startsWith('https://level-habit-api.onrender.com/api/')) {
+      if (response.url().startsWith(`${PRODUCTION_API_URL}/`)) {
         const url = new URL(response.url());
         const duration = Date.now() - (requestStartedAt.get(request) ?? Date.now());
         events.push({
@@ -72,11 +83,32 @@ export function credentials(): Readonly<{ email: string; password: string }> {
   return { email, password };
 }
 
+export function hasConfirmedWebKitCrossSiteCookieLimitation(
+  browserName: string
+): boolean {
+  const frontendHostname = new URL(
+    process.env['LEVELHABIT_BASE_URL']
+      ?? 'https://nicolasfrechette91.github.io/LevelHabit/'
+  ).hostname;
+  const apiHostname = new URL(PRODUCTION_API_URL).hostname;
+
+  return browserName === 'webkit'
+    && frontendHostname.endsWith('.github.io')
+    && apiHostname.endsWith('.onrender.com');
+}
+
+export function skipForWebKitCrossSiteRefreshCookie(browserName: string): void {
+  test.skip(
+    hasConfirmedWebKitCrossSiteCookieLimitation(browserName),
+    WEBKIT_CROSS_SITE_REFRESH_COOKIE_REASON
+  );
+}
+
 export async function warmBackend(page: Page): Promise<void> {
   await expect.poll(async () => {
     try {
       const response = await page.request.get(
-        'https://level-habit-api.onrender.com/api/health',
+        `${PRODUCTION_API_URL}/health`,
         { timeout: 15_000 }
       );
       return response.ok();
@@ -105,9 +137,16 @@ export class LevelHabitPage {
     await expect(this.page.getByTestId('page-dashboard')).toBeVisible();
   }
 
-  async logout(): Promise<void> {
+  async logout(): Promise<Response> {
+    const logoutResponsePromise = this.page.waitForResponse((response) =>
+      response.url().endsWith('/api/auth/logout')
+      && response.request().method() === 'POST'
+    );
     await this.page.getByTestId('logout-button').click();
+    const logoutResponse = await logoutResponsePromise;
     await expect(this.page.getByTestId('login-submit-button')).toBeVisible();
+
+    return logoutResponse;
   }
 
   async openRoute(route: (typeof PROTECTED_ROUTES)[number]): Promise<void> {

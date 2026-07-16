@@ -45,6 +45,23 @@ AuthCookieOptions resolvedAuthCookieOptions = builder.Configuration
     .Get<AuthCookieOptions>() ?? new AuthCookieOptions();
 
 if (
+    string.IsNullOrWhiteSpace(resolvedAuthCookieOptions.Path)
+    || !resolvedAuthCookieOptions.Path.StartsWith("/", StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(
+        "AuthCookies:Path must be an absolute cookie path beginning with '/'.");
+}
+
+if (
+    resolvedAuthCookieOptions.Domain is { Length: > 0 } cookieDomain
+    && (cookieDomain.Contains("://", StringComparison.Ordinal)
+        || cookieDomain.Contains('/')))
+{
+    throw new InvalidOperationException(
+        "AuthCookies:Domain must be a hostname without a scheme or path.");
+}
+
+if (
     !builder.Environment.IsDevelopment()
     && (!resolvedAuthCookieOptions.Secure
         || resolvedAuthCookieOptions.SameSite != SameSiteMode.None))

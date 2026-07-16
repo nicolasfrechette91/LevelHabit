@@ -11,6 +11,17 @@ user-isolation cases remain Chromium-only to limit generated local data. The
 separate `playwright.production.config.ts` suite is excluded from this local
 configuration and requires authorized production credentials.
 
+Run the production-only matrix from `frontend` with:
+
+```powershell
+npm run test:e2e:production
+```
+
+The command requires `LEVELHABIT_BASE_URL`, `LEVELHABIT_TEST_EMAIL`, and
+`LEVELHABIT_TEST_PASSWORD`, fails before browser startup if any are missing,
+and accepts only the production GitHub Pages LevelHabit URL. It never starts
+the local Angular web server. Do not print or persist the password value.
+
 ## Covered Flows
 
 - Main user journey: register, reach the dashboard, create a habit, complete it,

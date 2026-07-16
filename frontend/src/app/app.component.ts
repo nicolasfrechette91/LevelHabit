@@ -111,9 +111,14 @@ export class AppComponent {
     }
 
     this.isLoggingOut.set(true);
-    this.auth.logout().subscribe();
+    this.auth.logout().subscribe({
+      complete: () => this.navigateToLoginAfterLogout(),
+      error: () => this.navigateToLoginAfterLogout()
+    });
+  }
 
-    void this.router.navigateByUrl('/login').then(
+  private navigateToLoginAfterLogout(): void {
+    void this.router.navigateByUrl('/login', { replaceUrl: true }).then(
       () => this.isLoggingOut.set(false),
       () => this.isLoggingOut.set(false)
     );

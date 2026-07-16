@@ -209,6 +209,33 @@ describe('AuthService', () => {
     http.verify();
   });
 
+  it('waits for an in-flight refresh before revoking the resulting cookie on logout', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+    const refreshPromise = firstValueFrom(service.refreshSession());
+
+    http.expectOne(`${environment.apiUrl}/auth/csrf`).flush({
+      csrfToken: 'refresh-csrf'
+    });
+    const refreshRequest = http.expectOne(`${environment.apiUrl}/auth/refresh`);
+    const logoutPromise = firstValueFrom(service.logout());
+    http.expectNone(`${environment.apiUrl}/auth/csrf`);
+
+    refreshRequest.flush(AUTH_RESPONSE);
+    await expect(refreshPromise).resolves.toEqual(AUTH_RESPONSE);
+    expect(service.isAuthenticated()).toBe(false);
+    http.expectOne(`${environment.apiUrl}/auth/csrf`).flush({
+      csrfToken: 'logout-csrf'
+    });
+    const logoutRequest = http.expectOne(`${environment.apiUrl}/auth/logout`);
+    expect(logoutRequest.request.headers.get(AUTH_CSRF_HEADER)).toBe('logout-csrf');
+    logoutRequest.flush(null);
+
+    await expect(logoutPromise).resolves.toBeNull();
+    expect(service.isAuthenticated()).toBe(false);
+    http.verify();
+  });
+
   it('registers without creating an authenticated session', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
