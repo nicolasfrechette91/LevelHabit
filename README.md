@@ -1,77 +1,56 @@
 # Level Habit
 
-Level Habit is a production-deployed gamified habit tracker. Users create daily
-habits, complete them for XP, build streaks, unlock achievements, and level up
-a personal progress profile.
+Level Habit is a full-stack habit tracker that turns daily progress into a game.
+Users can create habits, earn XP, build streaks, unlock achievements, and track their progress over time.
 
-- Live demo: [LevelHabit on GitHub Pages](https://nicolasfrechette91.github.io/LevelHabit/)
-- API health check: [Render API health endpoint](https://level-habit-api.onrender.com/api/health)
 
-## Feature Summary
+- [Try it!](https://nicolasfrechette91.github.io/LevelHabit/)
+- [API health check](https://level-habit-api.onrender.com/api/health)
 
-- Registration with six-digit email verification, login, logout, short-lived
-  JWT access tokens, refresh-token rotation, password reset, protected API
-  endpoints, and authenticated frontend routes.
-- User-scoped habits with create, update, archive, and complete-today flows.
-- Habit reminders, in-app notifications, a notification center, and optional
-  browser notifications while the app is open.
-- XP rewards, level progression, streak calculations, and achievement
-  unlocks based on completion history.
-- Analytics summary data for recent completions, XP, streaks, and activity.
-- Production backend health warmup from the frontend to reduce Render cold-start
-  friction.
-- Backend and frontend validation through GitHub Actions.
+## Feature
+
+- Create, edit, complete, and archive daily habits.
+- Earn XP and level up by completing habits.
+- Build streaks based on completion history.
+- Unlock achievements as progress milestones are reached.
+- View recent completion, XP, streak, and activity analytics.
+- Configure habit reminders and receive in-app notifications.
+- Enable browser notifications while the application is open.
+- Register with six-digit email verification.
+- Reset forgotten passwords through one-time email links.
+- Stay signed in through secure refresh-token rotation.
+- Access only the habits, progress, achievements, reminders, notifications, and analytics associated with the signed-in account.
 
 ## Technical Highlights
 
-- Production full-stack deployment across GitHub Pages, Render, and Neon
-  PostgreSQL.
-- User-scoped data isolation for habits, completions, achievements, progress
-  profiles, analytics, reminders, and notifications.
-- JWT authentication with access tokens, rotating refresh tokens, server-side
-  token revocation, one-time auth tokens, route guards, and token-bearing HTTP
-  requests.
-- EF Core migrations for PostgreSQL schema changes in local and production
-  environments.
-- Gamified progression loop covering XP rewards, levels, streaks,
-  achievements, and analytics.
-- Automated backend and frontend tests.
-- CI/CD workflow for validation, GitHub Pages deployment, and Render deploy
-  hook triggering.
-- Responsive Angular frontend with mobile polish work already applied.
+- Angular single-page application with protected routes and responsive layouts.
+- ASP.NET Core Web API with user-scoped services and endpoints.
+- Short-lived JWT access tokens with rotating refresh tokens and server-side revocation.
+- One-time tokens for email verification and password resets.
+- Entity Framework Core migrations for local and production PostgreSQL databases.
+- Automated backend, frontend, accessibility, authentication, and production E2E tests.
+- GitHub Actions workflows for validation and frontend deployment.
+- Render deployment hooks for backend releases.
+- Frontend API warmup to reduce delays caused by Render cold starts.
 
 ## Tech Stack
 
-- Angular 21, TypeScript, Angular Router, HTTP services, route guards, SCSS, and
-  Bootstrap utilities.
+- Angular 21, TypeScript, Angular Router, Angular HTTP client, SCSS, Bootstrap and Playwright.
 - ASP.NET Core Web API on .NET 10.
 - Entity Framework Core with the Npgsql PostgreSQL provider.
-- PostgreSQL locally through Docker Compose.
+- Docker Compose for local PostgreSQL.
 - Neon-hosted PostgreSQL in production.
 - GitHub Pages for the production frontend.
 - Render for the production backend API.
-- GitHub Actions for CI, frontend deployment, and Render deploy hook triggering.
+- GitHub Actions for CI/CD
 
 ## Screenshots
-
-Screenshots are not committed yet. Capture real screenshots from the production
-deployment with a demo account and non-sensitive sample data, then save them
-under `docs/screenshots/`.
-
-Expected screenshot paths:
-
-| View | Path |
-| --- | --- |
-| Login or register | `docs/screenshots/login.png` |
-| Dashboard with progress | `docs/screenshots/dashboard.png` |
-| Habits with a completed habit | `docs/screenshots/habits.png` |
-| Achievements with at least one unlock | `docs/screenshots/achievements.png` |
-| Analytics with real activity data | `docs/screenshots/analytics.png` |
-| Mobile dashboard | `docs/screenshots/mobile-dashboard.png` |
-
-After those PNG files exist, replace this placeholder table with Markdown image
-tags or a compact gallery. See [docs/screenshots.md](docs/screenshots.md) for
-capture sizes, sample data setup, naming, and privacy reminders.
+![Login dashboard](screenshots/login.png)
+![Task of the day](screenshots/today.png)
+![Habit dashboard](screenshots/habits.png)
+![Progress profile](screenshots/progress.png) 
+![Achievements](screenshots/achievements.png) 
+![Analytics](screenshots/analytics.png)
 
 ## CI/CD And Deployment Notes
 
