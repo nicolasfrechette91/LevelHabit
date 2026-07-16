@@ -6,6 +6,7 @@
     "start": "ng serve --host 0.0.0.0 --port 4200",
     "build": "ng build",
     "e2e": "playwright test",
+    "e2e:production": "playwright test --config playwright.production.config.ts",
     "e2e:install": "playwright install chromium",
     "e2e:ui": "playwright test --ui",
     "test": "ng test --watch=false",
