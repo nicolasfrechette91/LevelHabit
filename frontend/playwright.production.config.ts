@@ -45,6 +45,7 @@ export default defineConfig({
     baseURL,
     actionTimeout: 20_000,
     navigationTimeout: 45_000,
+    reducedMotion: 'reduce',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: 'off'

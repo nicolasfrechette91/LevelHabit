@@ -580,6 +580,30 @@ describe('Habits API view', () => {
     expect(textContent(nativeElement)).toContain('Best: 7');
   });
 
+  it('blocks habit creation until the initial API list has finished loading', async () => {
+    const api = new HabitApiServiceStub([]);
+    const pendingHabits = new Subject<HabitResponse[]>();
+    api.list.mockReturnValueOnce(pendingHabits.asObservable());
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
+    const submitButton = nativeElement.querySelector(
+      '[data-testid="habit-submit-button"]'
+    );
+
+    expect(submitButton).toBeInstanceOf(HTMLButtonElement);
+    expect((submitButton as HTMLButtonElement).disabled).toBe(true);
+    setFormField(harness, nativeElement, '#habit-title', 'Wait for the list');
+    submitHabitForm(harness, nativeElement);
+    expect(api.create).not.toHaveBeenCalled();
+
+    pendingHabits.next([]);
+    pendingHabits.complete();
+    harness.detectChanges();
+
+    expect((submitButton as HTMLButtonElement).disabled).toBe(false);
+    submitHabitForm(harness, nativeElement);
+    expect(api.create).toHaveBeenCalledTimes(1);
+  });
+
   it('creates habits through the API', async () => {
     const api = new HabitApiServiceStub([]);
     const { nativeElement, harness } = await renderApiHabitRoute(api);

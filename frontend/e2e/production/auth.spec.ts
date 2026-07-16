@@ -2,6 +2,7 @@ import {
   LevelHabitPage,
   credentials,
   expect,
+  hasConfirmedWebKitCrossSiteCookieLimitation,
   skipForWebKitCrossSiteRefreshCookie,
   test,
   warmBackend
@@ -28,7 +29,7 @@ test.describe('production authentication', () => {
   test('uses a generic error for an unknown account and an incorrect password', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.openLogin();
-    await page.getByTestId('login-email-input').fill(`e2e-codex-unknown-${Date.now()}@example.com`);
+    await page.getByTestId('login-email-input').fill(`e2e-tester-unknown-${Date.now()}@example.com`);
     await page.getByTestId('login-password-input').fill('incorrect-password');
     await page.getByTestId('login-submit-button').click();
     const firstMessage = await page.getByRole('alert').innerText();
@@ -58,7 +59,12 @@ test.describe('production authentication', () => {
     browserName,
     page
   }) => {
-    skipForWebKitCrossSiteRefreshCookie(browserName);
+    // WebKit cannot exercise session restoration while github.io and onrender.com
+    // are cross-site because it rejects the refresh cookie on full-page reloads.
+    skipForWebKitCrossSiteRefreshCookie(
+      browserName,
+      'Full-page reload cannot restore the authenticated session or verify guarded Back navigation.'
+    );
     const app = new LevelHabitPage(page);
     await app.login();
     await page.reload();
@@ -124,7 +130,6 @@ test.describe('production authentication', () => {
     browserName,
     page
   }) => {
-    skipForWebKitCrossSiteRefreshCookie(browserName);
     const app = new LevelHabitPage(page);
     const loginResponsePromise = page.waitForResponse((response) =>
       response.url().endsWith('/api/auth/login') && response.status() === 200
@@ -142,10 +147,14 @@ test.describe('production authentication', () => {
     const refreshCookie = (await page.context().cookies()).find((cookie) =>
       cookie.name === 'LevelHabit.Refresh'
     );
-    expect(refreshCookie).toMatchObject({
-      httpOnly: true,
-      secure: true,
-      sameSite: 'None'
-    });
+    if (hasConfirmedWebKitCrossSiteCookieLimitation(browserName)) {
+      expect(refreshCookie).toBeUndefined();
+    } else {
+      expect(refreshCookie).toMatchObject({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None'
+      });
+    }
   });
 });

@@ -1,8 +1,9 @@
 import {
   LevelHabitPage,
   credentials,
+  ensureAuthenticated,
   expect,
-  skipForWebKitCrossSiteRefreshCookie,
+  gotoProtectedRoute,
   test,
   warmBackend
 } from './support/production-fixture';
@@ -20,12 +21,13 @@ test.describe('production profile and account surface', () => {
     expect(page.url()).not.toMatch(/[0-9a-f]{8}-[0-9a-f-]{27,}/i);
   });
 
-  test('restores profile information after reload', async ({ browserName, page }) => {
-    skipForWebKitCrossSiteRefreshCookie(browserName);
+  test('restores profile information after reload', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.login();
     await app.openRoute('progress');
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await ensureAuthenticated(page);
+    await gotoProtectedRoute(page, 'progress');
     await expect(page.getByText(credentials().email, { exact: true })).toBeVisible();
   });
 

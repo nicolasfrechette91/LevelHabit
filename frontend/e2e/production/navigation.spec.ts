@@ -25,7 +25,12 @@ test.describe('production navigation and authorization', () => {
     browserName,
     page
   }) => {
-    skipForWebKitCrossSiteRefreshCookie(browserName);
+    // WebKit cannot exercise direct protected-route restoration while github.io
+    // and onrender.com are cross-site because reloads cannot use the refresh cookie.
+    skipForWebKitCrossSiteRefreshCookie(
+      browserName,
+      'Direct and reloaded protected routes redirect to login instead of restoring the session.'
+    );
     const app = new LevelHabitPage(page);
     await app.login();
     for (const route of PROTECTED_ROUTES) {

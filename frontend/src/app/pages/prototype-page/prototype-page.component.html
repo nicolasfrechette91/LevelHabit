@@ -374,7 +374,7 @@
                   type="submit"
                   class="btn btn-lh-primary fw-bold"
                   data-testid="habit-submit-button"
-                  [disabled]="game.habitActionInFlight() || reminderSaving()"
+                  [disabled]="game.habitsLoading() || game.habitActionInFlight() || reminderSaving()"
                 >
                   {{ (editingHabitId() ? 'common.saveChanges' : 'habits.create') | translate }}
                 </button>

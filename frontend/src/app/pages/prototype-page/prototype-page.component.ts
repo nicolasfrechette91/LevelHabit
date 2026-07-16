@@ -376,7 +376,7 @@ export class PrototypePageComponent implements OnInit {
   }
 
   protected saveHabit(): void {
-    if (!this.game.usesHabitApi()) {
+    if (!this.game.usesHabitApi() || this.game.habitsLoading()) {
       return;
     }
 
