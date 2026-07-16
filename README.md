@@ -4,7 +4,7 @@ Level Habit is a full-stack habit tracker that turns daily progress into a game.
 Users can create habits, earn XP, build streaks, unlock achievements, and track their progress over time.
 
 
-- [Try it!](https://nicolasfrechette91.github.io/LevelHabit/)
+- [Create your own account today!](https://nicolasfrechette91.github.io/LevelHabit/)
 - [API health check](https://level-habit-api.onrender.com/api/health)
 
 ## Feature
@@ -45,11 +45,22 @@ Users can create habits, earn XP, build streaks, unlock achievements, and track 
 - GitHub Actions for CI/CD
 
 ## Screenshots
+Login Page:
 ![Login dashboard](screenshots/login.png)
+
+Task of the day:
 ![Task of the day](screenshots/today.png)
+
+Your list of habits:
 ![Habit dashboard](screenshots/habits.png)
-![Progress profile](screenshots/progress.png) 
-![Achievements](screenshots/achievements.png) 
+
+Your progress:
+![Progress profile](screenshots/progress.png)
+
+Your achievements:
+![Achievements](screenshots/achievements.png)
+
+More stats:
 ![Analytics](screenshots/analytics.png)
 
 ## CI/CD And Deployment Notes
