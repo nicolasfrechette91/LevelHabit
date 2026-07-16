@@ -20,10 +20,12 @@ export type ProgressProfile = Readonly<{
 export type AuthResponse = Readonly<{
   accessToken: string;
   expiresAtUtc: string;
-  refreshToken: string;
-  refreshTokenExpiresAtUtc: string;
   user: AuthUser;
   progressProfile: ProgressProfile;
+}>;
+
+export type CsrfTokenResponse = Readonly<{
+  csrfToken: string;
 }>;
 
 export type MeResponse = Readonly<{
@@ -45,12 +47,6 @@ export type LoginRequest = Readonly<{
   email: string;
   password: string;
 }>;
-
-export type RefreshRequest = Readonly<{
-  refreshToken: string;
-}>;
-
-export type LogoutRequest = RefreshRequest;
 
 export type RegisterRequest = LoginRequest &
   Readonly<{

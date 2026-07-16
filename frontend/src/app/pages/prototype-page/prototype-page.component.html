@@ -217,9 +217,18 @@
                     data-testid="habit-title-input"
                     formControlName="title"
                     autocomplete="off"
+                    [class.is-invalid]="habitForm.controls.title.touched && habitForm.controls.title.invalid"
+                    [attr.aria-invalid]="habitForm.controls.title.touched && habitForm.controls.title.invalid ? 'true' : null"
+                    [attr.aria-describedby]="habitForm.controls.title.touched && habitForm.controls.title.invalid ? 'habit-title-error' : null"
                   >
                   @if (habitForm.controls.title.touched && habitForm.controls.title.invalid) {
-                    <div class="form-text text-danger">{{ 'validation.titleRequired' | translate }}</div>
+                    <div id="habit-title-error" class="invalid-feedback">
+                      @if (habitForm.controls.title.hasError('required')) {
+                        {{ 'validation.titleRequired' | translate }}
+                      } @else if (habitForm.controls.title.hasError('maxlength')) {
+                        {{ 'validation.titleMaxLength' | translate }}
+                      }
+                    </div>
                   }
                 </div>
 
@@ -258,7 +267,15 @@
                     data-testid="habit-description-input"
                     rows="3"
                     formControlName="description"
+                    [class.is-invalid]="habitForm.controls.description.touched && habitForm.controls.description.invalid"
+                    [attr.aria-invalid]="habitForm.controls.description.touched && habitForm.controls.description.invalid ? 'true' : null"
+                    [attr.aria-describedby]="habitForm.controls.description.touched && habitForm.controls.description.invalid ? 'habit-description-error' : null"
                   ></textarea>
+                  @if (habitForm.controls.description.touched && habitForm.controls.description.invalid) {
+                    <div id="habit-description-error" class="invalid-feedback">
+                      {{ 'validation.descriptionMaxLength' | translate }}
+                    </div>
+                  }
                 </div>
 
                 <div class="col-12">

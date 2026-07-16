@@ -41,7 +41,11 @@ import {
   TranslatePipe
 } from '../../i18n/i18n.pipes';
 import { LanguageService } from '../../i18n/language.service';
-import type { HabitUpsertRequest } from '../../habits/habit-api.service';
+import {
+  HABIT_DESCRIPTION_MAX_LENGTH,
+  HABIT_TITLE_MAX_LENGTH,
+  type HabitUpsertRequest
+} from '../../habits/habit-api.service';
 import {
   REMINDER_DAYS,
   HabitReminderApiService,
@@ -126,9 +130,11 @@ export class PrototypePageComponent implements OnInit {
   protected readonly habitForm = this.formBuilder.group({
     title: this.formBuilder.control('', [
       Validators.required,
-      Validators.maxLength(140)
+      Validators.maxLength(HABIT_TITLE_MAX_LENGTH)
     ]),
-    description: this.formBuilder.control('', [Validators.maxLength(1000)]),
+    description: this.formBuilder.control('', [
+      Validators.maxLength(HABIT_DESCRIPTION_MAX_LENGTH)
+    ]),
     category: this.formBuilder.control<PersistedHabitCategory>(
       PERSISTED_QUEST_CATEGORIES[0],
       [Validators.required]

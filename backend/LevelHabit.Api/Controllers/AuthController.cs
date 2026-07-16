@@ -1,5 +1,6 @@
 using LevelHabit.Api.Contracts.Auth;
 using LevelHabit.Api.Services.Auth;
+using LevelHabit.Api.Services.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,7 +8,9 @@ namespace LevelHabit.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class AuthController(IAuthService authService) : ControllerBase
+public sealed class AuthController(
+    IAuthService authService,
+    IAuthCookieService authCookieService) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<ActionResult<RegisterResponse>> Register(
@@ -28,25 +31,54 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     {
         AuthResponse response = await authService.LoginAsync(request, cancellationToken);
 
+        authCookieService.WriteRefreshToken(
+            Response,
+            response.RefreshToken,
+            response.RefreshTokenExpiresAtUtc);
+
         return Ok(response);
+    }
+
+    [HttpGet("csrf")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public ActionResult<CsrfTokenResponse> Csrf()
+    {
+        string csrfToken = authCookieService.IssueCsrfToken(Response);
+
+        return Ok(new CsrfTokenResponse(csrfToken));
     }
 
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResponse>> Refresh(
-        RefreshRequest request,
         CancellationToken cancellationToken)
     {
+        authCookieService.ValidateCsrfToken(Request);
+        RefreshRequest request = new(authCookieService.ReadRefreshToken(Request));
         AuthResponse response = await authService.RefreshAsync(request, cancellationToken);
+
+        authCookieService.WriteRefreshToken(
+            Response,
+            response.RefreshToken,
+            response.RefreshTokenExpiresAtUtc);
 
         return Ok(response);
     }
 
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(
-        LogoutRequest request,
         CancellationToken cancellationToken)
     {
-        await authService.LogoutAsync(request, cancellationToken);
+        authCookieService.ValidateCsrfToken(Request);
+        LogoutRequest request = new(authCookieService.ReadRefreshToken(Request));
+
+        try
+        {
+            await authService.LogoutAsync(request, cancellationToken);
+        }
+        finally
+        {
+            authCookieService.ClearAuthenticationCookies(Response);
+        }
 
         return NoContent();
     }

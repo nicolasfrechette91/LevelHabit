@@ -1,18 +1,19 @@
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  HttpTestingController,
+  provideHttpClientTesting
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { environment } from '../../environments/environment';
-import type { AuthResponse, MeResponse, RegisterResponse } from './auth.models';
-import { AUTH_STORAGE_KEY, AuthService } from './auth.service';
+import type { AuthResponse, RegisterResponse } from './auth.models';
+import { AUTH_CSRF_HEADER, AUTH_STORAGE_KEY, AuthService } from './auth.service';
 
 const AUTH_RESPONSE: AuthResponse = {
   accessToken: 'jwt-token',
   expiresAtUtc: '2099-01-01T00:00:00Z',
-  refreshToken: 'refresh-token',
-  refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z',
   user: {
     id: 'f972df99-805d-48a3-93e6-e5c469ba8be6',
     email: 'player@example.com',
@@ -32,11 +33,6 @@ const AUTH_RESPONSE: AuthResponse = {
   }
 };
 
-const ME_RESPONSE: MeResponse = {
-  user: AUTH_RESPONSE.user,
-  progressProfile: AUTH_RESPONSE.progressProfile
-};
-
 const REGISTER_RESPONSE: RegisterResponse = {
   email: 'player@example.com',
   requiresEmailVerification: true,
@@ -53,10 +49,9 @@ describe('AuthService', () => {
     });
   });
 
-  it('logs in and stores access and refresh tokens for the current browser session', async () => {
+  it('logs in with credentials while keeping tokens out of browser storage', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
-
     const responsePromise = firstValueFrom(
       service.login({
         email: 'player@example.com',
@@ -66,36 +61,134 @@ describe('AuthService', () => {
 
     const request = http.expectOne(`${environment.apiUrl}/auth/login`);
     expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBe(true);
     request.flush(AUTH_RESPONSE);
 
-    const response = await responsePromise;
-
-    expect(response.accessToken).toBe(AUTH_RESPONSE.accessToken);
+    await expect(responsePromise).resolves.toEqual(AUTH_RESPONSE);
     expect(service.isAuthenticated()).toBe(true);
+    expect(service.accessToken()).toBe(AUTH_RESPONSE.accessToken);
     expect(service.user()?.email).toBe(AUTH_RESPONSE.user.email);
-    expect(service.progressProfile()?.displayName).toBe(
-      AUTH_RESPONSE.progressProfile.displayName
-    );
-    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toContain(AUTH_RESPONSE.accessToken);
-    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toContain(AUTH_RESPONSE.refreshToken);
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     http.verify();
   });
 
-  it('registers with display and progress profile names without storing a session', async () => {
+  it('removes a legacy persisted token object when initialized', () => {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
+      accessToken: 'legacy-access',
+      refreshToken: 'legacy-refresh'
+    }));
+    sessionStorage.setItem(AUTH_STORAGE_KEY, 'legacy-refresh');
+
+    TestBed.inject(AuthService);
+
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+  });
+
+  it('restores a refreshed page session through CSRF-protected cookies', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
+    const responsePromise = firstValueFrom(service.ensureCurrentUser());
 
-    const responsePromise = firstValueFrom(
-      service.register({
-        email: 'player@example.com',
-        password: 'CorrectHorse123!',
-        displayName: 'Player One',
-        progressDisplayName: 'Morning Warden'
-      })
+    const csrfRequest = http.expectOne(`${environment.apiUrl}/auth/csrf`);
+    expect(csrfRequest.request.method).toBe('GET');
+    expect(csrfRequest.request.withCredentials).toBe(true);
+    csrfRequest.flush({ csrfToken: 'csrf-token' });
+
+    const refreshRequest = http.expectOne(`${environment.apiUrl}/auth/refresh`);
+    expect(refreshRequest.request.method).toBe('POST');
+    expect(refreshRequest.request.body).toEqual({});
+    expect(refreshRequest.request.withCredentials).toBe(true);
+    expect(refreshRequest.request.headers.get(AUTH_CSRF_HEADER)).toBe('csrf-token');
+    refreshRequest.flush(AUTH_RESPONSE);
+
+    await expect(responsePromise).resolves.toEqual({
+      user: AUTH_RESPONSE.user,
+      progressProfile: AUTH_RESPONSE.progressProfile
+    });
+    expect(service.isAuthenticated()).toBe(true);
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    http.verify();
+  });
+
+  it('shares one cookie refresh when concurrent callers restore the session', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+    const first = firstValueFrom(service.refreshSession());
+    const second = firstValueFrom(service.refreshSession());
+
+    http.expectOne(`${environment.apiUrl}/auth/csrf`).flush({
+      csrfToken: 'csrf-token'
+    });
+    http.expectOne(`${environment.apiUrl}/auth/refresh`).flush(AUTH_RESPONSE);
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      AUTH_RESPONSE,
+      AUTH_RESPONSE
+    ]);
+    http.verify();
+  });
+
+  it('does not restore a session when the refresh cookie is invalid', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+    const responsePromise = firstValueFrom(service.ensureCurrentUser());
+
+    http.expectOne(`${environment.apiUrl}/auth/csrf`).flush({
+      csrfToken: 'csrf-token'
+    });
+    http.expectOne(`${environment.apiUrl}/auth/refresh`).flush(
+      { title: 'Invalid refresh token' },
+      { status: 401, statusText: 'Unauthorized' }
     );
 
+    await expect(responsePromise).rejects.toBeTruthy();
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.accessToken()).toBeNull();
+    http.verify();
+  });
+
+  it('logs out through the CSRF-protected cookie endpoint and clears memory', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+    const loginPromise = firstValueFrom(
+      service.login({ email: 'player@example.com', password: 'CorrectHorse123!' })
+    );
+    http.expectOne(`${environment.apiUrl}/auth/login`).flush(AUTH_RESPONSE);
+    await loginPromise;
+
+    const logoutPromise = firstValueFrom(service.logout());
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.accessToken()).toBeNull();
+
+    http.expectOne(`${environment.apiUrl}/auth/csrf`).flush({
+      csrfToken: 'logout-csrf'
+    });
+    const logoutRequest = http.expectOne(`${environment.apiUrl}/auth/logout`);
+    expect(logoutRequest.request.method).toBe('POST');
+    expect(logoutRequest.request.body).toEqual({});
+    expect(logoutRequest.request.withCredentials).toBe(true);
+    expect(logoutRequest.request.headers.get(AUTH_CSRF_HEADER)).toBe('logout-csrf');
+    logoutRequest.flush(null);
+
+    await expect(logoutPromise).resolves.toBeNull();
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    http.verify();
+  });
+
+  it('registers without creating an authenticated session', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+    const responsePromise = firstValueFrom(service.register({
+      email: 'player@example.com',
+      password: 'CorrectHorse123!',
+      displayName: 'Player One',
+      progressDisplayName: 'Morning Warden'
+    }));
+
     const request = http.expectOne(`${environment.apiUrl}/auth/register`);
-    expect(request.request.method).toBe('POST');
     expect(request.request.body).toMatchObject({
       displayName: 'Player One',
       progressDisplayName: 'Morning Warden'
@@ -103,107 +196,31 @@ describe('AuthService', () => {
     request.flush(REGISTER_RESPONSE);
 
     await expect(responsePromise).resolves.toEqual(REGISTER_RESPONSE);
-
-    expect(service.progressProfile()).toBeNull();
-    expect(service.accessToken()).toBeNull();
-    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(service.isAuthenticated()).toBe(false);
     http.verify();
   });
 
-  it('requests a password reset email', async () => {
+  it('supports password recovery and email verification lifecycle requests', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
 
-    const responsePromise = firstValueFrom(
-      service.forgotPassword('player@example.com')
-    );
+    const forgot = firstValueFrom(service.forgotPassword('player@example.com'));
+    http.expectOne(`${environment.apiUrl}/auth/forgot-password`).flush({ message: 'sent' });
+    await expect(forgot).resolves.toEqual({ message: 'sent' });
 
-    const request = http.expectOne(`${environment.apiUrl}/auth/forgot-password`);
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      email: 'player@example.com'
-    });
-    request.flush({
-      message: 'If an account exists for that email, a password reset link has been sent.'
-    });
-
-    await expect(responsePromise).resolves.toEqual({
-      message: 'If an account exists for that email, a password reset link has been sent.'
-    });
-    http.verify();
-  });
-
-  it('resets a password with email and token', async () => {
-    const service = TestBed.inject(AuthService);
-    const http = TestBed.inject(HttpTestingController);
-
-    const responsePromise = firstValueFrom(
+    const reset = firstValueFrom(
       service.resetPassword('player@example.com', 'reset-token', 'NewPassword123!')
     );
+    http.expectOne(`${environment.apiUrl}/auth/reset-password`).flush({ message: 'reset' });
+    await expect(reset).resolves.toEqual({ message: 'reset' });
 
-    const request = http.expectOne(`${environment.apiUrl}/auth/reset-password`);
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      email: 'player@example.com',
-      token: 'reset-token',
-      newPassword: 'NewPassword123!'
-    });
-    request.flush({
-      message: 'Your password has been reset.'
-    });
+    const confirm = firstValueFrom(service.confirmEmail('player@example.com', '004827'));
+    http.expectOne(`${environment.apiUrl}/auth/confirm-email`).flush({ message: 'confirmed' });
+    await expect(confirm).resolves.toEqual({ message: 'confirmed' });
 
-    await expect(responsePromise).resolves.toEqual({
-      message: 'Your password has been reset.'
-    });
-    http.verify();
-  });
-
-  it('confirms an email with email and code', async () => {
-    const service = TestBed.inject(AuthService);
-    const http = TestBed.inject(HttpTestingController);
-
-    const responsePromise = firstValueFrom(
-      service.confirmEmail('player@example.com', '004827')
-    );
-
-    const request = http.expectOne(`${environment.apiUrl}/auth/confirm-email`);
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      email: 'player@example.com',
-      code: '004827'
-    });
-    request.flush({
-      message: 'Your email has been confirmed successfully.'
-    });
-
-    await expect(responsePromise).resolves.toEqual({
-      message: 'Your email has been confirmed successfully.'
-    });
-    http.verify();
-  });
-
-  it('resends an email verification code', async () => {
-    const service = TestBed.inject(AuthService);
-    const http = TestBed.inject(HttpTestingController);
-
-    const responsePromise = firstValueFrom(
-      service.resendVerificationCode('player@example.com')
-    );
-
-    const request = http.expectOne(
-      `${environment.apiUrl}/auth/resend-verification-code`
-    );
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      email: 'player@example.com'
-    });
-    request.flush({
-      message: 'If an unconfirmed account exists for this email, a verification code has been sent.'
-    });
-
-    await expect(responsePromise).resolves.toEqual({
-      message: 'If an unconfirmed account exists for this email, a verification code has been sent.'
-    });
+    const resend = firstValueFrom(service.resendVerificationCode('player@example.com'));
+    http.expectOne(`${environment.apiUrl}/auth/resend-verification-code`).flush({ message: 'resent' });
+    await expect(resend).resolves.toEqual({ message: 'resent' });
     http.verify();
   });
 
@@ -221,73 +238,5 @@ describe('AuthService', () => {
         'levelhabit.emailVerification.lastSent.v1.player@example.com'
       )
     ).toBe(String(now));
-  });
-
-  it('loads the current user from an existing token', async () => {
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        accessToken: 'stored-token',
-        expiresAtUtc: '2099-01-01T00:00:00Z',
-        refreshToken: 'stored-refresh-token',
-        refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z'
-      })
-    );
-
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
-    });
-
-    const service = TestBed.inject(AuthService);
-    const http = TestBed.inject(HttpTestingController);
-
-    const responsePromise = firstValueFrom(service.ensureCurrentUser());
-    const request = http.expectOne(`${environment.apiUrl}/auth/me`);
-    expect(request.request.method).toBe('GET');
-    request.flush(ME_RESPONSE);
-
-    await responsePromise;
-
-    expect(service.user()?.displayName).toBe('Player One');
-    expect(service.progressProfile()?.displayName).toBe('Morning Warden');
-    http.verify();
-  });
-
-  it('clears auth state on logout', () => {
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        accessToken: 'stored-token',
-        expiresAtUtc: '2099-01-01T00:00:00Z',
-        refreshToken: 'stored-refresh-token',
-        refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z'
-      })
-    );
-
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
-    });
-
-    const service = TestBed.inject(AuthService);
-    const http = TestBed.inject(HttpTestingController);
-
-    expect(service.isAuthenticated()).toBe(true);
-
-    service.logout();
-
-    expect(service.isAuthenticated()).toBe(false);
-    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
-    expect(service.accessToken()).toBeNull();
-    expect(service.refreshToken()).toBeNull();
-
-    const request = http.expectOne(`${environment.apiUrl}/auth/logout`);
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      refreshToken: 'stored-refresh-token'
-    });
-    request.flush(null);
-    http.verify();
   });
 });

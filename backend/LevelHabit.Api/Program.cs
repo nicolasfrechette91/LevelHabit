@@ -34,6 +34,25 @@ var allowedOrigins = builder.Configuration
     .Get<string[]>()
     ?? ["http://localhost:4200"];
 
+if (allowedOrigins.Length == 0 || allowedOrigins.Any(origin => origin.Contains('*')))
+{
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins must contain explicit origins and cannot use wildcards.");
+}
+
+AuthCookieOptions resolvedAuthCookieOptions = builder.Configuration
+    .GetSection(AuthCookieOptions.SectionName)
+    .Get<AuthCookieOptions>() ?? new AuthCookieOptions();
+
+if (
+    !builder.Environment.IsDevelopment()
+    && (!resolvedAuthCookieOptions.Secure
+        || resolvedAuthCookieOptions.SameSite != SameSiteMode.None))
+{
+    throw new InvalidOperationException(
+        "Production authentication cookies must use Secure=true and SameSite=None.");
+}
+
 builder.Services.AddControllers();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -57,6 +76,8 @@ builder.Services.AddDbContext<LevelHabitDbContext>(options =>
 
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<AuthCookieOptions>(
+    builder.Configuration.GetSection(AuthCookieOptions.SectionName));
 builder.Services.Configure<EmailOptions>(
     builder.Configuration.GetSection(EmailOptions.SectionName));
 builder.Services.Configure<FrontendOptions>(
@@ -135,6 +156,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddScoped<IAuthCookieService, AuthCookieService>();
 builder.Services.AddScoped<IEmailVerificationCodeService, EmailVerificationCodeService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
@@ -153,7 +175,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 

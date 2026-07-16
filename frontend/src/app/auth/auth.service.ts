@@ -4,6 +4,7 @@ import {
   Observable,
   catchError,
   finalize,
+  map,
   of,
   shareReplay,
   switchMap,
@@ -18,47 +19,29 @@ import type {
   AuthResponse,
   AuthUser,
   ConfirmEmailRequest,
+  CsrfTokenResponse,
   ForgotPasswordRequest,
-  ProgressProfile,
   LoginRequest,
-  LogoutRequest,
   MeResponse,
-  RefreshRequest,
-  RegisterResponse,
+  ProgressProfile,
   RegisterRequest,
+  RegisterResponse,
   ResendVerificationCodeRequest,
-  ResetPasswordRequest,
+  ResetPasswordRequest
 } from './auth.models';
 
 export const AUTH_STORAGE_KEY = 'levelhabit.auth.v1';
+export const AUTH_CSRF_HEADER = 'X-LevelHabit-CSRF';
 const EMAIL_VERIFICATION_SENT_STORAGE_PREFIX =
   'levelhabit.emailVerification.lastSent.v1.';
-
-type StoredAuth = Readonly<{
-  accessToken: string;
-  expiresAtUtc: string;
-  refreshToken: string;
-  refreshTokenExpiresAtUtc: string;
-}>;
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly storedAuth = this.readStoredAuth();
-  private readonly accessTokenSignal = signal<string | null>(
-    this.storedAuth?.accessToken ?? null
-  );
-  private readonly expiresAtUtcSignal = signal<string | null>(
-    this.storedAuth?.expiresAtUtc ?? null
-  );
-  private readonly refreshTokenSignal = signal<string | null>(
-    this.storedAuth?.refreshToken ?? null
-  );
-  private readonly refreshTokenExpiresAtUtcSignal = signal<string | null>(
-    this.storedAuth?.refreshTokenExpiresAtUtc ?? null
-  );
+  private readonly accessTokenSignal = signal<string | null>(null);
+  private readonly expiresAtUtcSignal = signal<string | null>(null);
   private readonly userSignal = signal<AuthUser | null>(null);
   private readonly progressProfileSignal = signal<ProgressProfile | null>(null);
   private readonly emailVerificationNoticeSignal = signal<string | null>(null);
@@ -69,33 +52,24 @@ export class AuthService {
   readonly progressProfile = this.progressProfileSignal.asReadonly();
   readonly emailVerificationNotice =
     this.emailVerificationNoticeSignal.asReadonly();
-  readonly isAuthenticated = computed(() =>
-    this.hasToken() || this.hasRefreshToken()
-  );
+  readonly isAuthenticated = computed(() => this.hasToken());
   readonly authRequired = environment.authRequired;
   readonly canUsePrototypeRoutes = computed(() =>
     !this.authRequired || this.isAuthenticated()
   );
 
-  accessToken(): string | null {
-    return this.accessTokenSignal();
+  constructor() {
+    this.removeLegacyStoredSession();
   }
 
-  refreshToken(): string | null {
-    return this.refreshTokenSignal();
+  accessToken(): string | null {
+    return this.accessTokenSignal();
   }
 
   hasToken(): boolean {
     return this.tokenIsUsable(
       this.accessTokenSignal(),
       this.expiresAtUtcSignal()
-    );
-  }
-
-  hasRefreshToken(): boolean {
-    return this.tokenIsUsable(
-      this.refreshTokenSignal(),
-      this.refreshTokenExpiresAtUtcSignal()
     );
   }
 
@@ -109,7 +83,10 @@ export class AuthService {
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${environment.apiUrl}/auth/login`, request)
+      .post<AuthResponse>(`${environment.apiUrl}/auth/login`, request, {
+        context: this.skipRefreshContext(),
+        withCredentials: true
+      })
       .pipe(tap((response) => this.persistSession(response)));
   }
 
@@ -191,45 +168,41 @@ export class AuthService {
   }
 
   refreshSession(): Observable<AuthResponse> {
-    const refreshToken = this.refreshTokenSignal();
-
-    if (!refreshToken || !this.hasRefreshToken()) {
-      this.clearSession();
-      return throwError(() => new Error('A valid refresh token is required.'));
-    }
-
     if (this.refreshRequest$) {
       return this.refreshRequest$;
     }
 
     const sessionVersion = this.sessionVersion;
-    const request: RefreshRequest = { refreshToken };
 
-    this.refreshRequest$ = this.http
-      .post<AuthResponse>(`${environment.apiUrl}/auth/refresh`, request, {
-        context: this.skipRefreshContext()
-      })
-      .pipe(
-        tap((response) => {
-          if (
-            this.sessionVersion === sessionVersion
-            && this.refreshTokenSignal() === refreshToken
-          ) {
-            this.persistSession(response);
+    this.refreshRequest$ = this.requestCsrfToken().pipe(
+      switchMap((csrfToken) =>
+        this.http.post<AuthResponse>(
+          `${environment.apiUrl}/auth/refresh`,
+          {},
+          {
+            context: this.skipRefreshContext(),
+            headers: { [AUTH_CSRF_HEADER]: csrfToken },
+            withCredentials: true
           }
-        }),
-        catchError((error: unknown) => {
-          if (this.refreshTokenSignal() === refreshToken) {
-            this.clearSession();
-          }
+        )
+      ),
+      tap((response) => {
+        if (this.sessionVersion === sessionVersion) {
+          this.persistSession(response);
+        }
+      }),
+      catchError((error: unknown) => {
+        if (this.sessionVersion === sessionVersion) {
+          this.clearSession();
+        }
 
-          return throwError(() => error);
-        }),
-        finalize(() => {
-          this.refreshRequest$ = null;
-        }),
-        shareReplay({ bufferSize: 1, refCount: false })
-      );
+        return throwError(() => error);
+      }),
+      finalize(() => {
+        this.refreshRequest$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
 
     return this.refreshRequest$;
   }
@@ -242,12 +215,11 @@ export class AuthService {
 
   ensureCurrentUser(): Observable<MeResponse> {
     if (!this.hasToken()) {
-      if (!this.hasRefreshToken()) {
-        return throwError(() => new Error('A valid session is required.'));
-      }
-
       return this.refreshSession().pipe(
-        switchMap(() => this.loadCurrentUser())
+        map((response) => ({
+          user: response.user,
+          progressProfile: response.progressProfile
+        }))
       );
     }
 
@@ -273,23 +245,23 @@ export class AuthService {
     this.emailVerificationNoticeSignal.set(null);
   }
 
-  logout(): void {
-    const refreshToken = this.refreshTokenSignal();
-
+  logout(): Observable<void> {
     this.clearSession();
 
-    if (!refreshToken) {
-      return;
-    }
-
-    const request: LogoutRequest = { refreshToken };
-
-    this.http
-      .post<void>(`${environment.apiUrl}/auth/logout`, request, {
-        context: this.skipRefreshContext()
-      })
-      .pipe(catchError(() => of(undefined)))
-      .subscribe();
+    return this.requestCsrfToken().pipe(
+      switchMap((csrfToken) =>
+        this.http.post<void>(
+          `${environment.apiUrl}/auth/logout`,
+          {},
+          {
+            context: this.skipRefreshContext(),
+            headers: { [AUTH_CSRF_HEADER]: csrfToken },
+            withCredentials: true
+          }
+        )
+      ),
+      catchError(() => of(undefined))
+    );
   }
 
   clearSession(): void {
@@ -297,82 +269,32 @@ export class AuthService {
     this.refreshRequest$ = null;
     this.accessTokenSignal.set(null);
     this.expiresAtUtcSignal.set(null);
-    this.refreshTokenSignal.set(null);
-    this.refreshTokenExpiresAtUtcSignal.set(null);
     this.userSignal.set(null);
     this.progressProfileSignal.set(null);
     this.emailVerificationNoticeSignal.set(null);
+    this.removeLegacyStoredSession();
+  }
 
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    }
+  private requestCsrfToken(): Observable<string> {
+    return this.http
+      .get<CsrfTokenResponse>(`${environment.apiUrl}/auth/csrf`, {
+        context: this.skipRefreshContext(),
+        withCredentials: true
+      })
+      .pipe(map((response) => response.csrfToken));
   }
 
   private persistSession(response: AuthResponse): void {
     this.sessionVersion += 1;
     this.accessTokenSignal.set(response.accessToken);
     this.expiresAtUtcSignal.set(response.expiresAtUtc);
-    this.refreshTokenSignal.set(response.refreshToken);
-    this.refreshTokenExpiresAtUtcSignal.set(response.refreshTokenExpiresAtUtc);
     this.setCurrentUser(response);
-
-    if (typeof localStorage === 'undefined') {
-      return;
-    }
-
-    const storedAuth: StoredAuth = {
-      accessToken: response.accessToken,
-      expiresAtUtc: response.expiresAtUtc,
-      refreshToken: response.refreshToken,
-      refreshTokenExpiresAtUtc: response.refreshTokenExpiresAtUtc
-    };
-
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(storedAuth));
+    this.removeLegacyStoredSession();
   }
 
   private setCurrentUser(response: MeResponse): void {
     this.userSignal.set(response.user);
     this.progressProfileSignal.set(response.progressProfile);
-  }
-
-  private readStoredAuth(): StoredAuth | null {
-    if (typeof localStorage === 'undefined') {
-      return null;
-    }
-
-    try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-
-      if (!stored) {
-        return null;
-      }
-
-      const parsed: unknown = JSON.parse(stored);
-
-      if (!this.isStoredAuth(parsed)) {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        return null;
-      }
-
-      const accessExpiresAtMilliseconds = Date.parse(parsed.expiresAtUtc);
-      const refreshExpiresAtMilliseconds = Date.parse(
-        parsed.refreshTokenExpiresAtUtc
-      );
-
-      if (
-        Number.isNaN(accessExpiresAtMilliseconds)
-        || Number.isNaN(refreshExpiresAtMilliseconds)
-        || refreshExpiresAtMilliseconds <= Date.now()
-      ) {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        return null;
-      }
-
-      return parsed;
-    } catch {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      return null;
-    }
   }
 
   private tokenIsUsable(token: string | null, expiresAtUtc: string | null): boolean {
@@ -383,18 +305,14 @@ export class AuthService {
     return Date.parse(expiresAtUtc) > Date.now();
   }
 
-  private isStoredAuth(value: unknown): value is StoredAuth {
-    return (
-      this.isRecord(value)
-      && typeof value['accessToken'] === 'string'
-      && typeof value['expiresAtUtc'] === 'string'
-      && typeof value['refreshToken'] === 'string'
-      && typeof value['refreshTokenExpiresAtUtc'] === 'string'
-    );
-  }
+  private removeLegacyStoredSession(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
 
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    }
   }
 
   private verificationSentStorageKey(email: string): string {

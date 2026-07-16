@@ -38,6 +38,26 @@ test.describe('production accessibility', () => {
     }
   });
 
+  test('traps notification-dialog focus, closes with Escape, and restores focus', async ({ page }) => {
+    const app = new LevelHabitPage(page);
+    await app.login();
+    const trigger = page.getByRole('button', { name: 'Notifications' });
+    await trigger.focus();
+    await trigger.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Notifications' });
+
+    await expect(dialog).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Dismiss' })).toBeFocused();
+    for (let index = 0; index < 8; index += 1) {
+      await page.keyboard.press('Tab');
+      expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+    }
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
   test('remains usable at 200 percent equivalent zoom', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.login();

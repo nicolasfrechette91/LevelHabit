@@ -95,7 +95,7 @@ function createAuthenticatedAuthService(): Pick<
     hasToken: () => true,
     ensureCurrentUser: () => of(AUTH_ME_RESPONSE),
     updateProgressProfile: (nextProgressProfile) => progressProfile.set(nextProgressProfile),
-    logout: () => undefined
+    logout: () => of(undefined)
   };
 }
 

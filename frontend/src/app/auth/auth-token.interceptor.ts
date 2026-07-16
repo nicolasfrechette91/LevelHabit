@@ -69,7 +69,7 @@ function shouldRefresh(
     && isApiRequest
     && !request.context.get(SKIP_AUTH_REFRESH)
     && !isAuthLifecycleEndpoint(request)
-    && auth.hasRefreshToken()
+    && auth.accessToken() !== null
   );
 }
 
@@ -97,6 +97,7 @@ function isAuthLifecycleEndpoint(request: HttpRequest<unknown>): boolean {
     'register',
     'refresh',
     'logout',
+    'csrf',
     'forgot-password',
     'reset-password',
     'confirm-email',

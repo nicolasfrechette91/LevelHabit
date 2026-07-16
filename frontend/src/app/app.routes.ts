@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard } from './auth/auth.guard';
+import { anonymousGuard } from './auth/anonymous.guard';
 import { PROTOTYPE_ROUTE_CONFIGS } from './pages/prototype-page/prototype-view.model';
 
 const loadAuthPage = () =>
@@ -37,6 +38,7 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: loadAuthPage,
+    canActivate: [anonymousGuard],
     data: {
       titleKey: 'routes.login',
       mode: 'login'
@@ -45,6 +47,7 @@ export const routes: Routes = [
   {
     path: 'register',
     loadComponent: loadAuthPage,
+    canActivate: [anonymousGuard],
     data: {
       titleKey: 'routes.register',
       mode: 'register'

@@ -5,25 +5,23 @@ import { catchError, map, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 
-export const authGuard: CanActivateFn = (_route, state) => {
+export const anonymousGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  const loginTree = () =>
-    router.createUrlTree(['/login'], {
-      queryParams: {
-        returnUrl: state.url
-      }
-    });
 
   if (!environment.authRequired) {
     return true;
   }
 
+  if (auth.hasToken()) {
+    return router.createUrlTree(['/dashboard']);
+  }
+
   return auth.ensureCurrentUser().pipe(
-    map(() => true),
+    map(() => router.createUrlTree(['/dashboard'])),
     catchError(() => {
       auth.clearSession();
-      return of(loginTree());
+      return of(true);
     })
   );
 };

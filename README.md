@@ -285,6 +285,8 @@ Local service URLs:
 - Sentry error tracking is optional. Empty DSN values leave tracking disabled.
 - Backend CORS must allow the exact production frontend origin:
   `https://nicolasfrechette91.github.io`.
+- Credentialed authentication CORS must remain enabled with explicit origins;
+  never combine `AllowCredentials` with a wildcard origin.
 - Refresh-token behavior is documented in
   [docs/refresh-token-auth.md](docs/refresh-token-auth.md).
 - Password reset and email verification use Brevo transactional email when
@@ -327,6 +329,10 @@ Jwt__Issuer=LevelHabit.Api
 Jwt__Audience=LevelHabit.Frontend
 Jwt__ExpirationMinutes=15
 Jwt__RefreshTokenExpirationDays=30
+AuthCookies__RefreshTokenName=LevelHabit.Refresh
+AuthCookies__CsrfTokenName=LevelHabit.Csrf
+AuthCookies__Secure=true
+AuthCookies__SameSite=None
 Email__Provider=Brevo
 EmailVerification__CodeExpirationMinutes=10
 EmailVerification__ResendCooldownSeconds=60
@@ -336,7 +342,6 @@ BREVO_SENDER_EMAIL=<verified sender email>
 BREVO_SENDER_NAME=LevelHabit
 Frontend__BaseUrl=https://nicolasfrechette91.github.io/LevelHabit
 Cors__AllowedOrigins__0=https://nicolasfrechette91.github.io
-Cors__AllowedOrigins__1=http://localhost:4200
 Sentry__Dsn=<optional backend Sentry DSN>
 Sentry__Environment=production
 ```
@@ -501,9 +506,10 @@ migrations:
 
 ## Known Limitations
 
-- Browser token persistence uses `localStorage` for the current GitHub
-  Pages/Render architecture; a same-site deployment could move refresh tokens
-  to httpOnly cookies later.
+- Refresh tokens use secure cross-site cookies between GitHub Pages and Render.
+  Browsers or enterprise policies that block third-party cookies may prevent
+  session restoration; a same-site custom API domain would avoid that class of
+  restriction.
 - Reminder limitations in this version: one reminder time per habit, selected
   weekday schedules only, no snoozing, no email/SMS/push providers, and browser
   notifications only while Level Habit is open.

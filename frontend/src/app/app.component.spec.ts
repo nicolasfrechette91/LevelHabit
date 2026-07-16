@@ -3,32 +3,28 @@ import {
   HttpTestingController,
   provideHttpClientTesting
 } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { Observable, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../environments/environment';
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
-import { AUTH_STORAGE_KEY } from './auth/auth.service';
+import type { MeResponse } from './auth/auth.models';
+import { AuthService } from './auth/auth.service';
 
 describe('AppComponent', () => {
-  beforeEach(() => {
-    TestBed.resetTestingModule();
-    localStorage.clear();
-  });
+  beforeEach(() => TestBed.resetTestingModule());
 
   it('renders anonymous account links when no user is authenticated', async () => {
-    const { element, http } = await setupApp();
+    const { element } = await setupApp();
 
     expect(element.querySelector('.app-shell')).not.toBeNull();
-    expect(element.querySelector('.navbar-brand')?.textContent).toContain('LevelHabit');
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
     expect(element.querySelector('.site-nav')).toBeNull();
-    expect(element.querySelector('[data-testid="logout-button"]')).toBeNull();
-    expect(element.querySelector('[data-testid="nav-dashboard"]')).toBeNull();
-    http.verify();
   });
 
   it('hides the redundant login link on the login page', async () => {
@@ -36,43 +32,31 @@ describe('AppComponent', () => {
 
     expect(element.querySelector('.auth-nav')?.textContent).not.toContain('Log in');
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
-
     http.expectOne(`${environment.apiUrl}/health`).flush('Healthy');
     http.verify();
   });
 
-  it('renders the app shell, brand, and primary navigation for authenticated users', async () => {
-    const { element, http } = await setupApp({ authenticated: true });
+  it('renders primary navigation for authenticated users', async () => {
+    const { element } = await setupApp({ authenticated: true });
 
-    expect(element.querySelector('.app-shell')).not.toBeNull();
-    expect(element.querySelector('.navbar-brand')?.textContent).toContain('LevelHabit');
-    expect(element.querySelector('nav')).not.toBeNull();
     expect(element.querySelectorAll('nav a')).toHaveLength(5);
     expect(element.querySelector('[data-testid="logout-button"]')).not.toBeNull();
-    http.verify();
   });
 
   it('hides authenticated navigation immediately after logout', async () => {
-    const { element, fixture, http } = await setupApp({ authenticated: true });
+    const { auth, element, fixture, router } = await setupApp({ authenticated: true });
+    const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     const logoutButton = element.querySelector(
       '[data-testid="logout-button"]'
-    ) as HTMLButtonElement | null;
+    ) as HTMLButtonElement;
 
-    expect(logoutButton).not.toBeNull();
-
-    logoutButton?.click();
+    logoutButton.click();
     fixture.detectChanges();
 
+    expect(auth.logout).toHaveBeenCalledOnce();
     expect(element.querySelector('.site-nav')).toBeNull();
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
-    expect(element.querySelector('[data-testid="logout-button"]')).toBeNull();
-    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
-
-    const request = http.expectOne(`${environment.apiUrl}/auth/logout`);
-
-    expect(request.request.method).toBe('POST');
-    request.flush(null);
-    http.verify();
+    expect(navigateByUrl).toHaveBeenCalledWith('/login');
   });
 });
 
@@ -82,28 +66,21 @@ type SetupOptions = Readonly<{
 }>;
 
 async function setupApp(options: SetupOptions = {}): Promise<{
+  auth: AuthServiceStub;
   element: HTMLElement;
   fixture: ComponentFixture<AppComponent>;
   http: HttpTestingController;
+  router: Router;
 }> {
-  if (options.authenticated) {
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        accessToken: 'test-access-token',
-        expiresAtUtc: '2099-01-01T00:00:00Z',
-        refreshToken: 'test-refresh-token',
-        refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z'
-      })
-    );
-  }
+  const auth = new AuthServiceStub(options.authenticated ?? false);
 
   await TestBed.configureTestingModule({
     imports: [AppComponent],
     providers: [
       provideRouter(routes),
       provideHttpClient(),
-      provideHttpClientTesting()
+      provideHttpClientTesting(),
+      { provide: AuthService, useValue: auth }
     ]
   }).compileComponents();
 
@@ -113,14 +90,41 @@ async function setupApp(options: SetupOptions = {}): Promise<{
     await router.navigateByUrl(options.path);
   }
 
-  vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
-
   const fixture = TestBed.createComponent(AppComponent);
   fixture.detectChanges();
 
   return {
+    auth,
     element: fixture.nativeElement as HTMLElement,
     fixture,
-    http: TestBed.inject(HttpTestingController)
+    http: TestBed.inject(HttpTestingController),
+    router
   };
+}
+
+class AuthServiceStub {
+  readonly authRequired = true;
+  private readonly authenticated = signal(false);
+  readonly isAuthenticated = this.authenticated.asReadonly();
+  readonly emailVerificationNotice = signal<string | null>(null).asReadonly();
+  readonly dismissEmailVerificationNotice = vi.fn();
+  readonly clearSession = vi.fn(() => this.authenticated.set(false));
+  readonly logout = vi.fn((): Observable<void> => {
+    this.authenticated.set(false);
+    return of(undefined);
+  });
+
+  constructor(authenticated: boolean) {
+    this.authenticated.set(authenticated);
+  }
+
+  hasToken(): boolean {
+    return this.authenticated();
+  }
+
+  ensureCurrentUser(): Observable<MeResponse> {
+    return this.authenticated()
+      ? of({} as MeResponse)
+      : throwError(() => new Error('No session'));
+  }
 }

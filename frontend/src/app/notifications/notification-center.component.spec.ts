@@ -52,12 +52,42 @@ describe('NotificationCenterComponent', () => {
     fixture.detectChanges();
 
     expect(store.togglePanel).toHaveBeenCalled();
-    expect(element.querySelector('[data-testid="notification-panel"]')).not.toBeNull();
+    const dialog = element.querySelector(
+      '[data-testid="notification-panel"]'
+    ) as HTMLDialogElement;
+    expect(dialog.open).toBe(true);
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     fixture.detectChanges();
 
-    expect(element.querySelector('[data-testid="notification-panel"]')).toBeNull();
+    expect(dialog.open).toBe(false);
+  });
+
+  it('moves focus inside the named dialog and restores it when closed', () => {
+    const { element, fixture } = setup([], 0);
+    const toggle = element.querySelector(
+      '[data-testid="notification-bell"]'
+    ) as HTMLButtonElement;
+
+    toggle.focus();
+    toggle.click();
+    fixture.detectChanges();
+
+    const dialog = element.querySelector(
+      '[data-testid="notification-panel"]'
+    ) as HTMLDialogElement;
+    const close = element.querySelector(
+      '[data-testid="close-notifications-button"]'
+    ) as HTMLButtonElement;
+    expect(dialog.getAttribute('aria-label')).toBe('Notifications');
+    expect(close.getAttribute('aria-label')).toBe('Dismiss');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    close.click();
+    fixture.detectChanges();
+
+    expect(dialog.open).toBe(false);
+    expect(document.activeElement).toBe(toggle);
   });
 
   it('marks one notification as read', () => {
@@ -127,7 +157,7 @@ function setup(
   const unreadCountSignal = signal(unreadCount);
   const loadingSignal = signal(false);
   const errorSignal = signal<string | null>(null);
-  const panelOpenSignal = signal(panelStartsOpen);
+  const panelOpenSignal = signal(false);
   const store: NotificationStoreStub = {
     notifications: notificationsSignal.asReadonly(),
     unreadCount: unreadCountSignal.asReadonly(),
@@ -158,6 +188,11 @@ function setup(
 
   const fixture = TestBed.createComponent(NotificationCenterComponent);
   fixture.detectChanges();
+
+  if (panelStartsOpen) {
+    click(fixture.nativeElement as HTMLElement, '[data-testid="notification-bell"]');
+    fixture.detectChanges();
+  }
 
   return {
     element: fixture.nativeElement as HTMLElement,

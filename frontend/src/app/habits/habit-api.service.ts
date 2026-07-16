@@ -10,6 +10,9 @@ import type {
   PersistedHabitFrequency
 } from '../state/levelhabit.models';
 
+export const HABIT_TITLE_MAX_LENGTH = 140;
+export const HABIT_DESCRIPTION_MAX_LENGTH = 1000;
+
 export type HabitResponse = Readonly<{
   id: string;
   userId: string;

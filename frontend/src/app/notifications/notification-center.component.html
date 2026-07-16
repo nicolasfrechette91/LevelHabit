@@ -1,4 +1,4 @@
-<div class="notification-center" (keydown.escape)="closePanel()">
+<div class="notification-center">
   <button
     type="button"
     class="notification-toggle"
@@ -19,18 +19,21 @@
     }
   </button>
 
-  @if (notifications.panelOpen()) {
-    <section
-      class="notification-panel"
-      role="dialog"
-      [attr.aria-label]="'notifications.label' | translate"
-      data-testid="notification-panel"
-    >
-      <header class="notification-panel-header">
-        <div>
-          <p class="eyebrow mb-1">{{ 'notifications.label' | translate }}</p>
-          <h2 class="h6 fw-bold mb-0">{{ 'notifications.latest' | translate }}</h2>
-        </div>
+  <dialog
+    class="notification-panel"
+    [attr.aria-label]="'notifications.label' | translate"
+    data-testid="notification-panel"
+    (cancel)="onDialogCancel()"
+    (close)="onDialogClosed()"
+    (click)="onDialogClick($event)"
+    (keydown)="onDialogKeydown($event)"
+  >
+    <header class="notification-panel-header">
+      <div>
+        <p class="eyebrow mb-1">{{ 'notifications.label' | translate }}</p>
+        <h2 class="h6 fw-bold mb-0">{{ 'notifications.latest' | translate }}</h2>
+      </div>
+      <div class="notification-panel-actions">
         <button
           type="button"
           class="btn btn-sm btn-outline-success fw-bold"
@@ -40,9 +43,18 @@
         >
           {{ 'notifications.markAllRead' | translate }}
         </button>
-      </header>
+        <button
+          type="button"
+          class="btn-close"
+          data-testid="close-notifications-button"
+          [attr.aria-label]="'navigation.dismiss' | translate"
+          autofocus
+          (click)="closePanel()"
+        ></button>
+      </div>
+    </header>
 
-      <div class="notification-panel-body" aria-live="polite">
+    <div class="notification-panel-body" aria-live="polite">
         @if (notifications.loading()) {
           <p class="notification-state lh-muted mb-0">{{ 'notifications.loading' | translate }}</p>
         } @else if (notifications.error(); as notificationError) {
@@ -97,7 +109,6 @@
             }
           </div>
         }
-      </div>
-    </section>
-  }
+    </div>
+  </dialog>
 </div>

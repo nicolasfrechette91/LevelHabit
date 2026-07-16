@@ -305,3 +305,60 @@ All four are archived and were the only records modified by this review.
 ## Verdict
 
 LevelHabit is **functionally strong and visually portfolio-presentable, but not yet polished enough for an unqualified portfolio launch**. The five highest-priority improvements are: secure refresh-token storage, authenticated anonymous-route guards, single-flight login submission, accurate accessible habit length validation, and notification-dialog focus semantics.
+
+## 9. Remediation status (2026-07-15)
+
+Status: **Implemented and locally verified; production verification pending deployment.**
+
+| Finding | Remediation |
+|---|---|
+| LH-AUTH-001 | Added a functional anonymous-only guard to `/login` and `/register`. It restores an HttpOnly-cookie session before route activation and redirects authenticated navigation or full-page loads to Dashboard without creating the anonymous component. |
+| LH-AUTH-002 | Added a synchronous `pending()` single-flight check at the beginning of login submission. The existing loading label, `aria-busy`, and disabled state now accompany component-level duplicate protection for clicks and Enter submissions. |
+| LH-HABIT-003 | Confirmed the backend/domain/database limits of 140 title characters and 1000 description characters. Create and edit now show distinct required/maximum messages with `aria-invalid` and field-specific `aria-describedby` associations, block invalid saves, and recover after correction. |
+| LH-SEC-004 | Refresh tokens now use a rotating `Secure`, `HttpOnly`, `SameSite=None` API cookie in production and are excluded from login/refresh JSON. Access tokens are memory-only. Refresh/logout use credentialed requests and a double-submit CSRF cookie/header. Explicit-origin CORS now allows credentials. |
+| LH-A11Y-005 | Replaced the custom dialog-like panel with a native modal dialog, meaningful initial Close focus, modal background inertness, Escape close, explicit Tab-boundary containment, an accessible name, and trigger-focus restoration. |
+
+Regression coverage added:
+
+- Angular unit tests: anonymous navigation and refresh for login/registration;
+  login rapid click/Enter single-flight and failed-request recovery; create/edit
+  habit boundaries and accessible associations; cookie refresh/logout/storage;
+  access-token retry; and notification focus behavior.
+- ASP.NET Core tests: refresh-token JSON exclusion; production cookie flags;
+  CSRF acceptance/rejection; cookie expiry; and the existing rotation/reuse
+  rejection tests.
+- Playwright: an isolated three-browser remediation suite plus updated
+  production tests for the same scenarios. The isolated suite passed 15/15
+  across Chromium, Firefox, and WebKit with no retries.
+
+Local verification totals:
+
+- Angular unit tests: 129 passed, 0 failed, 0 skipped.
+- ASP.NET Core tests: 103 passed, 0 failed, 0 skipped.
+- Isolated Playwright remediation matrix: 15 passed, 0 failed, 0 skipped,
+  0 flaky or retry-only passes.
+- Angular production build: passed.
+- ASP.NET Core Release build: passed with 0 warnings and 0 errors.
+- Updated production Playwright matrix: 69 tests collected successfully;
+  execution remains pending the coordinated backend/frontend deployment and
+  availability of the authorized production test account.
+
+The original production result (47 passed, 7 failed, 3 skipped) remains the
+deployment baseline. The updated 69-case production matrix has been compiled
+but cannot be truthfully rerun against the old deployment: the new backend must
+be deployed before the new frontend, and production E2E credentials were not
+available in the remediation environment.
+
+Observations and follow-up:
+
+- LH-PROG-006 remains unchanged because whether same-day archived completions
+  belong in “today” is a product decision, not a confirmed defect.
+- LH-PROFILE-007 remains unchanged because editable profile behavior is outside
+  current requirements.
+- Restore or permanent deletion of archived habits was not introduced. The
+  four `E2E-CODEX-` records remain archived; adding a production cleanup-only
+  endpoint would be inappropriate. The new validation browser test mocks its
+  save responses and creates no production records.
+- After deployment, rerun `npm run e2e:production` with the authorized test
+  account, first non-mutating and then with destructive lifecycle coverage only
+  in an isolated test environment or with an approved cleanup strategy.

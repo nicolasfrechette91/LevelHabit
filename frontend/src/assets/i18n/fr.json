@@ -101,6 +101,8 @@
     "progressDisplayNameMinLength": "Le nom de progression affiché doit compter au moins 2 caractères.",
     "progressDisplayNameMaxLength": "Le nom de progression affiché doit compter au plus 80 caractères.",
     "titleRequired": "Le titre est requis.",
+    "titleMaxLength": "Le titre doit compter au plus 140 caractères.",
+    "descriptionMaxLength": "La description doit compter au plus 1000 caractères.",
     "reminderTimeInvalid": "Saisissez une heure de rappel valide.",
     "timezoneInvalid": "Choisissez un fuseau horaire valide.",
     "reminderDayRequired": "Choisissez au moins un jour de rappel.",

@@ -19,6 +19,8 @@ import { AuthService } from '../../auth/auth.service';
 import type { MeResponse } from '../../auth/auth.models';
 import { LanguageService } from '../../i18n/language.service';
 import {
+  HABIT_DESCRIPTION_MAX_LENGTH,
+  HABIT_TITLE_MAX_LENGTH,
   HabitApiService,
   type HabitCompletionResponse,
   type HabitResponse,
@@ -596,6 +598,76 @@ describe('Habits API view', () => {
     expect(textContent(nativeElement)).toContain('Study sprint');
   });
 
+  it('associates the required title error and blocks an empty create', async () => {
+    const api = new HabitApiServiceStub([]);
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
+
+    submitHabitForm(harness, nativeElement);
+
+    const title = nativeElement.querySelector('#habit-title') as HTMLInputElement;
+    expect(api.create).not.toHaveBeenCalled();
+    expect(textContent(nativeElement)).toContain('Title is required.');
+    expect(title.getAttribute('aria-invalid')).toBe('true');
+    expect(title.getAttribute('aria-describedby')).toBe('habit-title-error');
+  });
+
+  it('accepts title and description values exactly at their backend limits', async () => {
+    const api = new HabitApiServiceStub([]);
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
+    const title = 'T'.repeat(HABIT_TITLE_MAX_LENGTH);
+    const description = 'D'.repeat(HABIT_DESCRIPTION_MAX_LENGTH);
+
+    setFormField(harness, nativeElement, '#habit-title', title);
+    setFormField(harness, nativeElement, '#habit-description', description);
+    submitHabitForm(harness, nativeElement);
+
+    expect(api.create).toHaveBeenCalledWith(expect.objectContaining({
+      title,
+      description
+    }));
+  });
+
+  it('shows field-specific overlength errors and saves after correction', async () => {
+    const api = new HabitApiServiceStub([]);
+    const { nativeElement, harness } = await renderApiHabitRoute(api);
+
+    setFormField(
+      harness,
+      nativeElement,
+      '#habit-title',
+      'T'.repeat(HABIT_TITLE_MAX_LENGTH + 1)
+    );
+    setFormField(
+      harness,
+      nativeElement,
+      '#habit-description',
+      'D'.repeat(HABIT_DESCRIPTION_MAX_LENGTH + 1)
+    );
+    submitHabitForm(harness, nativeElement);
+
+    const title = nativeElement.querySelector('#habit-title') as HTMLInputElement;
+    const description = nativeElement.querySelector(
+      '#habit-description'
+    ) as HTMLTextAreaElement;
+    expect(api.create).not.toHaveBeenCalled();
+    expect(textContent(nativeElement)).toContain(
+      `Title must be ${HABIT_TITLE_MAX_LENGTH} characters or fewer.`
+    );
+    expect(textContent(nativeElement)).toContain(
+      `Description must be ${HABIT_DESCRIPTION_MAX_LENGTH} characters or fewer.`
+    );
+    expect(title.getAttribute('aria-describedby')).toBe('habit-title-error');
+    expect(description.getAttribute('aria-describedby')).toBe(
+      'habit-description-error'
+    );
+
+    setFormField(harness, nativeElement, '#habit-title', 'Corrected title');
+    setFormField(harness, nativeElement, '#habit-description', 'Corrected description');
+    submitHabitForm(harness, nativeElement);
+
+    expect(api.create).toHaveBeenCalledOnce();
+  });
+
   it('shows reminder fields when reminders are enabled', async () => {
     const { nativeElement, harness } = await renderApiHabitRoute();
 
@@ -697,6 +769,45 @@ describe('Habits API view', () => {
       frequency: 'Daily'
     });
     expect(textContent(nativeElement)).toContain('Evening training');
+  });
+
+  it('applies the same maximum-length validation while editing', async () => {
+    const { api, nativeElement, harness } = await renderApiHabitRoute();
+    getButtonByText(nativeElement, /^Edit$/).click();
+    harness.detectChanges();
+
+    setFormField(
+      harness,
+      nativeElement,
+      '#habit-title',
+      'T'.repeat(HABIT_TITLE_MAX_LENGTH + 1)
+    );
+    setFormField(
+      harness,
+      nativeElement,
+      '#habit-description',
+      'D'.repeat(HABIT_DESCRIPTION_MAX_LENGTH + 1)
+    );
+    submitHabitForm(harness, nativeElement);
+
+    expect(api.update).not.toHaveBeenCalled();
+    expect(textContent(nativeElement)).toContain(
+      `Title must be ${HABIT_TITLE_MAX_LENGTH} characters or fewer.`
+    );
+    expect(textContent(nativeElement)).toContain(
+      `Description must be ${HABIT_DESCRIPTION_MAX_LENGTH} characters or fewer.`
+    );
+
+    const title = 'E'.repeat(HABIT_TITLE_MAX_LENGTH);
+    const description = 'F'.repeat(HABIT_DESCRIPTION_MAX_LENGTH);
+    setFormField(harness, nativeElement, '#habit-title', title);
+    setFormField(harness, nativeElement, '#habit-description', description);
+    submitHabitForm(harness, nativeElement);
+
+    expect(api.update).toHaveBeenCalledWith(
+      API_QUEST.id,
+      expect.objectContaining({ title, description })
+    );
   });
 
   it('archives habits through the API', async () => {
@@ -1092,7 +1203,7 @@ function createApiAuthService(): Pick<
     hasToken: () => true,
     ensureCurrentUser: (): Observable<MeResponse> => of(AUTH_ME_RESPONSE),
     updateProgressProfile: (nextProgressProfile) => progressProfile.set(nextProgressProfile),
-    logout: () => undefined
+    logout: () => of(undefined)
   };
 }
 

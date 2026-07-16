@@ -98,8 +98,9 @@ export class AppComponent {
   });
 
   protected logout(): void {
-    this.auth.logout();
-    void this.router.navigateByUrl('/login');
+    this.auth.logout().subscribe(() => {
+      void this.router.navigateByUrl('/login');
+    });
   }
 
   private hasAuthenticatedLayout(): boolean {

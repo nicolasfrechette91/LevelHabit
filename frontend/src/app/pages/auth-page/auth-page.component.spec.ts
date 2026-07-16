@@ -2,7 +2,7 @@ import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
 
@@ -20,8 +20,6 @@ import { AuthPageComponent } from './auth-page.component';
 const AUTH_RESPONSE: AuthResponse = {
   accessToken: 'jwt-token',
   expiresAtUtc: '2099-01-01T00:00:00Z',
-  refreshToken: 'refresh-token',
-  refreshTokenExpiresAtUtc: '2099-02-01T00:00:00Z',
   user: {
     id: 'f972df99-805d-48a3-93e6-e5c469ba8be6',
     email: 'player@example.com',
@@ -166,6 +164,53 @@ describe('AuthPageComponent', () => {
       password: 'CorrectHorse123!'
     });
     expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
+  });
+
+  it('keeps rapid login clicks single-flight until the active request completes', async () => {
+    const { auth, fixture, nativeElement } = await setup('login');
+    const loginResponse = new Subject<AuthResponse>();
+    auth.login.mockReturnValueOnce(loginResponse);
+    setInputValue(fixture, '#login-email', 'player@example.com');
+    setInputValue(fixture, '#login-password', 'CorrectHorse123!');
+    const submit = nativeElement.querySelector(
+      '[data-testid="login-submit-button"]'
+    ) as HTMLButtonElement;
+
+    submit.click();
+    submit.click();
+    fixture.detectChanges();
+
+    expect(auth.login).toHaveBeenCalledOnce();
+    expect(submit.disabled).toBe(true);
+    expect(submit.getAttribute('aria-busy')).toBe('true');
+    expect(submit.textContent).toContain('Signing in...');
+
+    loginResponse.next(AUTH_RESPONSE);
+    loginResponse.complete();
+    fixture.detectChanges();
+
+    expect(submit.disabled).toBe(false);
+  });
+
+  it('ignores repeated Enter-equivalent form submissions while login is active', async () => {
+    const { auth, fixture } = await setup('login');
+    const loginResponse = new Subject<AuthResponse>();
+    auth.login.mockReturnValueOnce(loginResponse);
+    setInputValue(fixture, '#login-email', 'player@example.com');
+    setInputValue(fixture, '#login-password', 'CorrectHorse123!');
+
+    submitForm(fixture);
+    submitForm(fixture);
+
+    expect(auth.login).toHaveBeenCalledOnce();
+
+    loginResponse.error(new HttpErrorResponse({ status: 401 }));
+    fixture.detectChanges();
+
+    const submit = fixture.nativeElement.querySelector(
+      '[data-testid="login-submit-button"]'
+    ) as HTMLButtonElement;
+    expect(submit.disabled).toBe(false);
   });
 
   it('toggles login password visibility without changing its value', async () => {

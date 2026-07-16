@@ -65,11 +65,16 @@
   color: var(--lh-ink);
   max-height: min(31rem, calc(100vh - 5.5rem));
   overflow: hidden;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.5rem);
+  inset: 5rem 1rem auto auto;
+  margin: 0;
+  padding: 0;
+  position: fixed;
   width: min(24rem, calc(100vw - 2rem));
   z-index: 30;
+
+  &::backdrop {
+    background: rgba($lh-ink, 0.18);
+  }
 }
 
 .notification-panel-header {
@@ -79,6 +84,12 @@
   gap: 1rem;
   justify-content: space-between;
   padding: 1rem;
+}
+
+.notification-panel-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
 }
 
 .notification-panel-body {
@@ -149,8 +160,7 @@
   }
 
   .notification-panel {
-    left: 0;
-    right: auto;
-    width: 100%;
+    inset: 6.5rem 1rem auto;
+    width: auto;
   }
 }

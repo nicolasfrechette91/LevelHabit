@@ -75,6 +75,10 @@ export class AuthPageComponent implements OnInit {
   }
 
   protected submitLogin(): void {
+    if (this.pending()) {
+      return;
+    }
+
     this.loginSubmitted.set(true);
     this.successMessage.set(null);
     this.errorMessage.set(null);

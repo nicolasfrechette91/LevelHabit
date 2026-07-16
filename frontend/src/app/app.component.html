@@ -7,10 +7,10 @@
       <a
         class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0"
         [routerLink]="auth.isAuthenticated() ? '/dashboard' : '/login'"
-        aria-label="LevelHabit"
+        aria-label="Level Habit"
       >
         <img ngSrc="levelhabit-mark.svg" alt="" width="36" height="36" priority>
-        <span>LevelHabit</span>
+        <span>Level Habit</span>
       </a>
 
       @if (auth.isAuthenticated()) {

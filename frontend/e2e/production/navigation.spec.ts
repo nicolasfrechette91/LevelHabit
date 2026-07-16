@@ -40,30 +40,49 @@ test.describe('production navigation and authorization', () => {
     }
   });
 
-  test('redirects the login URL when a session is already active', async ({ page }) => {
+  test('redirects login and registration full-page loads when a session is active', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.login();
     await page.goto('./#/login');
     await expect(page.getByTestId('page-dashboard')).toBeVisible({ timeout: 3_000 });
     await expect(page).toHaveURL(/#\/dashboard$/);
+    await expect(page.getByTestId('login-submit-button')).toHaveCount(0);
+    await page.goto('./#/register');
+    await expect(page.getByTestId('page-dashboard')).toBeVisible({ timeout: 3_000 });
+    await expect(page).toHaveURL(/#\/dashboard$/);
+    await expect(page.getByTestId('register-submit-button')).toHaveCount(0);
   });
 
-  test('clears stored credentials and rejects API access after logout', async ({ page }) => {
+  test('clears the authentication cookie and rejects session restoration after logout', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.login();
-    const storedShape = await page.evaluate(() => {
-      const stored = localStorage.getItem('levelhabit.auth.v1');
-      return stored ? Object.keys(JSON.parse(stored)).sort() : [];
-    });
-    expect(storedShape).toEqual([
-      'accessToken', 'expiresAtUtc', 'refreshToken', 'refreshTokenExpiresAtUtc'
-    ]);
+    expect(await page.evaluate(() => localStorage.getItem('levelhabit.auth.v1'))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem('levelhabit.auth.v1'))).toBeNull();
     await app.logout();
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('levelhabit.auth.v1'))).toBeNull();
+    expect(
+      (await page.context().cookies()).some((cookie) => cookie.name === 'LevelHabit.Refresh')
+    ).toBe(false);
+    await page.reload();
+    await expect(page.getByTestId('login-submit-button')).toBeVisible();
+    await page.goto('./#/register');
+    await expect(page.getByTestId('register-submit-button')).toBeVisible();
     const status = await page.evaluate(async () => {
       const response = await fetch('https://level-habit-api.onrender.com/api/habits');
       return response.status;
     });
     expect(status).toBe(401);
+  });
+
+  test('allows credentialed CORS from GitHub Pages', async ({ page }) => {
+    await page.goto('./#/login');
+    const result = await page.evaluate(async () => {
+      const response = await fetch(
+        'https://level-habit-api.onrender.com/api/health',
+        { credentials: 'include' }
+      );
+      return { ok: response.ok, status: response.status };
+    });
+
+    expect(result).toEqual({ ok: true, status: 200 });
   });
 });

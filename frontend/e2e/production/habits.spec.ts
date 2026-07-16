@@ -3,25 +3,104 @@ import { LevelHabitPage, attachLocatorScreenshot, expect, test, warmBackend } fr
 test.describe('production habit lifecycle', () => {
   test.beforeEach(async ({ page }) => warmBackend(page));
 
-  test('explains overlength title and description validation without submitting', async ({ page }) => {
+  test('enforces accessible backend length limits for create and edit, then saves corrections', async ({ page }) => {
     const app = new LevelHabitPage(page);
     await app.login();
     await app.openRoute('habits');
     let createRequests = 0;
-    page.on('request', (request) => {
-      if (request.method() === 'POST' && request.url().endsWith('/api/habits')) {
-        createRequests += 1;
+    let updateRequests = 0;
+    const fakeHabitId = '11111111-1111-4111-8111-111111111111';
+    await page.route('**/api/habits{,/*}', async (route) => {
+      const request = route.request();
+      const isCreate = request.method() === 'POST' && request.url().endsWith('/api/habits');
+      const isUpdate = request.method() === 'PUT' && request.url().endsWith(`/api/habits/${fakeHabitId}`);
+      const isReminderRead = request.method() === 'GET'
+        && request.url().endsWith(`/api/habits/${fakeHabitId}/reminder`);
+
+      if (isReminderRead) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          json: {
+            id: null,
+            habitId: fakeHabitId,
+            isEnabled: false,
+            time: null,
+            timeZoneId: null,
+            daysOfWeek: [],
+            lastTriggeredAtUtc: null,
+            nextTriggerAtUtc: null,
+            createdAtUtc: null,
+            updatedAtUtc: null
+          }
+        });
+        return;
       }
+
+      if (!isCreate && !isUpdate) {
+        await route.continue();
+        return;
+      }
+
+      if (isCreate) {
+        createRequests += 1;
+      } else {
+        updateRequests += 1;
+      }
+      const body = request.postDataJSON() as Record<string, unknown>;
+      await route.fulfill({
+        status: isCreate ? 201 : 200,
+        contentType: 'application/json',
+        json: {
+          id: fakeHabitId,
+          userId: '22222222-2222-4222-8222-222222222222',
+          ...body,
+          xpReward: 10,
+          isArchived: false,
+          completedToday: false,
+          completedTodayXpAwarded: null,
+          completedTodayAtUtc: null,
+          currentStreak: 0,
+          bestStreak: 0,
+          lastCompletedDateUtc: null,
+          lastCompletedAtUtc: null,
+          createdAtUtc: '2026-07-15T12:00:00Z',
+          updatedAtUtc: '2026-07-15T12:00:00Z'
+        }
+      });
     });
+
+    const maximumTitle = 'T'.repeat(140);
+    const maximumDescription = 'D'.repeat(1000);
+    await page.getByTestId('habit-title-input').fill(maximumTitle);
+    await page.getByTestId('habit-description-input').fill(maximumDescription);
+    await page.getByTestId('habit-submit-button').click();
+    expect(createRequests).toBe(1);
+    const fakeCard = page.getByTestId('habit-card').filter({ hasText: maximumTitle });
+    await expect(fakeCard).toBeVisible();
+    await fakeCard.getByRole('button', { name: 'Edit' }).click();
+
     await page.getByTestId('habit-title-input').fill('T'.repeat(141));
     await page.getByTestId('habit-description-input').fill('D'.repeat(1001));
     await page.getByTestId('habit-submit-button').click();
-    expect(createRequests).toBe(0);
+    expect(updateRequests).toBe(0);
     await page.getByTestId('habit-form').screenshot({
       path: 'test-results/production-audit/evidence/LH-HABIT-002-overlength-validation.png'
     });
     await expect(page.getByText('Title must be 140 characters or fewer.')).toBeVisible({ timeout: 3_000 });
     await expect(page.getByText('Description must be 1000 characters or fewer.')).toBeVisible();
+    await expect(page.getByLabel('Title')).toHaveAttribute('aria-describedby', 'habit-title-error');
+    await expect(page.getByLabel('Description')).toHaveAttribute(
+      'aria-describedby',
+      'habit-description-error'
+    );
+
+    const correctedTitle = 'Corrected mocked habit';
+    await page.getByTestId('habit-title-input').fill(correctedTitle);
+    await page.getByTestId('habit-description-input').fill('Corrected description');
+    await page.getByTestId('habit-submit-button').click();
+    expect(updateRequests).toBe(1);
+    await expect(page.getByTestId('habit-card').filter({ hasText: correctedTitle })).toBeVisible();
   });
 
   test('validates, creates, edits, completes, persists, and archives only its own record', async ({ page }, testInfo) => {

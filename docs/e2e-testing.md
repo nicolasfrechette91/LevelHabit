@@ -5,6 +5,12 @@ Angular app against the local ASP.NET Core API and local PostgreSQL database.
 The tests generate unique users and habit names at runtime and do not require
 production credentials.
 
+The non-destructive QA remediation suite uses a contract-faithful mocked API
+and runs in Chromium, Firefox, and WebKit. The older destructive lifecycle and
+user-isolation cases remain Chromium-only to limit generated local data. The
+separate `playwright.production.config.ts` suite is excluded from this local
+configuration and requires authorized production credentials.
+
 ## Covered Flows
 
 - Main user journey: register, reach the dashboard, create a habit, complete it,
@@ -12,6 +18,9 @@ production credentials.
   confirm persisted progress.
 - User isolation: complete a habit as User A, register User B, and confirm User
   B does not see User A's habit, analytics progress, or achievement unlocks.
+- QA remediation: anonymous-only routes, login single-flight, create/edit
+  length validation, cookie-session restoration/storage, and notification
+  dialog focus in all three browser engines.
 
 ## Prerequisites
 
@@ -83,3 +92,8 @@ Remove-Item Env:E2E_SKIP_WEB_SERVER
 The E2E suite is intentionally local/manual for now. It is not part of the
 required GitHub Actions validation workflow because it depends on full-stack
 startup, Docker PostgreSQL, backend secrets, and migrations.
+
+The original lifecycle helpers predate mandatory email verification. Running
+those two destructive cases against a real local API also requires a practical
+way for the test operator to obtain and enter the Development email code. The
+mocked QA remediation suite does not bypass application email verification.

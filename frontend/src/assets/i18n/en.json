@@ -27,7 +27,7 @@
     "password": "Password",
     "or": "or",
     "backToLogin": "Back to login",
-    "metaDescription": "LevelHabit is a gamified habit tracker for habits, XP, streaks, achievements, and personal progress."
+    "metaDescription": "Level Habit is a gamified habit tracker for habits, XP, streaks, achievements, and personal progress."
   },
   "navigation": {
     "primary": "Primary navigation",
@@ -55,12 +55,12 @@
     "analytics": "Analytics | LevelHabit"
   },
   "auth": {
-    "eyebrow": "LEVELHABIT",
+    "eyebrow": "LEVEL HABIT",
     "heroBefore": "Level up your life,",
     "heroHighlight": "one habit",
     "heroAfter": "at a time.",
     "summary": "Small daily actions create lasting change. Build better habits, maintain your streaks, track your progress, and become the best version of yourself.",
-    "benefitsLabel": "LevelHabit benefits",
+    "benefitsLabel": "Level Habit benefits",
     "buildHabits": "Build habits",
     "buildHabitsSummary": "Create routines that support your goals.",
     "maintainStreaks": "Maintain streaks",
@@ -101,6 +101,8 @@
     "progressDisplayNameMinLength": "Progress display name must be at least 2 characters.",
     "progressDisplayNameMaxLength": "Progress display name must be 80 characters or fewer.",
     "titleRequired": "Title is required.",
+    "titleMaxLength": "Title must be 140 characters or fewer.",
+    "descriptionMaxLength": "Description must be 1000 characters or fewer.",
     "reminderTimeInvalid": "Enter a valid reminder time.",
     "timezoneInvalid": "Choose a valid time zone.",
     "reminderDayRequired": "Select at least one reminder day.",
@@ -228,7 +230,7 @@
     "settingsLabel": "Notification settings",
     "notifications": "Notifications",
     "browserNotifications": "Browser notifications",
-    "browserSummary": "In-app reminders are always stored in LevelHabit. Browser notifications only appear while LevelHabit is open in this version.",
+    "browserSummary": "In-app reminders are always stored in Level Habit. Browser notifications only appear while Level Habit is open in this version.",
     "unsupported": "Browser notifications are not supported in this browser.",
     "denied": "Browser permission is denied. Update your browser settings to enable it.",
     "enabledWhileOpen": "Enabled while open",
@@ -311,7 +313,7 @@
     "authentication": "Authentication failed. Please try again.",
     "emailNotConfirmed": "Please confirm your email address before logging in.",
     "invalidCredentials": "Email or password was not recognized.",
-    "apiUnavailable": "LevelHabit API is not reachable right now. Please try again in a moment.",
+    "apiUnavailable": "Level Habit API is not reachable right now. Please try again in a moment.",
     "resetInvalid": "This reset link is invalid or has expired.",
     "verificationMissingEmail": "The email address for this verification request is missing.",
     "verificationInvalid": "The verification code is invalid or expired.",
