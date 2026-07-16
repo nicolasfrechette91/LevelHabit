@@ -146,6 +146,14 @@ jobs:
             exit 1
           fi
 
-          curl --fail --silent --show-error \
-            -X POST \
+          echo "Triggering Render backend deployment..."
+
+          curl \
+            --fail-with-body \
+            --show-error \
+            --location \
+            --request POST \
             "$RENDER_DEPLOY_HOOK_URL"
+
+          echo
+          echo "Render deployment was successfully triggered."
