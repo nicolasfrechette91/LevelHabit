@@ -129,6 +129,10 @@
   min-height: calc(100dvh - 4.25rem);
 }
 
+.app-main-logging-out {
+  visibility: hidden;
+}
+
 .app-main-authenticated {
   background-color: var(--lh-surface);
   background-image:

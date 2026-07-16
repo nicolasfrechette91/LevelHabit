@@ -97,6 +97,8 @@
   <main
     class="app-main"
     [class.app-main-authenticated]="usesAuthenticatedLayout()"
+    [class.app-main-logging-out]="isLoggingOut()"
+    [attr.aria-hidden]="isLoggingOut()"
     style="--authenticated-background-image: url('authenticated-background.png')"
   >
     <router-outlet />

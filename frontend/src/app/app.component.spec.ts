@@ -100,9 +100,13 @@ describe('AppComponent', () => {
     expect(element.querySelector('.site-nav')).toBeNull();
   });
 
-  it('hides authenticated navigation immediately after logout', async () => {
+  it('neutralizes the authenticated page while navigating immediately after logout', async () => {
     const { auth, element, fixture, router } = await setupApp({ status: 'authenticated' });
-    const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    let resolveNavigation!: (navigated: boolean) => void;
+    const navigation = new Promise<boolean>((resolve) => {
+      resolveNavigation = resolve;
+    });
+    const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockReturnValue(navigation);
     const logoutButton = element.querySelector(
       '[data-testid="logout-button"]'
     ) as HTMLButtonElement;
@@ -112,8 +116,18 @@ describe('AppComponent', () => {
 
     expect(auth.logout).toHaveBeenCalledOnce();
     expect(element.querySelector('.site-nav')).toBeNull();
-    expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
+    expect(element.querySelector('.auth-nav')).toBeNull();
+    expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).not.toBeNull();
+    expect(element.querySelector('.app-main')?.classList).toContain('app-main-logging-out');
     expect(navigateByUrl).toHaveBeenCalledWith('/login');
+
+    resolveNavigation(true);
+    await navigation;
+    fixture.detectChanges();
+
+    expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).toBeNull();
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
+    expect(element.querySelector('.app-main')?.classList).not.toContain('app-main-logging-out');
   });
 });
 

@@ -1,5 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { Component, computed, effect, inject } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   type ActivatedRouteSnapshot,
@@ -56,9 +56,11 @@ export class AppComponent {
     { initialValue: null }
   );
 
+  protected readonly isLoggingOut = signal(false);
   protected readonly isHeaderInitializing = computed(
     () =>
       this.auth.isCheckingAuth()
+      || this.isLoggingOut()
       || (!this.router.navigated && this.navigation() === null)
   );
 
@@ -104,9 +106,17 @@ export class AppComponent {
   });
 
   protected logout(): void {
-    this.auth.logout().subscribe(() => {
-      void this.router.navigateByUrl('/login');
-    });
+    if (this.isLoggingOut()) {
+      return;
+    }
+
+    this.isLoggingOut.set(true);
+    this.auth.logout().subscribe();
+
+    void this.router.navigateByUrl('/login').then(
+      () => this.isLoggingOut.set(false),
+      () => this.isLoggingOut.set(false)
+    );
   }
 
   private hasAuthenticatedLayout(): boolean {

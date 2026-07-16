@@ -60,6 +60,23 @@ test.describe('QA remediation regressions', () => {
     expect(api.loginRequests()).toBe(2);
   });
 
+  test('navigates away from protected content without waiting for logout HTTP', async ({ page }) => {
+    const api = await installMockApi(page, { holdLogoutResponse: true });
+    await login(page);
+    const logoutResponse = page.waitForResponse((response) =>
+      response.url().endsWith('/api/auth/logout')
+    );
+
+    await page.getByTestId('logout-button').click();
+
+    await expect(page).toHaveURL(/#\/login$/);
+    await expect(page.getByTestId('login-submit-button')).toBeVisible();
+    await expect(page.getByTestId('page-dashboard')).toHaveCount(0);
+
+    api.releaseLogoutResponse();
+    await logoutResponse;
+  });
+
   test('validates habit limits accessibly in create and edit and saves corrections', async ({ page }) => {
     await installMockApi(page);
     await login(page);
@@ -140,13 +157,21 @@ test.describe('QA remediation regressions', () => {
   });
 });
 
-async function installMockApi(page: Page): Promise<{
+async function installMockApi(
+  page: Page,
+  options: Readonly<{ holdLogoutResponse?: boolean }> = {}
+): Promise<{
   loginRequests: () => number;
+  releaseLogoutResponse: () => void;
   sessionActive: () => boolean;
 }> {
   let activeSession = false;
   let loginRequestCount = 0;
   let habits: Record<string, unknown>[] = [];
+  let releaseLogoutResponse!: () => void;
+  const logoutResponseGate = new Promise<void>((resolve) => {
+    releaseLogoutResponse = resolve;
+  });
 
   await page.route('http://localhost:5118/api/**', async (route) => {
     const request = route.request();
@@ -190,6 +215,11 @@ async function installMockApi(page: Page): Promise<{
     if (pathname.endsWith('/auth/logout')) {
       activeSession = false;
       await page.context().clearCookies();
+
+      if (options.holdLogoutResponse) {
+        await logoutResponseGate;
+      }
+
       await fulfill(route, 204, null);
       return;
     }
@@ -261,6 +291,7 @@ async function installMockApi(page: Page): Promise<{
 
   return {
     loginRequests: () => loginRequestCount,
+    releaseLogoutResponse,
     sessionActive: () => activeSession
   };
 }
