@@ -30,6 +30,8 @@ import type {
   ResetPasswordRequest
 } from './auth.models';
 
+export type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated';
+
 export const AUTH_STORAGE_KEY = 'levelhabit.auth.v1';
 export const AUTH_CSRF_HEADER = 'X-LevelHabit-CSRF';
 const EMAIL_VERIFICATION_SENT_STORAGE_PREFIX =
@@ -45,6 +47,8 @@ export class AuthService {
   private readonly userSignal = signal<AuthUser | null>(null);
   private readonly progressProfileSignal = signal<ProgressProfile | null>(null);
   private readonly emailVerificationNoticeSignal = signal<string | null>(null);
+  private readonly authStatusSignal = signal<AuthStatus>('checking');
+  private initializationRequest$: Observable<AuthStatus> | null = null;
   private refreshRequest$: Observable<AuthResponse> | null = null;
   private sessionVersion = 0;
 
@@ -52,7 +56,19 @@ export class AuthService {
   readonly progressProfile = this.progressProfileSignal.asReadonly();
   readonly emailVerificationNotice =
     this.emailVerificationNoticeSignal.asReadonly();
-  readonly isAuthenticated = computed(() => this.hasToken());
+  readonly authStatus = this.authStatusSignal.asReadonly();
+  readonly isAuthInitialized = computed(
+    () => this.authStatusSignal() !== 'checking'
+  );
+  readonly isCheckingAuth = computed(
+    () => this.authStatusSignal() === 'checking'
+  );
+  readonly isAuthenticated = computed(
+    () => this.authStatusSignal() === 'authenticated'
+  );
+  readonly isUnauthenticated = computed(
+    () => this.authStatusSignal() === 'unauthenticated'
+  );
   readonly authRequired = environment.authRequired;
   readonly canUsePrototypeRoutes = computed(() =>
     !this.authRequired || this.isAuthenticated()
@@ -167,6 +183,26 @@ export class AuthService {
     return Math.max(0, cooldownSeconds - elapsedSeconds);
   }
 
+  initializeAuth(): Observable<AuthStatus> {
+    const currentStatus = this.authStatusSignal();
+
+    if (currentStatus !== 'checking') {
+      return of(currentStatus);
+    }
+
+    if (this.initializationRequest$) {
+      return this.initializationRequest$;
+    }
+
+    this.initializationRequest$ = this.refreshSession().pipe(
+      map(() => this.authStatusSignal()),
+      catchError(() => of<AuthStatus>('unauthenticated')),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+
+    return this.initializationRequest$;
+  }
+
   refreshSession(): Observable<AuthResponse> {
     if (this.refreshRequest$) {
       return this.refreshRequest$;
@@ -214,23 +250,31 @@ export class AuthService {
   }
 
   ensureCurrentUser(): Observable<MeResponse> {
-    if (!this.hasToken()) {
-      return this.refreshSession().pipe(
-        map((response) => ({
-          user: response.user,
-          progressProfile: response.progressProfile
-        }))
-      );
-    }
+    return this.initializeAuth().pipe(
+      switchMap((status) => {
+        if (status !== 'authenticated') {
+          return throwError(() => new Error('Authentication is required.'));
+        }
 
-    const user = this.userSignal();
-    const progressProfile = this.progressProfileSignal();
+        if (!this.hasToken()) {
+          return this.refreshSession().pipe(
+            map((response) => ({
+              user: response.user,
+              progressProfile: response.progressProfile
+            }))
+          );
+        }
 
-    if (user && progressProfile) {
-      return of({ user, progressProfile });
-    }
+        const user = this.userSignal();
+        const progressProfile = this.progressProfileSignal();
 
-    return this.loadCurrentUser();
+        if (user && progressProfile) {
+          return of({ user, progressProfile });
+        }
+
+        return this.loadCurrentUser();
+      })
+    );
   }
 
   updateProgressProfile(progressProfile: ProgressProfile): void {
@@ -272,6 +316,7 @@ export class AuthService {
     this.userSignal.set(null);
     this.progressProfileSignal.set(null);
     this.emailVerificationNoticeSignal.set(null);
+    this.authStatusSignal.set('unauthenticated');
     this.removeLegacyStoredSession();
   }
 
@@ -289,6 +334,7 @@ export class AuthService {
     this.accessTokenSignal.set(response.accessToken);
     this.expiresAtUtcSignal.set(response.expiresAtUtc);
     this.setCurrentUser(response);
+    this.authStatusSignal.set('authenticated');
     this.removeLegacyStoredSession();
   }
 

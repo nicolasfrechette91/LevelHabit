@@ -6,36 +6,30 @@ import {
   UrlTree,
   provideRouter
 } from '@angular/router';
-import { Observable, firstValueFrom, of, throwError } from 'rxjs';
+import { Observable, Subject, firstValueFrom, of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { MeResponse } from './auth.models';
 import { anonymousGuard } from './anonymous.guard';
 import { authGuard } from './auth.guard';
-import { AuthService } from './auth.service';
-
-const ME_RESPONSE = {
-  user: {},
-  progressProfile: {}
-} as MeResponse;
+import { type AuthStatus, AuthService } from './auth.service';
 
 describe('authentication route guards', () => {
   beforeEach(() => TestBed.resetTestingModule());
 
   it('redirects an authenticated navigation to login', async () => {
-    await expectAnonymousRedirect('/login', new AuthServiceStub({ hasToken: true }));
+    await expectAnonymousRedirect('/login', new AuthServiceStub('authenticated'));
   });
 
   it('redirects an authenticated navigation to registration', async () => {
-    await expectAnonymousRedirect('/register', new AuthServiceStub({ hasToken: true }));
+    await expectAnonymousRedirect('/register', new AuthServiceStub('authenticated'));
   });
 
   it('redirects an authenticated refresh on login after restoring its cookie session', async () => {
-    await expectAnonymousRedirect('/login', new AuthServiceStub({ restoreSession: true }));
+    await expectAnonymousRedirect('/login', new AuthServiceStub('authenticated'));
   });
 
   it('redirects an authenticated refresh on registration after restoring its cookie session', async () => {
-    await expectAnonymousRedirect('/register', new AuthServiceStub({ restoreSession: true }));
+    await expectAnonymousRedirect('/register', new AuthServiceStub('authenticated'));
   });
 
   it('allows logged-out access to login', async () => {
@@ -47,7 +41,7 @@ describe('authentication route guards', () => {
   });
 
   it('allows protected routes after restoring an HttpOnly-cookie session', async () => {
-    const auth = configure(new AuthServiceStub({ restoreSession: true }));
+    const auth = configure(new AuthServiceStub('authenticated'));
     const result = TestBed.runInInjectionContext(() =>
       authGuard(
         {} as ActivatedRouteSnapshot,
@@ -56,7 +50,7 @@ describe('authentication route guards', () => {
     ) as Observable<boolean | UrlTree>;
 
     await expect(firstValueFrom(result)).resolves.toBe(true);
-    expect(auth.ensureCurrentUser).toHaveBeenCalledOnce();
+    expect(auth.initializeAuth).toHaveBeenCalledOnce();
   });
 
   it('redirects logged-out protected navigation to login with a return URL', async () => {
@@ -74,7 +68,31 @@ describe('authentication route guards', () => {
     expect(router.serializeUrl(resolved as UrlTree)).toBe(
       '/login?returnUrl=%2Fhabits'
     );
-    expect(auth.clearSession).toHaveBeenCalledOnce();
+    expect(auth.initializeAuth).toHaveBeenCalledOnce();
+  });
+
+  it('waits for authentication initialization before deciding a protected route', async () => {
+    const initialization = new Subject<AuthStatus>();
+    const auth = configure(new AuthServiceStub('checking', initialization));
+    const result = TestBed.runInInjectionContext(() =>
+      authGuard(
+        {} as ActivatedRouteSnapshot,
+        { url: '/dashboard' } as RouterStateSnapshot
+      )
+    ) as Observable<boolean | UrlTree>;
+    let settled = false;
+    const resolved = firstValueFrom(result).finally(() => {
+      settled = true;
+    });
+
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    initialization.next('authenticated');
+    initialization.complete();
+
+    await expect(resolved).resolves.toBe(true);
+    expect(auth.initializeAuth).toHaveBeenCalledOnce();
   });
 });
 
@@ -102,7 +120,7 @@ async function expectAnonymousAccess(_url: '/login' | '/register'): Promise<void
   ) as Observable<boolean | UrlTree>;
 
   await expect(firstValueFrom(result)).resolves.toBe(true);
-  expect(auth.clearSession).toHaveBeenCalledOnce();
+  expect(auth.initializeAuth).toHaveBeenCalledOnce();
 }
 
 function configure(auth: AuthServiceStub): AuthServiceStub {
@@ -117,21 +135,12 @@ function configure(auth: AuthServiceStub): AuthServiceStub {
 }
 
 class AuthServiceStub {
-  readonly clearSession = vi.fn();
-  readonly ensureCurrentUser = vi.fn((): Observable<MeResponse> =>
-    this.restoreSession
-      ? of(ME_RESPONSE)
-      : throwError(() => new Error('No session'))
-  );
-  private readonly tokenAvailable: boolean;
-  private readonly restoreSession: boolean;
+  readonly initializeAuth: ReturnType<typeof vi.fn>;
 
-  constructor(options: { hasToken?: boolean; restoreSession?: boolean } = {}) {
-    this.tokenAvailable = options.hasToken ?? false;
-    this.restoreSession = options.restoreSession ?? false;
-  }
-
-  hasToken(): boolean {
-    return this.tokenAvailable;
+  constructor(
+    status: AuthStatus = 'unauthenticated',
+    initialization: Observable<AuthStatus> = of(status)
+  ) {
+    this.initializeAuth = vi.fn(() => initialization);
   }
 }

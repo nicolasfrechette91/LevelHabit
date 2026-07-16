@@ -19,11 +19,8 @@ export const authGuard: CanActivateFn = (_route, state) => {
     return true;
   }
 
-  return auth.ensureCurrentUser().pipe(
-    map(() => true),
-    catchError(() => {
-      auth.clearSession();
-      return of(loginTree());
-    })
+  return auth.initializeAuth().pipe(
+    map((status) => status === 'authenticated' ? true : loginTree()),
+    catchError(() => of(loginTree()))
   );
 };

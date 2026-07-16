@@ -49,6 +49,16 @@ describe('AuthService', () => {
     });
   });
 
+  it('starts in the checking authentication state', () => {
+    const service = TestBed.inject(AuthService);
+
+    expect(service.authStatus()).toBe('checking');
+    expect(service.isCheckingAuth()).toBe(true);
+    expect(service.isAuthInitialized()).toBe(false);
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.isUnauthenticated()).toBe(false);
+  });
+
   it('logs in with credentials while keeping tokens out of browser storage', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
@@ -107,16 +117,18 @@ describe('AuthService', () => {
       user: AUTH_RESPONSE.user,
       progressProfile: AUTH_RESPONSE.progressProfile
     });
+    expect(service.authStatus()).toBe('authenticated');
+    expect(service.isAuthInitialized()).toBe(true);
     expect(service.isAuthenticated()).toBe(true);
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     http.verify();
   });
 
-  it('shares one cookie refresh when concurrent callers restore the session', async () => {
+  it('shares one cookie refresh when concurrent initialization callers restore the session', async () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
-    const first = firstValueFrom(service.refreshSession());
-    const second = firstValueFrom(service.refreshSession());
+    const first = firstValueFrom(service.initializeAuth());
+    const second = firstValueFrom(service.initializeAuth());
 
     http.expectOne(`${environment.apiUrl}/auth/csrf`).flush({
       csrfToken: 'csrf-token'
@@ -124,9 +136,10 @@ describe('AuthService', () => {
     http.expectOne(`${environment.apiUrl}/auth/refresh`).flush(AUTH_RESPONSE);
 
     await expect(Promise.all([first, second])).resolves.toEqual([
-      AUTH_RESPONSE,
-      AUTH_RESPONSE
+      'authenticated',
+      'authenticated'
     ]);
+    expect(service.authStatus()).toBe('authenticated');
     http.verify();
   });
 
@@ -144,8 +157,26 @@ describe('AuthService', () => {
     );
 
     await expect(responsePromise).rejects.toBeTruthy();
+    expect(service.authStatus()).toBe('unauthenticated');
+    expect(service.isAuthInitialized()).toBe(true);
     expect(service.isAuthenticated()).toBe(false);
     expect(service.accessToken()).toBeNull();
+    http.verify();
+  });
+
+  it('settles as unauthenticated after an unexpected initialization error', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+    const initialization = firstValueFrom(service.initializeAuth());
+
+    http.expectOne(`${environment.apiUrl}/auth/csrf`).flush(
+      { title: 'Server error' },
+      { status: 500, statusText: 'Server Error' }
+    );
+
+    await expect(initialization).resolves.toBe('unauthenticated');
+    expect(service.authStatus()).toBe('unauthenticated');
+    expect(service.isCheckingAuth()).toBe(false);
     http.verify();
   });
 

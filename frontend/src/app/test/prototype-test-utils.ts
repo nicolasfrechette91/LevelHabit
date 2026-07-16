@@ -75,6 +75,7 @@ function createAuthenticatedAuthService(): Pick<
   | 'canUsePrototypeRoutes'
   | 'ensureCurrentUser'
   | 'hasToken'
+  | 'initializeAuth'
   | 'progressProfile'
   | 'isAuthenticated'
   | 'logout'
@@ -93,6 +94,7 @@ function createAuthenticatedAuthService(): Pick<
     progressProfile: progressProfile.asReadonly(),
     isAuthenticated: isAuthenticated.asReadonly(),
     hasToken: () => true,
+    initializeAuth: () => of('authenticated'),
     ensureCurrentUser: () => of(AUTH_ME_RESPONSE),
     updateProgressProfile: (nextProgressProfile) => progressProfile.set(nextProgressProfile),
     logout: () => of(undefined)

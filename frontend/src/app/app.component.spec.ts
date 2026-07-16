@@ -13,10 +13,20 @@ import { environment } from '../environments/environment';
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
 import type { MeResponse } from './auth/auth.models';
-import { AuthService } from './auth/auth.service';
+import { type AuthStatus, AuthService } from './auth/auth.service';
 
 describe('AppComponent', () => {
   beforeEach(() => TestBed.resetTestingModule());
+
+  it('renders only a neutral header placeholder while authentication is checking', async () => {
+    const { element } = await setupApp({ status: 'checking' });
+
+    expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).not.toBeNull();
+    expect(element.querySelector('.auth-nav')).toBeNull();
+    expect(element.querySelector('.site-nav')).toBeNull();
+    expect(element.textContent).not.toContain('Log in');
+    expect(element.textContent).not.toContain('Create account');
+  });
 
   it('renders anonymous account links when no user is authenticated', async () => {
     const { element } = await setupApp();
@@ -37,14 +47,39 @@ describe('AppComponent', () => {
   });
 
   it('renders primary navigation for authenticated users', async () => {
-    const { element } = await setupApp({ authenticated: true });
+    const { element } = await setupApp({ status: 'authenticated' });
 
     expect(element.querySelectorAll('nav a')).toHaveLength(5);
     expect(element.querySelector('[data-testid="logout-button"]')).not.toBeNull();
   });
 
+  it('renders primary navigation after authentication initialization succeeds', async () => {
+    const { auth, element, fixture } = await setupApp({ status: 'checking' });
+
+    auth.setStatus('authenticated');
+    fixture.detectChanges();
+
+    expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).toBeNull();
+    expect(element.querySelector('.site-nav')).not.toBeNull();
+    expect(element.querySelector('.auth-nav')).toBeNull();
+  });
+
+  it('renders public navigation only after authentication is confirmed unauthenticated', async () => {
+    const { auth, element, fixture } = await setupApp({ status: 'checking' });
+
+    expect(element.querySelector('.auth-nav')).toBeNull();
+
+    auth.setStatus('unauthenticated');
+    fixture.detectChanges();
+
+    expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).toBeNull();
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Log in');
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
+    expect(element.querySelector('.site-nav')).toBeNull();
+  });
+
   it('hides authenticated navigation immediately after logout', async () => {
-    const { auth, element, fixture, router } = await setupApp({ authenticated: true });
+    const { auth, element, fixture, router } = await setupApp({ status: 'authenticated' });
     const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     const logoutButton = element.querySelector(
       '[data-testid="logout-button"]'
@@ -61,8 +96,8 @@ describe('AppComponent', () => {
 });
 
 type SetupOptions = Readonly<{
-  authenticated?: boolean;
   path?: string;
+  status?: AuthStatus;
 }>;
 
 async function setupApp(options: SetupOptions = {}): Promise<{
@@ -72,7 +107,7 @@ async function setupApp(options: SetupOptions = {}): Promise<{
   http: HttpTestingController;
   router: Router;
 }> {
-  const auth = new AuthServiceStub(options.authenticated ?? false);
+  const auth = new AuthServiceStub(options.status ?? 'unauthenticated');
 
   await TestBed.configureTestingModule({
     imports: [AppComponent],
@@ -104,26 +139,37 @@ async function setupApp(options: SetupOptions = {}): Promise<{
 
 class AuthServiceStub {
   readonly authRequired = true;
-  private readonly authenticated = signal(false);
-  readonly isAuthenticated = this.authenticated.asReadonly();
+  private readonly status = signal<AuthStatus>('checking');
+  readonly authStatus = this.status.asReadonly();
+  readonly isCheckingAuth = () => this.status() === 'checking';
+  readonly isAuthenticated = () => this.status() === 'authenticated';
+  readonly isUnauthenticated = () => this.status() === 'unauthenticated';
   readonly emailVerificationNotice = signal<string | null>(null).asReadonly();
   readonly dismissEmailVerificationNotice = vi.fn();
-  readonly clearSession = vi.fn(() => this.authenticated.set(false));
+  readonly clearSession = vi.fn(() => this.status.set('unauthenticated'));
   readonly logout = vi.fn((): Observable<void> => {
-    this.authenticated.set(false);
+    this.status.set('unauthenticated');
     return of(undefined);
   });
 
-  constructor(authenticated: boolean) {
-    this.authenticated.set(authenticated);
+  constructor(status: AuthStatus) {
+    this.status.set(status);
+  }
+
+  setStatus(status: AuthStatus): void {
+    this.status.set(status);
   }
 
   hasToken(): boolean {
-    return this.authenticated();
+    return this.isAuthenticated();
+  }
+
+  initializeAuth(): Observable<AuthStatus> {
+    return of(this.status());
   }
 
   ensureCurrentUser(): Observable<MeResponse> {
-    return this.authenticated()
+    return this.isAuthenticated()
       ? of({} as MeResponse)
       : throwError(() => new Error('No session'));
   }

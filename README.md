@@ -6,8 +6,6 @@ a personal progress profile.
 
 - Live demo: [LevelHabit on GitHub Pages](https://nicolasfrechette91.github.io/LevelHabit/)
 - API health check: [Render API health endpoint](https://level-habit-api.onrender.com/api/health)
-- Case study: [docs/case-study.md](docs/case-study.md)
-- Screenshot capture guide: [docs/screenshots.md](docs/screenshots.md)
 
 ## At A Glance
 

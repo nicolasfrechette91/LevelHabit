@@ -1183,6 +1183,7 @@ function createApiAuthService(): Pick<
   | 'canUsePrototypeRoutes'
   | 'ensureCurrentUser'
   | 'hasToken'
+  | 'initializeAuth'
   | 'progressProfile'
   | 'isAuthenticated'
   | 'logout'
@@ -1201,6 +1202,7 @@ function createApiAuthService(): Pick<
     progressProfile: progressProfile.asReadonly(),
     isAuthenticated: isAuthenticated.asReadonly(),
     hasToken: () => true,
+    initializeAuth: () => of('authenticated'),
     ensureCurrentUser: (): Observable<MeResponse> => of(AUTH_ME_RESPONSE),
     updateProgressProfile: (nextProgressProfile) => progressProfile.set(nextProgressProfile),
     logout: () => of(undefined)

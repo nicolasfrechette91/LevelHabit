@@ -13,15 +13,12 @@ export const anonymousGuard: CanActivateFn = () => {
     return true;
   }
 
-  if (auth.hasToken()) {
-    return router.createUrlTree(['/dashboard']);
-  }
-
-  return auth.ensureCurrentUser().pipe(
-    map(() => router.createUrlTree(['/dashboard'])),
-    catchError(() => {
-      auth.clearSession();
-      return of(true);
-    })
+  return auth.initializeAuth().pipe(
+    map((status) =>
+      status === 'authenticated'
+        ? router.createUrlTree(['/dashboard'])
+        : true
+    ),
+    catchError(() => of(true))
   );
 };
