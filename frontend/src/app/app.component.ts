@@ -1,5 +1,5 @@
 import { NgOptimizedImage } from '@angular/common';
-import { Component, effect, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   type ActivatedRouteSnapshot,
@@ -54,6 +54,12 @@ export class AppComponent {
       filter((event): event is NavigationEnd => event instanceof NavigationEnd)
     ),
     { initialValue: null }
+  );
+
+  protected readonly isHeaderInitializing = computed(
+    () =>
+      this.auth.isCheckingAuth()
+      || (!this.router.navigated && this.navigation() === null)
   );
 
   protected readonly usesAuthenticatedLayout = toSignal(

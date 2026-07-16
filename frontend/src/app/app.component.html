@@ -1,20 +1,20 @@
 <div class="app-shell">
   <header
     class="navbar site-header sticky-top"
-    [class.site-header-anonymous]="auth.isUnauthenticated()"
-    [attr.aria-busy]="auth.isCheckingAuth()"
+    [class.site-header-anonymous]="auth.isUnauthenticated() && !isHeaderInitializing()"
+    [attr.aria-busy]="isHeaderInitializing()"
   >
     <div class="app-container d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2">
       <a
         class="navbar-brand brand d-inline-flex align-items-center gap-2 m-0"
-        [routerLink]="auth.isAuthenticated() ? '/dashboard' : auth.isUnauthenticated() ? '/login' : null"
+        [routerLink]="isHeaderInitializing() ? null : auth.isAuthenticated() ? '/dashboard' : '/login'"
         aria-label="Level Habit"
       >
         <img ngSrc="levelhabit-mark.svg" alt="" width="36" height="36" priority>
         <span>Level Habit</span>
       </a>
 
-      @if (auth.isCheckingAuth()) {
+      @if (isHeaderInitializing()) {
         <div
           class="auth-initializing-placeholder ms-md-auto"
           data-testid="auth-initializing-placeholder"

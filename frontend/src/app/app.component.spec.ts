@@ -46,6 +46,28 @@ describe('AppComponent', () => {
     http.verify();
   });
 
+  it('keeps the neutral header until the initial login navigation finishes', async () => {
+    const { auth, element, fixture, http, router } = await setupApp({
+      skipInitialNavigation: true,
+      status: 'checking'
+    });
+
+    auth.setStatus('unauthenticated');
+    fixture.detectChanges();
+
+    expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).not.toBeNull();
+    expect(element.querySelector('.auth-nav')).toBeNull();
+
+    await router.navigateByUrl('/login');
+    fixture.detectChanges();
+
+    expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).toBeNull();
+    expect(element.querySelector('.auth-nav')?.textContent).not.toContain('Log in');
+    expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
+    http.expectOne(`${environment.apiUrl}/health`).flush('Healthy');
+    http.verify();
+  });
+
   it('renders primary navigation for authenticated users', async () => {
     const { element } = await setupApp({ status: 'authenticated' });
 
@@ -97,6 +119,7 @@ describe('AppComponent', () => {
 
 type SetupOptions = Readonly<{
   path?: string;
+  skipInitialNavigation?: boolean;
   status?: AuthStatus;
 }>;
 
@@ -121,8 +144,8 @@ async function setupApp(options: SetupOptions = {}): Promise<{
 
   const router = TestBed.inject(Router);
 
-  if (options.path) {
-    await router.navigateByUrl(options.path);
+  if (!options.skipInitialNavigation) {
+    await router.navigateByUrl(options.path ?? '/forgot-password');
   }
 
   const fixture = TestBed.createComponent(AppComponent);
