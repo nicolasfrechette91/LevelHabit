@@ -48,8 +48,8 @@ Users can create habits, earn XP, build streaks, unlock achievements, and track 
 Login Page:
 ![Login dashboard](screenshots/login.png)
 
-Task of the day:
-![Task of the day](screenshots/today.png)
+Tasks of the day:
+![Tasks of the day](screenshots/today.png)
 
 Your list of habits:
 ![Habit dashboard](screenshots/habits.png)
