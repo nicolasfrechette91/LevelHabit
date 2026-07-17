@@ -14,8 +14,8 @@ on:
 
   # Enable only after both manual tests in README.md succeed.
   # Runs at 14:17 UTC on the first day of every month.
-  # schedule:
-  #   - cron: "17 14 1 * *"
+  schedule:
+    - cron: "17 14 1 * *"
 
 permissions:
   contents: read
