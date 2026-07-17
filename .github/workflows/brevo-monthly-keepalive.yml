@@ -1,0 +1,107 @@
+name: Brevo monthly keepalive email
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Choose dry-run first; choose send only when ready to send the test email"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - send
+
+  # Enable only after both manual tests in README.md succeed.
+  # Runs at 14:17 UTC on the first day of every month.
+  # schedule:
+  #   - cron: "17 14 1 * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brevo-monthly-keepalive
+  cancel-in-progress: false
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+      BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
+      BREVO_RECIPIENT_EMAIL: ${{ secrets.BREVO_RECIPIENT_EMAIL }}
+
+    steps:
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+
+          [[ -n "${BREVO_API_KEY}" ]] || missing+=(BREVO_API_KEY)
+          [[ -n "${BREVO_SENDER_EMAIL}" ]] || missing+=(BREVO_SENDER_EMAIL)
+          [[ -n "${BREVO_RECIPIENT_EMAIL}" ]] || missing+=(BREVO_RECIPIENT_EMAIL)
+
+          if (( ${#missing[@]} > 0 )); then
+            echo "Missing required GitHub Actions secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Dry-run summary
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-run' }}
+        shell: bash
+        run: |
+          echo "Configuration is present. No email was sent."
+          echo "Run this workflow again with mode=send to perform the real test."
+
+      - name: Send email through Brevo
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'send' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          payload="$({
+            jq -n \
+              --arg sender_email "${BREVO_SENDER_EMAIL}" \
+              --arg recipient_email "${BREVO_RECIPIENT_EMAIL}" \
+              --arg run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+              --arg sent_at "$(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
+              '{
+                sender: {
+                  name: "Portfolio Brevo Keepalive",
+                  email: $sender_email
+                },
+                to: [{ email: $recipient_email }],
+                subject: "Monthly Brevo API keepalive",
+                htmlContent: ("<p>Monthly Brevo API keepalive completed successfully.</p><p>Sent: " + $sent_at + "</p><p><a href=\"" + $run_url + "\">View GitHub Actions run</a></p>")
+              }'
+          })"
+
+          response_file="$(mktemp)"
+          http_status="$({
+            curl --silent --show-error \
+              --output "${response_file}" \
+              --write-out '%{http_code}' \
+              --request POST \
+              --url 'https://api.brevo.com/v3/smtp/email' \
+              --header 'accept: application/json' \
+              --header 'content-type: application/json' \
+              --header "api-key: ${BREVO_API_KEY}" \
+              --data "${payload}"
+          })"
+
+          if [[ "${http_status}" != "201" ]]; then
+            echo "Brevo request failed with HTTP ${http_status}." >&2
+            jq -r '.message // .code // "Brevo returned an error without a message."' "${response_file}" >&2 || true
+            exit 1
+          fi
+
+          message_id="$(jq -r '.messageId // empty' "${response_file}")"
+          if [[ -z "${message_id}" ]]; then
+            echo "Brevo returned HTTP 201 but no messageId." >&2
+            exit 1
+          fi
+
+          echo "Brevo accepted the email. messageId=${message_id}"
