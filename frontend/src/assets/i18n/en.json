@@ -2,6 +2,24 @@
   "language": {
     "label": "Language"
   },
+  "backendWakeup": {
+    "brand": "LevelHabit",
+    "checking": {
+      "loadingLabel": "Loading your habits",
+      "title": "LevelHabit is getting ready",
+      "description": "We’re waking up the server and loading your progress.",
+      "wait": "This may take a few moments.",
+      "progress": "Loading your habits…"
+    },
+    "unavailable": {
+      "title": "LevelHabit is taking longer than expected",
+      "description": "We couldn’t reach the server yet. Your data is safe.",
+      "retryPrompt": "Please try again in a moment."
+    },
+    "actions": {
+      "retry": "Try Again"
+    }
+  },
   "common": {
     "save": "Save",
     "saveChanges": "Save changes",

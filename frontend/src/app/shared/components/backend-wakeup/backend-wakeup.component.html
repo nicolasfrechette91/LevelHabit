@@ -1,27 +1,35 @@
 <main class="wakeup-page" aria-labelledby="wakeup-title">
   <section class="wakeup-card text-center" [attr.aria-busy]="status() === 'checking'">
-    <div class="wakeup-brand" aria-label="LevelHabit">
+    <div class="wakeup-brand" [attr.aria-label]="'backendWakeup.brand' | translate">
       <img ngSrc="levelhabit-mark.svg" alt="" width="64" height="64" priority>
-      <span>LevelHabit</span>
+      <span>{{ 'backendWakeup.brand' | translate }}</span>
     </div>
 
     <div class="wakeup-content" aria-live="polite" aria-atomic="true">
       @if (status() === 'checking') {
         <div class="spinner-border wakeup-spinner" role="status">
-          <span class="visually-hidden">Loading your habits</span>
+          <span class="visually-hidden">
+            {{ 'backendWakeup.checking.loadingLabel' | translate }}
+          </span>
         </div>
-        <h1 id="wakeup-title">LevelHabit is getting ready</h1>
+        <h1 id="wakeup-title">
+          {{ 'backendWakeup.checking.title' | translate }}
+        </h1>
         <p>
-          We’re waking up the server and loading your progress.<br>
-          This may take a few moments.
+          {{ 'backendWakeup.checking.description' | translate }}<br>
+          {{ 'backendWakeup.checking.wait' | translate }}
         </p>
-        <p class="wakeup-progress mb-0">Loading your habits…</p>
+        <p class="wakeup-progress mb-0">
+          {{ 'backendWakeup.checking.progress' | translate }}
+        </p>
       } @else {
         <div class="wakeup-delay-icon" aria-hidden="true">!</div>
-        <h1 id="wakeup-title">LevelHabit is taking longer than expected</h1>
+        <h1 id="wakeup-title">
+          {{ 'backendWakeup.unavailable.title' | translate }}
+        </h1>
         <p>
-          We couldn’t reach the server yet. Your data is safe.<br>
-          Please try again in a moment.
+          {{ 'backendWakeup.unavailable.description' | translate }}<br>
+          {{ 'backendWakeup.unavailable.retryPrompt' | translate }}
         </p>
         <button
           type="button"
@@ -29,7 +37,7 @@
           [disabled]="status() === 'checking'"
           (click)="retry.emit()"
         >
-          Try Again
+          {{ 'backendWakeup.actions.retry' | translate }}
         </button>
       }
     </div>

@@ -2,6 +2,24 @@
   "language": {
     "label": "Langue"
   },
+  "backendWakeup": {
+    "brand": "LevelHabit",
+    "checking": {
+      "loadingLabel": "Chargement de vos habitudes",
+      "title": "LevelHabit se prépare",
+      "description": "Nous démarrons le serveur et chargeons votre progression.",
+      "wait": "Cette opération peut prendre quelques instants.",
+      "progress": "Chargement de vos habitudes…"
+    },
+    "unavailable": {
+      "title": "LevelHabit prend plus de temps que prévu",
+      "description": "Nous n’arrivons pas encore à joindre le serveur. Vos données sont en sécurité.",
+      "retryPrompt": "Veuillez réessayer dans quelques instants."
+    },
+    "actions": {
+      "retry": "Réessayer"
+    }
+  },
   "common": {
     "save": "Enregistrer",
     "saveChanges": "Enregistrer les modifications",
