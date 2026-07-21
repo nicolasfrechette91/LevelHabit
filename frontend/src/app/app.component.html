@@ -1,3 +1,4 @@
+@if (backendStatus() === 'available') {
 <div class="app-shell">
   <header
     class="navbar site-header sticky-top"
@@ -104,3 +105,9 @@
     <router-outlet />
   </main>
 </div>
+} @else {
+  <app-backend-wakeup
+    [status]="backendStatus()"
+    (retry)="retryBackendCheck()"
+  />
+}

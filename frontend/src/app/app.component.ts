@@ -13,6 +13,7 @@ import { filter, map, startWith } from 'rxjs';
 import { Meta, Title } from '@angular/platform-browser';
 
 import { AuthService } from './auth/auth.service';
+import { BackendStatusService } from './core/services/backend-status.service';
 import { TranslatePipe } from './i18n/i18n.pipes';
 import { LanguageSelectorComponent } from './i18n/language-selector.component';
 import { LanguageService } from './i18n/language.service';
@@ -21,6 +22,7 @@ import {
   PROTOTYPE_ROUTE_CONFIGS,
   type PrototypeView
 } from './pages/prototype-page/prototype-view.model';
+import { BackendWakeupComponent } from './shared/components/backend-wakeup/backend-wakeup.component';
 
 type NavPath = `/${PrototypeView}`;
 type NavItem = {
@@ -31,6 +33,7 @@ type NavItem = {
 @Component({
   selector: 'app-root',
   imports: [
+    BackendWakeupComponent,
     NgOptimizedImage,
     LanguageSelectorComponent,
     NotificationCenterComponent,
@@ -44,6 +47,7 @@ type NavItem = {
 })
 export class AppComponent {
   protected readonly auth = inject(AuthService);
+  private readonly backend = inject(BackendStatusService);
   private readonly router = inject(Router);
   private readonly language = inject(LanguageService);
   private readonly meta = inject(Meta);
@@ -57,6 +61,7 @@ export class AppComponent {
   );
 
   protected readonly isLoggingOut = signal(false);
+  protected readonly backendStatus = this.backend.status;
   protected readonly isHeaderInitializing = computed(
     () =>
       this.auth.isCheckingAuth()
@@ -104,6 +109,23 @@ export class AppComponent {
       content: this.language.translate('common.metaDescription')
     });
   });
+
+  private readonly initializeAuthentication = effect((onCleanup) => {
+    if (this.backendStatus() !== 'available') {
+      return;
+    }
+
+    const subscription = this.auth.initializeAuth().subscribe();
+    onCleanup(() => subscription.unsubscribe());
+  });
+
+  constructor() {
+    this.backend.startCheck();
+  }
+
+  protected retryBackendCheck(): void {
+    this.backend.startCheck();
+  }
 
   protected logout(): void {
     if (this.isLoggingOut()) {

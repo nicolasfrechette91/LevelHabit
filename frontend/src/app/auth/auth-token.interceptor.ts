@@ -8,7 +8,7 @@ import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
-import { SKIP_AUTH_REFRESH } from './auth-http.context';
+import { SKIP_AUTH, SKIP_AUTH_REFRESH } from './auth-http.context';
 import { AuthService } from './auth.service';
 
 export const authTokenInterceptor: HttpInterceptorFn = (request, next) => {
@@ -67,6 +67,7 @@ function shouldRefresh(
     error instanceof HttpErrorResponse
     && error.status === 401
     && isApiRequest
+    && !request.context.get(SKIP_AUTH)
     && !request.context.get(SKIP_AUTH_REFRESH)
     && !isAuthLifecycleEndpoint(request)
     && auth.accessToken() !== null
@@ -77,7 +78,11 @@ function shouldAttachAccessToken(
   request: HttpRequest<unknown>,
   isApiRequest: boolean
 ): boolean {
-  return isApiRequest && !isAuthLifecycleEndpoint(request);
+  return (
+    isApiRequest
+    && !request.context.get(SKIP_AUTH)
+    && !isAuthLifecycleEndpoint(request)
+  );
 }
 
 function withBearerToken(

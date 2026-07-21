@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { routes } from '../app.routes';
 import { AuthService } from '../auth/auth.service';
 import type { MeResponse } from '../auth/auth.models';
+import { BackendStatusService } from '../core/services/backend-status.service';
 import { PrototypePageComponent } from '../pages/prototype-page/prototype-page.component';
 import { LevelHabitStateService } from '../state/levelhabit-state.service';
 
@@ -49,6 +50,10 @@ export async function renderPrototypeRoute(path: string): Promise<{
       {
         provide: AuthService,
         useValue: createAuthenticatedAuthService()
+      },
+      {
+        provide: BackendStatusService,
+        useValue: { whenAvailable: () => of(undefined) }
       }
     ]
   });

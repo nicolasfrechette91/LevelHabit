@@ -9,14 +9,63 @@ import { Router, provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { environment } from '../environments/environment';
 import { AppComponent } from './app.component';
 import { routes } from './app.routes';
 import type { MeResponse } from './auth/auth.models';
 import { type AuthStatus, AuthService } from './auth/auth.service';
+import {
+  type BackendStatus,
+  BackendStatusService
+} from './core/services/backend-status.service';
 
 describe('AppComponent', () => {
   beforeEach(() => TestBed.resetTestingModule());
+
+  it('shows the backend checking screen before rendering the application', async () => {
+    const { element } = await setupApp({ backendStatus: 'checking' });
+
+    expect(element.textContent).toContain('LevelHabit is getting ready');
+    expect(element.textContent).toContain('Loading your habits');
+    expect(element.querySelector('.spinner-border')).not.toBeNull();
+    expect(element.querySelector('.app-shell')).toBeNull();
+  });
+
+  it('renders the application automatically after the backend becomes available', async () => {
+    const { auth, backend, element, fixture } = await setupApp({
+      backendStatus: 'checking'
+    });
+
+    backend.setStatus('available');
+    fixture.detectChanges();
+
+    expect(element.querySelector('app-backend-wakeup')).toBeNull();
+    expect(element.querySelector('.app-shell')).not.toBeNull();
+    expect(auth.initializeAuth).toHaveBeenCalledOnce();
+  });
+
+  it('restarts the backend check from the unavailable screen', async () => {
+    const { backend, element, fixture } = await setupApp({
+      backendStatus: 'unavailable'
+    });
+
+    expect(element.textContent).toContain('taking longer than expected');
+    const retry = element.querySelector('.wakeup-retry') as HTMLButtonElement;
+    retry.click();
+    fixture.detectChanges();
+
+    expect(backend.startCheck).toHaveBeenCalledTimes(2);
+    expect(backend.status()).toBe('checking');
+    expect(element.textContent).toContain('LevelHabit is getting ready');
+  });
+
+  it('does not restart the warm-up check during normal navigation', async () => {
+    const { backend, fixture, router } = await setupApp();
+
+    await router.navigateByUrl('/reset-password');
+    fixture.detectChanges();
+
+    expect(backend.startCheck).toHaveBeenCalledOnce();
+  });
 
   it('renders only a neutral header placeholder while authentication is checking', async () => {
     const { element } = await setupApp({ status: 'checking' });
@@ -38,16 +87,14 @@ describe('AppComponent', () => {
   });
 
   it('hides the redundant login link on the login page', async () => {
-    const { element, http } = await setupApp({ path: '/login' });
+    const { element } = await setupApp({ path: '/login' });
 
     expect(element.querySelector('.auth-nav')?.textContent).not.toContain('Log in');
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
-    http.expectOne(`${environment.apiUrl}/health`).flush('Healthy');
-    http.verify();
   });
 
   it('keeps the neutral header until the initial login navigation finishes', async () => {
-    const { auth, element, fixture, http, router } = await setupApp({
+    const { auth, element, fixture, router } = await setupApp({
       skipInitialNavigation: true,
       status: 'checking'
     });
@@ -64,8 +111,6 @@ describe('AppComponent', () => {
     expect(element.querySelector('[data-testid="auth-initializing-placeholder"]')).toBeNull();
     expect(element.querySelector('.auth-nav')?.textContent).not.toContain('Log in');
     expect(element.querySelector('.auth-nav')?.textContent).toContain('Create account');
-    http.expectOne(`${environment.apiUrl}/health`).flush('Healthy');
-    http.verify();
   });
 
   it('renders primary navigation for authenticated users', async () => {
@@ -154,6 +199,7 @@ describe('AppComponent', () => {
 });
 
 type SetupOptions = Readonly<{
+  backendStatus?: BackendStatus;
   path?: string;
   skipInitialNavigation?: boolean;
   status?: AuthStatus;
@@ -161,12 +207,16 @@ type SetupOptions = Readonly<{
 
 async function setupApp(options: SetupOptions = {}): Promise<{
   auth: AuthServiceStub;
+  backend: BackendStatusServiceStub;
   element: HTMLElement;
   fixture: ComponentFixture<AppComponent>;
   http: HttpTestingController;
   router: Router;
 }> {
   const auth = new AuthServiceStub(options.status ?? 'unauthenticated');
+  const backend = new BackendStatusServiceStub(
+    options.backendStatus ?? 'available'
+  );
 
   await TestBed.configureTestingModule({
     imports: [AppComponent],
@@ -174,7 +224,8 @@ async function setupApp(options: SetupOptions = {}): Promise<{
       provideRouter(routes),
       provideHttpClient(),
       provideHttpClientTesting(),
-      { provide: AuthService, useValue: auth }
+      { provide: AuthService, useValue: auth },
+      { provide: BackendStatusService, useValue: backend }
     ]
   }).compileComponents();
 
@@ -189,6 +240,7 @@ async function setupApp(options: SetupOptions = {}): Promise<{
 
   return {
     auth,
+    backend,
     element: fixture.nativeElement as HTMLElement,
     fixture,
     http: TestBed.inject(HttpTestingController),
@@ -224,13 +276,36 @@ class AuthServiceStub {
     return this.isAuthenticated();
   }
 
-  initializeAuth(): Observable<AuthStatus> {
-    return of(this.status());
-  }
+  readonly initializeAuth = vi.fn((): Observable<AuthStatus> => of(this.status()));
 
   ensureCurrentUser(): Observable<MeResponse> {
     return this.isAuthenticated()
       ? of({} as MeResponse)
       : throwError(() => new Error('No session'));
+  }
+}
+
+class BackendStatusServiceStub {
+  private readonly statusSignal = signal<BackendStatus>('checking');
+  readonly status = this.statusSignal.asReadonly();
+  private hasStarted = false;
+  readonly startCheck = vi.fn(() => {
+    if (this.hasStarted && this.statusSignal() === 'unavailable') {
+      this.statusSignal.set('checking');
+    }
+
+    this.hasStarted = true;
+  });
+
+  constructor(status: BackendStatus) {
+    this.statusSignal.set(status);
+  }
+
+  setStatus(status: BackendStatus): void {
+    this.statusSignal.set(status);
+  }
+
+  whenAvailable(): Observable<void> {
+    return this.statusSignal() === 'available' ? of(undefined) : new Subject<void>();
   }
 }

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   NonNullableFormBuilder,
@@ -7,12 +7,11 @@ import {
   Validators
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, finalize } from 'rxjs';
 
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../../auth/auth.models';
 import { AuthService } from '../../auth/auth.service';
-import { BackendHealthService } from '../../backend-health.service';
 import { TranslatePipe } from '../../i18n/i18n.pipes';
 
 type AuthMode = 'login' | 'register';
@@ -25,8 +24,6 @@ type AuthMode = 'login' | 'register';
 })
 export class AuthPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
-  private readonly backendHealth = inject(BackendHealthService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -67,11 +64,6 @@ export class AuthPageComponent implements OnInit {
         'auth.emailConfirmed'
       );
     }
-
-    this.backendHealth
-      .warmUp()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe();
   }
 
   protected submitLogin(): void {

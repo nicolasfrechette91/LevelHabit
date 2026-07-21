@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { anonymousGuard } from './anonymous.guard';
 import { authGuard } from './auth.guard';
+import { BackendStatusService } from '../core/services/backend-status.service';
 import { type AuthStatus, AuthService } from './auth.service';
 
 describe('authentication route guards', () => {
@@ -127,6 +128,10 @@ function configure(auth: AuthServiceStub): AuthServiceStub {
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
+      {
+        provide: BackendStatusService,
+        useValue: { whenAvailable: () => of(undefined) }
+      },
       { provide: AuthService, useValue: auth }
     ]
   });

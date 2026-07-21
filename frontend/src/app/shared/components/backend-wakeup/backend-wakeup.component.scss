@@ -1,0 +1,119 @@
+@use "variables" as *;
+
+:host {
+  display: block;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.wakeup-page {
+  align-items: center;
+  background:
+    radial-gradient(circle at top, rgba($lh-warning, 0.13), transparent 42%),
+    var(--lh-surface);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 1.5rem;
+}
+
+.wakeup-card {
+  background: rgba($lh-white, 0.96);
+  border: 1px solid rgba($lh-emerald, 0.14);
+  border-radius: 1.25rem;
+  box-shadow: $lh-shadow-soft;
+  max-width: 36rem;
+  padding: clamp(2rem, 7vw, 3.5rem);
+  width: 100%;
+}
+
+.wakeup-brand {
+  align-items: center;
+  color: var(--lh-ink);
+  display: inline-flex;
+  font-size: 1.25rem;
+  font-weight: 900;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+
+  img {
+    display: block;
+  }
+}
+
+.wakeup-content {
+  min-height: 15rem;
+}
+
+.wakeup-spinner {
+  animation: wakeup-spin 1s linear infinite;
+  border: 0.25rem solid rgba($lh-emerald, 0.2);
+  border-radius: 50%;
+  border-right-color: currentColor;
+  color: var(--lh-emerald);
+  display: inline-block;
+  height: 3rem;
+  margin-bottom: 1.5rem;
+  width: 3rem;
+}
+
+@keyframes wakeup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wakeup-delay-icon {
+  align-items: center;
+  background: rgba($lh-gold, 0.14);
+  border-radius: 50%;
+  color: var(--lh-gold-strong);
+  display: inline-flex;
+  font-size: 1.75rem;
+  font-weight: 900;
+  height: 3rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  width: 3rem;
+}
+
+h1 {
+  color: var(--lh-ink);
+  font-size: clamp(1.65rem, 5vw, 2.15rem);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  margin-bottom: 1rem;
+}
+
+p {
+  color: var(--lh-muted);
+  line-height: 1.7;
+}
+
+.wakeup-progress {
+  color: var(--lh-emerald);
+  font-weight: 800;
+  margin-top: 1.5rem;
+}
+
+.wakeup-retry {
+  margin-top: 1rem;
+  min-width: 9rem;
+}
+
+@media (max-width: 575.98px) {
+  .wakeup-page {
+    padding: 1rem;
+  }
+
+  .wakeup-card {
+    border-radius: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wakeup-spinner {
+    animation-duration: 2s;
+  }
+}

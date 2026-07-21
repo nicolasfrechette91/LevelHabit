@@ -1,4 +1,9 @@
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  provideHttpClient,
+  withInterceptors
+} from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting
@@ -11,6 +16,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../environments/environment';
 import type { AuthResponse } from './auth.models';
 import { AUTH_CSRF_HEADER, AUTH_STORAGE_KEY, AuthService } from './auth.service';
+import { SKIP_AUTH } from './auth-http.context';
 import { authTokenInterceptor } from './auth-token.interceptor';
 
 const AUTH_RESPONSE: AuthResponse = createAuthResponse('access-token');
@@ -46,6 +52,30 @@ describe('authTokenInterceptor', () => {
     externalRequest.flush({});
 
     await Promise.all([apiPromise, externalPromise]);
+    http.verify();
+  });
+
+  it('keeps explicitly anonymous API requests out of JWT and refresh handling', async () => {
+    const httpClient = TestBed.inject(HttpClient);
+    const http = TestBed.inject(HttpTestingController);
+    await establishSession(http);
+
+    const healthPromise = firstValueFrom(
+      httpClient.get(`${environment.apiUrl}/health`, {
+        context: new HttpContext().set(SKIP_AUTH, true),
+        responseType: 'text'
+      })
+    );
+    const healthRequest = http.expectOne(`${environment.apiUrl}/health`);
+
+    expect(healthRequest.request.headers.has('Authorization')).toBe(false);
+    healthRequest.flush('Unavailable', {
+      status: 401,
+      statusText: 'Unauthorized'
+    });
+
+    await expect(healthPromise).rejects.toBeTruthy();
+    http.expectNone(`${environment.apiUrl}/auth/csrf`);
     http.verify();
   });
 

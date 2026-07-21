@@ -1,12 +1,10 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockInstance } from 'vitest';
 
-import { environment } from '../../../environments/environment';
 import type {
   AuthResponse,
   LoginRequest,
@@ -68,17 +66,6 @@ describe('AuthPageComponent', () => {
     localStorage.clear();
   });
 
-  it('calls the backend health endpoint when initialized', async () => {
-    const { http } = await setup('login', { flushWarmUp: false });
-
-    const request = http.expectOne(`${environment.apiUrl}/health`);
-    expect(request.request.method).toBe('GET');
-    expect(request.request.responseType).toBe('text');
-
-    request.flush('Healthy');
-    http.verify();
-  });
-
   it('renders the login page in French after a runtime language change', async () => {
     const { fixture, nativeElement } = await setup('login');
 
@@ -88,30 +75,6 @@ describe('AuthPageComponent', () => {
     expect(nativeElement.textContent).toContain('Bon retour');
     expect(nativeElement.textContent).toContain('Se connecter');
     expect(nativeElement.textContent).toContain('Mot de passe oublié?');
-  });
-
-  it('keeps login usable when backend warm-up fails', async () => {
-    const { auth, fixture, http, nativeElement, navigateByUrl } = await setup('login', {
-      flushWarmUp: false
-    });
-
-    const request = http.expectOne(`${environment.apiUrl}/health`);
-    request.flush('Unavailable', {
-      status: 503,
-      statusText: 'Service Unavailable'
-    });
-
-    setInputValue(fixture, '#login-email', 'player@example.com');
-    setInputValue(fixture, '#login-password', 'CorrectHorse123!');
-    submitForm(fixture);
-
-    expect(auth.login).toHaveBeenCalledWith({
-      email: 'player@example.com',
-      password: 'CorrectHorse123!'
-    });
-    expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
-    expect(nativeElement.querySelector('[role="alert"]')).toBeNull();
-    http.verify();
   });
 
   it('prevents login submit when the email format is invalid', async () => {
@@ -325,14 +288,12 @@ describe('AuthPageComponent', () => {
 });
 
 type SetupOptions = Readonly<{
-  flushWarmUp?: boolean;
   queryParams?: Record<string, string>;
 }>;
 
 async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
   auth: AuthServiceStub;
   fixture: ComponentFixture<AuthPageComponent>;
-  http: HttpTestingController;
   nativeElement: HTMLElement;
   navigate: MockInstance<Router['navigate']>;
   navigateByUrl: MockInstance<Router['navigateByUrl']>;
@@ -350,29 +311,20 @@ async function setup(mode: AuthMode, options: SetupOptions = {}): Promise<{
     imports: [AuthPageComponent],
     providers: [
       provideRouter([]),
-      provideHttpClient(),
-      provideHttpClientTesting(),
       { provide: ActivatedRoute, useValue: route },
       { provide: AuthService, useValue: auth }
     ]
   }).compileComponents();
 
-  const http = TestBed.inject(HttpTestingController);
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(AuthPageComponent);
   fixture.detectChanges();
 
-  if (options.flushWarmUp ?? true) {
-    const request = http.expectOne(`${environment.apiUrl}/health`);
-    request.flush('Healthy');
-  }
-
   return {
     auth,
     fixture,
-    http,
     nativeElement: fixture.nativeElement as HTMLElement,
     navigate,
     navigateByUrl

@@ -1,0 +1,37 @@
+<main class="wakeup-page" aria-labelledby="wakeup-title">
+  <section class="wakeup-card text-center" [attr.aria-busy]="status() === 'checking'">
+    <div class="wakeup-brand" aria-label="LevelHabit">
+      <img ngSrc="levelhabit-mark.svg" alt="" width="64" height="64" priority>
+      <span>LevelHabit</span>
+    </div>
+
+    <div class="wakeup-content" aria-live="polite" aria-atomic="true">
+      @if (status() === 'checking') {
+        <div class="spinner-border wakeup-spinner" role="status">
+          <span class="visually-hidden">Loading your habits</span>
+        </div>
+        <h1 id="wakeup-title">LevelHabit is getting ready</h1>
+        <p>
+          We’re waking up the server and loading your progress.<br>
+          This may take a few moments.
+        </p>
+        <p class="wakeup-progress mb-0">Loading your habits…</p>
+      } @else {
+        <div class="wakeup-delay-icon" aria-hidden="true">!</div>
+        <h1 id="wakeup-title">LevelHabit is taking longer than expected</h1>
+        <p>
+          We couldn’t reach the server yet. Your data is safe.<br>
+          Please try again in a moment.
+        </p>
+        <button
+          type="button"
+          class="btn btn-lh-primary wakeup-retry"
+          [disabled]="status() === 'checking'"
+          (click)="retry.emit()"
+        >
+          Try Again
+        </button>
+      }
+    </div>
+  </section>
+</main>

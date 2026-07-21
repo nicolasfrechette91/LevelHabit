@@ -16,6 +16,7 @@ import {
   type AnalyticsSummaryResponse
 } from '../../analytics/analytics-api.service';
 import { AuthService } from '../../auth/auth.service';
+import { BackendStatusService } from '../../core/services/backend-status.service';
 import type { MeResponse } from '../../auth/auth.models';
 import { LanguageService } from '../../i18n/language.service';
 import {
@@ -1031,6 +1032,10 @@ async function renderApiAchievementRoute(
         useValue: createApiAuthService()
       },
       {
+        provide: BackendStatusService,
+        useValue: { whenAvailable: () => of(undefined) }
+      },
+      {
         provide: HabitApiService,
         useValue: new HabitApiServiceStub()
       },
@@ -1077,6 +1082,10 @@ async function renderApiAnalyticsRoute(
       {
         provide: AuthService,
         useValue: createApiAuthService()
+      },
+      {
+        provide: BackendStatusService,
+        useValue: { whenAvailable: () => of(undefined) }
       },
       {
         provide: HabitApiService,
@@ -1129,6 +1138,10 @@ async function renderApiHabitRoute(
       {
         provide: AuthService,
         useValue: createApiAuthService()
+      },
+      {
+        provide: BackendStatusService,
+        useValue: { whenAvailable: () => of(undefined) }
       },
       {
         provide: HabitApiService,
